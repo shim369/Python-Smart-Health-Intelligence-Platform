@@ -1,7 +1,7 @@
 [project]
 name = "python-smart-health-intelligence-platform"
 version = "0.1.0"
-description = "Add your description here"
+description = "A health intelligence platform for health data analysis, recommendations, AI-powered recipe generation, and future ML integration."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -14,4 +14,52 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.0,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "health_intelligence"
+module-root = "src"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["health_intelligence"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
 ]
