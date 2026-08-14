@@ -1,9 +1,3 @@
-うん。ここまで決めた内容なら、もう `docs/requirements.md` に落としていい段階。
-
-特に今回は、**MLを必ず開発する／ただし最終製品での採用は評価結果で決める／採用しない場合はRule-basedをFallbackとして残す**、この3点を明文化しておく。
-
-`requirements.md` は、まず以下の内容で初版を作るのがいい。
-
 # Smart Health Intelligence Platform 要件定義書
 
 ## 1. 文書概要
@@ -116,6 +110,8 @@ AIとMLを同一の仕組みとして扱わない。
 ### HealthLog
 
 健康状態に関する基本的な記録を管理する。
+
+> **未確定事項**: 具体的なフィールド構成(記録項目)はPhase 1のDomain Model詳細設計で確定する。他のLogと異なり用途が広いため、先に項目を仮決めせず、Phase 1で必要項目を洗い出したうえで確定させる。
 
 ### MealLog
 
@@ -313,15 +309,19 @@ ML Pipelineには以下を含む。
 
 ## 9.3 ML採用判断
 
-MLモデルの実装自体は必須とする。
-
-ただし、最終的なRecommendation EngineへのML統合は評価結果に基づいて判断する。
+**MLモデルの実装自体は必須とする。** ただし、最終的なRecommendation EngineへのML統合は評価結果に基づいて判断する。
 
 以下の3つの判断を許容する。
 
 ### ML採用
 
 MLがRule-based Baselineを十分に上回り、汎化性能・安定性等の観点から製品利用に適すると判断した場合。
+
+```text
+Recommendation
+      ↓
+     ML
+```
 
 ### ML限定採用
 
@@ -336,15 +336,25 @@ Sleep     → Rule-based
 Workout   → Rule-based
 ```
 
+すべての領域でMLを採用する必要はない。
+
 ### ML見送り
 
 MLがRule-based Baselineを上回らない、データ量が不足している、汎化性能が不十分などの理由により、製品Recommendationへの統合を見送る場合。
+
+```text
+Recommendation
+      ↓
+Rule-based
+```
+
+ML Pipeline自体は構築・評価するが、製品Recommendationへの統合は見送ることができる。
 
 ---
 
 ## 9.4 Fallback
 
-MLを製品Recommendationへ統合する場合でも、Rule-based RecommendationをFallbackとして保持する。
+MLを製品Recommendationへ統合する場合でも、Rule-based RecommendationをFallbackとして保持することを要件とする。
 
 以下の場合にはRule-based RecommendationへFallbackできることを要件とする。
 
@@ -527,6 +537,8 @@ PostgreSQLを主要な永続化データベースとして利用する。
 
 Repository Patternを採用し、Domain層およびService層からデータベース実装詳細を分離する。
 
+複数テーブル・複数Repositoryにまたがる更新処理は、単一トランザクションとして扱い、一部のみが更新される状態(部分的更新)を防止することを要件とする。トランザクション境界はService/Unit of Work側で管理し、Repositoryが独自にcommit/rollbackを行わないこととする。
+
 ---
 
 # 15. アーキテクチャ要件
@@ -594,6 +606,7 @@ RepositoryのCRUDおよびuser_id境界を検証する。
 * user_idによるデータ分離
 * AI Error / Retry
 * Repository → Database
+* トランザクション境界・Rollback(複数Repositoryにまたがる更新の部分的失敗時)
 
 ## 16.4 E2E Test
 
@@ -644,7 +657,7 @@ pytest
 
 ## 17.5 信頼性
 
-* Database Transactionを適切に管理する
+* Database Transactionを適切に管理し、複数テーブルにまたがる更新の部分的失敗を防止する(Unit of Workによるトランザクション境界の一元管理)
 * Exceptionを適切に処理する
 * AI APIのTimeoutを設定する
 * Retry対象を明確にする
@@ -754,48 +767,7 @@ V1.0では以下を開発対象とする。
 
 ---
 
-# 21. V1.0におけるMLの扱い
-
-ML Pipelineの構築は必須とする。
-
-一方、MLモデルを最終的な製品Recommendationへ統合するかどうかは、ML評価結果に基づいて決定する。
-
-最終的な構成は以下のいずれかとする。
-
-```text
-ML採用
-
-Recommendation
-      ↓
-     ML
-```
-
-または、
-
-```text
-ML限定採用
-
-Nutrition → ML
-Weight    → ML
-Sleep     → Rule
-Workout   → Rule
-```
-
-または、
-
-```text
-ML見送り / Fallback
-
-Recommendation
-      ↓
-Rule-based
-```
-
-MLを採用する場合でも、Rule-based RecommendationをFallbackとして保持する。
-
----
-
-# 22. 将来拡張
+# 21. 将来拡張
 
 V1.0完成後の拡張候補として以下を想定する。
 
@@ -815,7 +787,7 @@ V1.0完成後の拡張候補として以下を想定する。
 
 ---
 
-# 23. 設計上の重要原則
+# 22. 設計上の重要原則
 
 本プロジェクトでは以下を基本原則とする。
 
@@ -827,5 +799,6 @@ V1.0完成後の拡張候補として以下を想定する。
 6. **MLを採用する場合でもFallbackを用意する**
 7. **ユーザーデータを`user_id`によって明確に分離する**
 8. **DomainとInfrastructureを分離する**
-9. **テスト可能な設計を優先する**
-10. **CIを常にGreenに維持する**
+9. **複数Repositoryにまたがる更新はUnit of Workで一貫性を保証する**
+10. **テスト可能な設計を優先する**
+11. **CIを常にGreenに維持する**
