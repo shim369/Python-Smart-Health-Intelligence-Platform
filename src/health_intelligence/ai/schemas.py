@@ -1,0 +1,39 @@
+"""AI Provider境界で利用するPydantic Schema。
+
+architecture.md Section 6.4: 外部境界(AI Structured Output等)には
+Pydanticを利用する。ここで定義するSchemaはAIProviderの入出力にのみ
+使い、Domain Model(Recipe/RecipeIngredient)への変換はService層で行う。
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field
+
+
+class RecipeInput(BaseModel):
+    """レシピ生成のためのAIへの入力。"""
+
+    ingredient_names: list[str] = Field(min_length=1)
+    dietary_preference: str | None = None
+    calorie_target: float | None = None
+
+
+class GeneratedRecipeIngredient(BaseModel):
+    """AIが生成したレシピの材料1件分。"""
+
+    name: str
+    amount: float
+    unit: str
+
+
+class GeneratedRecipe(BaseModel):
+    """AIのStructured Outputとして受け取るレシピ本体。
+
+    Pydantic Validationにより、Schemaを満たさないレスポンスは
+    AIValidationErrorとして呼び出し側へ伝播させる想定
+    (実際のValidation Error変換は各Provider実装側で行う)。
+    """
+
+    title: str
+    instructions: str
+    ingredients: list[GeneratedRecipeIngredient] = Field(min_length=1)

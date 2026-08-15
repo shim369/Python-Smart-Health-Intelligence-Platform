@@ -3,17 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 from uuid import UUID
 
+from health_intelligence.ai.protocols import AIProvider
 from health_intelligence.domain.models import Recipe, RecipeIngredient
 from health_intelligence.repositories.unit_of_work import UnitOfWork
-
-if TYPE_CHECKING:
-    # AI Provider Protocolは次のタスク(AI Provider Protocol + FakeAIProvider
-    # 雛形)で `health_intelligence.ai.protocols` に定義する。
-    # それまでは型チェック専用のTYPE_CHECKINGガード内でのみ参照する。
-    from health_intelligence.ai.protocols import AIProvider
 
 
 class RecipeService:
@@ -31,9 +25,7 @@ class RecipeService:
         self._uow_factory = uow_factory
         self._ai_provider = ai_provider
 
-    def save_recipe(
-        self, recipe: Recipe, ingredients: list[RecipeIngredient]
-    ) -> None:
+    def save_recipe(self, recipe: Recipe, ingredients: list[RecipeIngredient]) -> None:
         """Recipeとその材料一覧を1トランザクションで保存する。
 
         RecipeRepositoryとRecipeIngredientRepositoryという複数
@@ -55,9 +47,7 @@ class RecipeService:
         with self._uow_factory() as uow:
             return uow.recipe_ingredients.list_by_recipe(recipe_id)
 
-    def generate_recipe(
-        self, user_id: UUID, ingredient_names: list[str]
-    ) -> Recipe:
+    def generate_recipe(self, user_id: UUID, ingredient_names: list[str]) -> Recipe:
         """食材リストからAIによってレシピを生成する。
 
         Prompt Builder / Structured Output / Retry・Timeout・
