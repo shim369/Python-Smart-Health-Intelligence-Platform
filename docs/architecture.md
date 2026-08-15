@@ -386,6 +386,20 @@ Parameters / Metrics / Model / Experiment / Evaluation Resultsを記録し、実
 - **ML限定採用**: 領域ごとにMLの採否を判断(例: Nutrition→ML、Sleep→Rule)。すべての領域でMLを採用する必要はない
 - **ML見送り**: MLがBaselineを上回らない場合はRule-basedを継続利用。ML Pipeline自体は構築・評価するが、製品Recommendationへの統合は見送ることができる
 
+#### 11.5.1 判断基準(数値)
+
+Nutrition/Weight/Sleep/Workoutの各領域ごとに、以下の基準で独立して判定する(詳細はrequirements.md 9.3.1)。
+
+| 項目 | 基準 |
+|---|---|
+| 評価指標 | 回帰: MAE、分類: F1スコア(目的変数の型はPhase 8で確定) |
+| 改善率閾値 | Baseline比で相対10%以上の改善 |
+| 過学習チェック | train/validation誤差の差が相対20%以内 |
+| 最低データ量 | 60日分以上のログ、欠損率30%未満 |
+| 評価方法 | forward-chaining(時系列考慮)K分割交差検証 |
+
+データ量・欠損率の基準を満たさない領域は、評価を待たずに見送り(Rule-based継続)とする。
+
 ### 11.6 ML Fallback
 
 MLを製品Recommendationへ統合する場合でも、Rule-based RecommendationをFallbackとして保持する。
@@ -649,7 +663,6 @@ Phase 1(8/14〜8/17)の期間内に骨格レベルまで決めておくべき項
 - AIProvider Protocolの詳細(メソッドシグネチャ、Structured Outputのスキーマ形状)
 - Retry / Timeoutの具体値
 - Streamlit Session State Key設計
-- ML採用判断基準(Baselineをどの程度上回れば採用するか等)
 
 ### 22.2 Phase 2以降で確定すればよいもの
 
