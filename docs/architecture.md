@@ -542,15 +542,30 @@ Python-Smart-Health-Intelligence-Platform/
 │       │   │   ├── recipe.py
 │       │   │   └── recipe_ingredient.py
 │       │   └── enums.py
+│       ├── services/
+│       │   ├── __init__.py
+│       │   ├── user_service.py
+│       │   ├── health_service.py
+│       │   ├── meal_service.py
+│       │   ├── workout_service.py
+│       │   ├── sleep_service.py
+│       │   ├── weight_service.py
+│       │   ├── recommendation_service.py
+│       │   └── recipe_service.py
 │       ├── repositories/
-│       │   ├── user_repository.py
-│       │   ├── health_log_repository.py
-│       │   ├── meal_log_repository.py
-│       │   ├── workout_log_repository.py
-│       │   ├── sleep_log_repository.py
-│       │   ├── weight_log_repository.py
-│       │   ├── ingredient_repository.py
-│       │   └── recipe_repository.py
+│       │   ├── __init__.py
+│       │   ├── protocols.py          # Repository Interface(Protocol)
+│       │   ├── unit_of_work.py       # Unit of Work Interface(Protocol)
+│       │   └── sqlalchemy/           # 具体的な実装(Phase 2で追加)
+│       │       ├── user_repository.py
+│       │       ├── health_log_repository.py
+│       │       ├── meal_log_repository.py
+│       │       ├── workout_log_repository.py
+│       │       ├── sleep_log_repository.py
+│       │       ├── weight_log_repository.py
+│       │       ├── ingredient_repository.py
+│       │       ├── recipe_repository.py
+│       │       └── unit_of_work.py
 │       ├── database/
 │       │   ├── connection.py
 │       │   ├── schema.py
