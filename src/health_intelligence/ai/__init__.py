@@ -14,6 +14,11 @@ from health_intelligence.ai.errors import (
 )
 from health_intelligence.ai.fake_provider import FakeAIProvider
 from health_intelligence.ai.protocols import AIProvider
+from health_intelligence.ai.retry_policy import (
+    DEFAULT_RETRY_POLICY,
+    RETRYABLE_ERRORS,
+    RetryPolicy,
+)
 from health_intelligence.ai.schemas import (
     GeneratedRecipe,
     GeneratedRecipeIngredient,
@@ -21,6 +26,8 @@ from health_intelligence.ai.schemas import (
 )
 
 __all__ = [
+    "DEFAULT_RETRY_POLICY",
+    "RETRYABLE_ERRORS",
     "AIProvider",
     "AIProviderError",
     "AIRateLimitError",
@@ -31,4 +38,5 @@ __all__ = [
     "GeneratedRecipe",
     "GeneratedRecipeIngredient",
     "RecipeInput",
+    "RetryPolicy",
 ]

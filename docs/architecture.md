@@ -343,6 +343,21 @@ API Key不要のテスト、APIコスト削減、API障害時のテスト、Dete
 
 Timeout / 429 Rate Limit / 503 Service Unavailable / Validation Error / その他API Errorを想定。429・503はRetry対象とし、指数バックオフを利用する。Timeoutを設定し無期限に待機しない。Validation ErrorはSchema Validationで検出する。
 
+#### 10.2.1 Retry / Timeout方針(数値)
+
+| 項目 | 値 |
+|---|---|
+| 最大試行回数 | 3回(初回+リトライ2回) |
+| バックオフ基準秒数 | 1秒 |
+| バックオフ倍率 | 2倍(指数) |
+| Jitter | ±20% |
+| 1回あたりのTimeout | 20秒 |
+| 最悪ケース総待ち時間 | 約63秒(3回×20秒 + 1秒 + 2秒) |
+| Retry対象 | 429 Rate Limit、503 Service Unavailableのみ |
+| Retry対象外(即座に失敗) | Timeout、Validation Error、その他の4xxエラー |
+
+`ai/retry_policy.py` の `RetryPolicy` / `DEFAULT_RETRY_POLICY` として定数化済み。GeminiProvider(Phase 4B)はこれを用いてRetryループを実装する。最悪ケースの待ち時間が長いため、Streamlit UI側(Phase 6)では生成中である旨とおおよその所要時間をユーザーに提示する。
+
 ---
 
 ## 11. Recommendation & ML Architecture
