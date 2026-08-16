@@ -8,7 +8,11 @@ from health_intelligence.domain.models.recipe_ingredient import RecipeIngredient
 from health_intelligence.domain.models.sleep_log import SleepLog
 from health_intelligence.domain.models.user import User
 from health_intelligence.domain.models.weight_log import WeightLog
-from health_intelligence.domain.models.workout_log import WorkoutLog
+from health_intelligence.domain.models.workout_log import (
+    WorkoutExercise,
+    WorkoutLog,
+    WorkoutSet,
+)
 
 __all__ = [
     "HealthLog",
@@ -19,5 +23,7 @@ __all__ = [
     "SleepLog",
     "User",
     "WeightLog",
+    "WorkoutExercise",
     "WorkoutLog",
+    "WorkoutSet",
 ]

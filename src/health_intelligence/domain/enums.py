@@ -18,22 +18,15 @@ class MealType(StrEnum):
     SNACK = "snack"
 
 
-class WorkoutType(StrEnum):
-    """WorkoutLogの運動種別。"""
+class ExerciseCategory(StrEnum):
+    """WorkoutExerciseの種目カテゴリ。
+
+    有酸素運動は`duration_minutes`、筋力トレーニングは`sets`で
+    記録する(workout_log.pyのWorkoutExercise参照)。
+    """
 
     CARDIO = "cardio"
     STRENGTH = "strength"
-    FLEXIBILITY = "flexibility"
-    SPORTS = "sports"
-    OTHER = "other"
-
-
-class WorkoutIntensity(StrEnum):
-    """WorkoutLogの運動強度。"""
-
-    LOW = "low"
-    MODERATE = "moderate"
-    HIGH = "high"
 
 
 class SleepQuality(StrEnum):
