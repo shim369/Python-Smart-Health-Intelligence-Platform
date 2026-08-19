@@ -15,6 +15,7 @@ from health_intelligence.ai.errors import (
 from health_intelligence.ai.fake_provider import FakeAIProvider
 from health_intelligence.ai.gemini_provider import GeminiProvider
 from health_intelligence.ai.protocols import AIProvider
+from health_intelligence.ai.recipe_cache import RecipeCache
 from health_intelligence.ai.retry_policy import (
     DEFAULT_RETRY_POLICY,
     RETRYABLE_ERRORS,
@@ -41,4 +42,5 @@ __all__ = [
     "GeneratedRecipeIngredient",
     "RecipeInput",
     "RetryPolicy",
+    "RecipeCache",
 ]

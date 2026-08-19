@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from health_intelligence.database.schema import IngredientORM
@@ -44,6 +44,14 @@ class SqlAlchemyIngredientRepository:
 
     def get_by_id(self, ingredient_id: UUID) -> Ingredient | None:
         orm = self._session.get(IngredientORM, ingredient_id)
+        return _to_domain(orm) if orm is not None else None
+
+    def get_by_name(self, name: str) -> Ingredient | None:
+        """大文字小文字を区別せず名前で検索する(get or create用)。"""
+        stmt = select(IngredientORM).where(
+            func.lower(IngredientORM.name) == name.lower()
+        )
+        orm = self._session.scalars(stmt).first()
         return _to_domain(orm) if orm is not None else None
 
     def list_all(self) -> list[Ingredient]:
