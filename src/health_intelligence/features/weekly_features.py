@@ -5,6 +5,7 @@ DailyFeaturesの並び(通常は直近7日分)を週間集計値へ変換する�
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from health_intelligence.features.daily_features import DailyFeatures
@@ -24,7 +25,13 @@ class WeeklyFeatures:
     total_workout_duration_minutes: int
 
 
-def _average(values: list[float]) -> float | None:
+def _average(values: Sequence[float]) -> float | None:
+    """平均を計算する。
+
+    `list[float]`ではなく`Sequence[float]`で受け取ることで、
+    `list[int]`(睡眠時間等)もそのまま渡せるようにしている
+    (listは非変、Sequenceは共変であるため。mypyのarg-type対応)。
+    """
     return sum(values) / len(values) if values else None
 
 

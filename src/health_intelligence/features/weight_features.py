@@ -25,9 +25,7 @@ def compute_weight_features(weight_logs: list[WeightLog]) -> WeightFeatures:
     引数の並び順は問わない(関数内で`recorded_at`昇順に並べ替える)。
     """
     if not weight_logs:
-        return WeightFeatures(
-            moving_average_kg=None, change_kg=None, change_rate=None
-        )
+        return WeightFeatures(moving_average_kg=None, change_kg=None, change_rate=None)
 
     ordered = sorted(weight_logs, key=lambda w: w.recorded_at)
     recent = ordered[-_MOVING_AVERAGE_WINDOW:]

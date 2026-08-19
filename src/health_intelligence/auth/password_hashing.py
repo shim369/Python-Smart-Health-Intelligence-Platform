@@ -43,8 +43,6 @@ def verify_password(password: str, password_hash: str) -> bool:
     except (ValueError, AttributeError):
         return False
 
-    derived = hashlib.pbkdf2_hmac(
-        algorithm, password.encode("utf-8"), salt, iterations
-    )
+    derived = hashlib.pbkdf2_hmac(algorithm, password.encode("utf-8"), salt, iterations)
     # タイミング攻撃を避けるため定数時間比較を使う。
     return hmac.compare_digest(derived, expected)

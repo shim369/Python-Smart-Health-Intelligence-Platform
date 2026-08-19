@@ -34,9 +34,7 @@ class UserCredentialORM(Base):
 
     __tablename__ = "user_credentials"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), primary_key=True
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
     password_hash: Mapped[str]
 
 
@@ -44,9 +42,7 @@ class HealthLogORM(Base):
     __tablename__ = "health_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), index=True
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     recorded_at: Mapped[datetime]
     condition_score: Mapped[int | None]
     symptoms: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
@@ -57,9 +53,7 @@ class MealLogORM(Base):
     __tablename__ = "meal_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), index=True
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     consumed_at: Mapped[datetime]
     meal_type: Mapped[str]
     calories: Mapped[float]
@@ -76,9 +70,7 @@ class WorkoutLogORM(Base):
     __tablename__ = "workout_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), index=True
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     performed_at: Mapped[datetime]
     calories_burned: Mapped[float | None]
     memo: Mapped[str | None] = mapped_column(Text)
@@ -128,9 +120,7 @@ class SleepLogORM(Base):
     __tablename__ = "sleep_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), index=True
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     bedtime: Mapped[datetime]
     wake_time: Mapped[datetime]
     quality: Mapped[str | None]
@@ -140,9 +130,7 @@ class WeightLogORM(Base):
     __tablename__ = "weight_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), index=True
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     recorded_at: Mapped[datetime]
     weight_kg: Mapped[float]
 
@@ -164,9 +152,7 @@ class RecipeORM(Base):
     __tablename__ = "recipes"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id"), index=True
-    )
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     title: Mapped[str]
     instructions: Mapped[str] = mapped_column(Text)
     source: Mapped[str]

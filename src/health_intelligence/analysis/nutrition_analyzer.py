@@ -38,9 +38,7 @@ class NutritionAnalyzer:
         penalty = (
             _range_penalty(features.protein_ratio, *_PROTEIN_RATIO_RANGE)
             + _range_penalty(features.fat_ratio, *_FAT_RATIO_RANGE)
-            + _range_penalty(
-                features.carbohydrate_ratio, *_CARBOHYDRATE_RATIO_RANGE
-            )
+            + _range_penalty(features.carbohydrate_ratio, *_CARBOHYDRATE_RATIO_RANGE)
         )
         score = clamp_score(100.0 - penalty * _PENALTY_PER_RATIO_POINT)
 

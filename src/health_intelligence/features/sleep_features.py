@@ -30,9 +30,7 @@ def compute_sleep_features(sleep_logs: list[SleepLog]) -> SleepFeatures:
 
     durations = [s.duration_minutes for s in sleep_logs]
     average_duration_minutes = sum(durations) / len(durations)
-    insufficient_sleep_days = sum(
-        1 for d in durations if d < _SUFFICIENT_SLEEP_MINUTES
-    )
+    insufficient_sleep_days = sum(1 for d in durations if d < _SUFFICIENT_SLEEP_MINUTES)
     duration_stddev_minutes = (
         statistics.stdev(durations) if len(durations) >= 2 else 0.0
     )

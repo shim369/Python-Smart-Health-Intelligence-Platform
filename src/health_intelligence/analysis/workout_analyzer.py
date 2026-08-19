@@ -17,12 +17,8 @@ class WorkoutAnalyzer:
     """
 
     def analyze(self, features: WorkoutFeatures) -> AnalysisResult:
-        missing_sessions = max(
-            0, _RECOMMENDED_WEEKLY_SESSIONS - features.session_count
-        )
-        score = clamp_score(
-            100.0 - missing_sessions * _PENALTY_PER_MISSING_SESSION
-        )
+        missing_sessions = max(0, _RECOMMENDED_WEEKLY_SESSIONS - features.session_count)
+        score = clamp_score(100.0 - missing_sessions * _PENALTY_PER_MISSING_SESSION)
 
         if missing_sessions > 0:
             findings = [

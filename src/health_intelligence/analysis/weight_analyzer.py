@@ -35,8 +35,7 @@ class WeightAnalyzer:
         if excess > 0:
             direction = "増加" if features.change_rate > 0 else "減少"
             findings = [
-                f"体重が急激に{direction}しています"
-                f"(変化率 {features.change_rate:+.1%})"
+                f"体重が急激に{direction}しています(変化率 {features.change_rate:+.1%})"
             ]
         else:
             findings = ["体重は安定して推移しています"]
