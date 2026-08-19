@@ -23,6 +23,7 @@ from health_intelligence.repositories.protocols import (
     RecipeIngredientRepository,
     RecipeRepository,
     SleepLogRepository,
+    UserCredentialRepository,
     UserRepository,
     WeightLogRepository,
     WorkoutLogRepository,
@@ -46,6 +47,7 @@ class UnitOfWork(Protocol):
     """
 
     users: UserRepository
+    user_credentials: UserCredentialRepository
     health_logs: HealthLogRepository
     meal_logs: MealLogRepository
     workout_logs: WorkoutLogRepository

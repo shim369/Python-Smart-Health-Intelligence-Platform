@@ -31,6 +31,9 @@ from health_intelligence.repositories.sqlalchemy.recipe_repository import (
 from health_intelligence.repositories.sqlalchemy.sleep_log_repository import (
     SqlAlchemySleepLogRepository,
 )
+from health_intelligence.repositories.sqlalchemy.user_credential_repository import (
+    SqlAlchemyUserCredentialRepository,
+)
 from health_intelligence.repositories.sqlalchemy.user_repository import (
     SqlAlchemyUserRepository,
 )
@@ -55,6 +58,7 @@ class SqlAlchemyUnitOfWork:
         self._committed = False
 
         self.users = SqlAlchemyUserRepository(self._session)
+        self.user_credentials = SqlAlchemyUserCredentialRepository(self._session)
         self.health_logs = SqlAlchemyHealthLogRepository(self._session)
         self.meal_logs = SqlAlchemyMealLogRepository(self._session)
         self.workout_logs = SqlAlchemyWorkoutLogRepository(self._session)

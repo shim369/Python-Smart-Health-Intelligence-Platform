@@ -37,6 +37,14 @@ def upgrade() -> None:
     )
 
     op.create_table(
+        "user_credentials",
+        sa.Column(
+            "user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), primary_key=True
+        ),
+        sa.Column("password_hash", sa.String(), nullable=False),
+    )
+
+    op.create_table(
         "health_logs",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
         sa.Column(
@@ -197,4 +205,5 @@ def downgrade() -> None:
     op.drop_table("workout_logs")
     op.drop_table("meal_logs")
     op.drop_table("health_logs")
+    op.drop_table("user_credentials")
     op.drop_table("users")
