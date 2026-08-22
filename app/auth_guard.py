@@ -13,6 +13,7 @@ architecture.md Section 9 Session State Architecture:
 from __future__ import annotations
 
 import streamlit as st
+from services import get_session_token_store
 
 from health_intelligence.auth import AuthSessionState
 
@@ -29,6 +30,10 @@ def require_login() -> AuthSessionState:
 
     with st.sidebar:
         if st.button("ログアウト"):
+            token = st.query_params.get("session_token")
+            if token:
+                get_session_token_store().revoke(token)
+            st.query_params.clear()
             auth_state.logout()
             st.rerun()
 

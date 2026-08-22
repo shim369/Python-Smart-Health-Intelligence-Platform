@@ -12,6 +12,7 @@ from health_intelligence.auth.authenticator import (
 from health_intelligence.auth.password_hashing import hash_password, verify_password
 from health_intelligence.auth.session_keys import SessionKey
 from health_intelligence.auth.session_state import AuthSessionState
+from health_intelligence.auth.session_token_store import SessionTokenStore
 
 __all__ = [
     "AuthSessionState",
@@ -20,4 +21,5 @@ __all__ = [
     "SessionKey",
     "hash_password",
     "verify_password",
+    "SessionTokenStore",
 ]

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st  # noqa: E402
-from services import get_authenticator  # noqa: E402
+from services import get_authenticator, get_session_token_store  # noqa: E402
 
 from health_intelligence.auth import (  # noqa: E402
     AuthSessionState,
@@ -20,6 +20,14 @@ from health_intelligence.auth import (  # noqa: E402
 
 auth_state = AuthSessionState(st.session_state)
 auth_state.initialize()
+
+
+def _login_and_persist(user_id) -> None:  # noqa: ANN001
+    """Session Stateへログインし、ブラウザ更新に備えてトークンも発行する。"""
+    auth_state.login(user_id)
+    token = get_session_token_store().issue(user_id)
+    st.query_params["session_token"] = token
+
 
 st.title("🩺 Smart Health Intelligence Platform")
 
@@ -37,7 +45,7 @@ with login_tab:
         if user is None:
             st.error("メールアドレスまたはパスワードが正しくありません。")
         else:
-            auth_state.login(user.user_id)
+            _login_and_persist(user.user_id)
             st.rerun()
 
 with register_tab:
@@ -60,5 +68,5 @@ with register_tab:
         except EmailAlreadyRegisteredError:
             st.error("このメールアドレスは既に登録されています。")
         else:
-            auth_state.login(user.user_id)
+            _login_and_persist(user.user_id)
             st.rerun()

@@ -10,7 +10,7 @@ from __future__ import annotations
 import streamlit as st
 from health_intelligence.config import get_ai_provider
 
-from health_intelligence.auth import Authenticator
+from health_intelligence.auth import Authenticator, SessionTokenStore
 from health_intelligence.repositories.sqlalchemy import build_uow_factory
 from health_intelligence.services import (
     HealthService,
@@ -32,6 +32,17 @@ def _uow_factory():
 @st.cache_resource
 def get_authenticator() -> Authenticator:
     return Authenticator(_uow_factory())
+
+
+@st.cache_resource
+def get_session_token_store() -> SessionTokenStore:
+    """プロセス内で全ユーザー共有のSessionTokenStore。
+
+    `st.cache_resource`はStreamlitプロセス全体で1つのインスタンスを
+    共有する(ユーザーごとにキャッシュされるわけではない)ため、
+    トークンストアの用途に合致する。
+    """
+    return SessionTokenStore()
 
 
 @st.cache_resource
@@ -66,6 +77,11 @@ def get_weight_service() -> WeightService:
 
 @st.cache_resource
 def get_recommendation_service() -> RecommendationService:
+    """WeightPredictorServiceはmodel_predict_fn未指定(=常にRule-based
+    Fallback)で組み立てる。ml/run_weight_pipeline.pyで実データによる
+    評価が完了し、学習済みモデルのロード方法が整備され次第、
+    model_predict_fnを差し込む(architecture.md Section 11.6)。
+    """
     return RecommendationService(_uow_factory())
 
 

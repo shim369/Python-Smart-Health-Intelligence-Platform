@@ -1,12 +1,3 @@
-"""Authenticator。
-
-Email + Passwordによるユーザー登録・認証を担当する。
-
-`register()`は User(識別情報)と UserCredential(パスワードハッシュ)
-という複数Repositoryにまたがる書き込みを1つのUnitOfWorkで行う
-(architecture.md Section 15 Unit of Workの実例)。
-"""
-
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -15,6 +6,7 @@ from uuid import uuid4
 
 from health_intelligence.auth.password_hashing import hash_password, verify_password
 from health_intelligence.domain.models import User
+from health_intelligence.repositories.errors import DuplicateKeyError
 from health_intelligence.repositories.unit_of_work import UnitOfWork
 
 
@@ -44,7 +36,12 @@ class Authenticator:
                 display_name=display_name,
                 created_at=datetime.now(UTC),
             )
-            uow.users.add(user)
+
+            try:
+                uow.users.add(user)
+            except DuplicateKeyError as exc:
+                raise EmailAlreadyRegisteredError(email) from exc
+
             uow.user_credentials.set_password_hash(
                 user.user_id, hash_password(password)
             )
