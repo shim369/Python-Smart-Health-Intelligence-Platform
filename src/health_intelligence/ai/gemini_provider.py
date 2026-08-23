@@ -31,6 +31,9 @@ from health_intelligence.ai.errors import (
 )
 from health_intelligence.ai.retry_policy import DEFAULT_RETRY_POLICY, RetryPolicy
 from health_intelligence.ai.schemas import GeneratedRecipe, RecipeInput
+from health_intelligence.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 _DEFAULT_MODEL = "gemini-2.5-flash"
 """使用するGeminiモデル名。モデルの世代交代が早いため、実際に使う際は
@@ -86,7 +89,18 @@ class GeminiProvider:
             except (AIRateLimitError, AIServiceUnavailableError) as e:
                 last_error = e
                 if attempt == self._retry_policy.max_attempts:
+                    logger.warning(
+                        "Gemini API call failed after %d attempts: %s",
+                        attempt,
+                        e,
+                    )
                     raise
+                logger.info(
+                    "Gemini API call failed (attempt %d/%d), retrying: %s",
+                    attempt,
+                    self._retry_policy.max_attempts,
+                    e,
+                )
                 self._wait_before_retry(attempt)
 
         # 最終試行で必ずreturnかraiseするため実際には到達しないが、
