@@ -16,10 +16,10 @@
 from __future__ import annotations
 
 import streamlit as st
-from health_intelligence.logging_config import configure_logging
 from services import get_session_token_store
 
 from health_intelligence.auth import AuthSessionState
+from health_intelligence.logging_config import configure_logging
 
 configure_logging()
 
