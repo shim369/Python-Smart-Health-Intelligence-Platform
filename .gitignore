@@ -1,8 +1,40 @@
-.venv/
+# 環境変数・秘密情報
+.env
+.env.local
+*.env
+.env.example
+
+# Python
 __pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+
+# uv
+.python-version
+
+# テスト・型チェックのキャッシュ
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.env
-.env.example
+.coverage
+htmlcov/
+
+# MLflow(実験ログはローカル生成物、リポジトリにコミットしない)
+mlruns/
+
+# ML採用判断の永続化ファイル(実行環境ごとに生成される)
+ml_artifacts/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
