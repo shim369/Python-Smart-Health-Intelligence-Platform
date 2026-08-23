@@ -19,6 +19,7 @@ import os
 import random
 import time
 
+import httpx
 from google import genai
 from google.genai import errors, types
 
@@ -35,7 +36,7 @@ from health_intelligence.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-_DEFAULT_MODEL = "gemini-2.5-flash"
+_DEFAULT_MODEL = "gemini-3.6-flash"
 """使用するGeminiモデル名。モデルの世代交代が早いため、実際に使う際は
 最新の推奨モデル名を確認して更新すること。"""
 
@@ -125,7 +126,7 @@ class GeminiProvider:
             if code == 503:
                 raise AIServiceUnavailableError(str(e)) from e
             raise AIProviderError(str(e)) from e
-        except TimeoutError as e:
+        except (TimeoutError, httpx.ReadTimeout) as e:
             raise AITimeoutError(str(e)) from e
 
         parsed = response.parsed

@@ -17,7 +17,7 @@ def test_default_policy_values() -> None:
     assert DEFAULT_RETRY_POLICY.max_attempts == 3
     assert DEFAULT_RETRY_POLICY.base_delay_seconds == 1.0
     assert DEFAULT_RETRY_POLICY.backoff_multiplier == 2.0
-    assert DEFAULT_RETRY_POLICY.request_timeout_seconds == 20.0
+    assert DEFAULT_RETRY_POLICY.request_timeout_seconds == 60.0
 
 
 def test_delay_seconds_follows_exponential_backoff() -> None:
@@ -32,8 +32,8 @@ def test_delay_seconds_rejects_non_positive_attempt() -> None:
 
 
 def test_worst_case_total_seconds() -> None:
-    # 3回 x 20秒 + (1秒 + 2秒) = 63秒
-    assert DEFAULT_RETRY_POLICY.worst_case_total_seconds == pytest.approx(63.0)
+    # 3回 x 60秒 + (1秒 + 2秒) = 183秒
+    assert DEFAULT_RETRY_POLICY.worst_case_total_seconds == pytest.approx(183.0)
 
 
 def test_only_rate_limit_and_service_unavailable_are_retryable() -> None:

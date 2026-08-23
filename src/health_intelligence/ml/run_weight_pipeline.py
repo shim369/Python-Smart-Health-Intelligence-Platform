@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+from health_intelligence.config import load_environment
 from health_intelligence.logging_config import configure_logging
 from health_intelligence.ml.dataset import (
     build_weight_change_dataset,
@@ -23,6 +24,7 @@ from health_intelligence.ml.train import train_and_predict
 
 
 def main() -> None:
+    load_environment()
     configure_logging()
     daily_features = generate_dummy_daily_features(num_days=90)
 

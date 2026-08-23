@@ -10,8 +10,11 @@ from typing import TypeVar
 from uuid import UUID
 
 import pytest
+from dotenv import load_dotenv
 
 from health_intelligence.domain.models import User
+
+load_dotenv()
 
 T = TypeVar("T")
 

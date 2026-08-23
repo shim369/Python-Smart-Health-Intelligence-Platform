@@ -19,8 +19,10 @@ import streamlit as st
 from services import get_session_token_store
 
 from health_intelligence.auth import AuthSessionState
+from health_intelligence.config import load_environment
 from health_intelligence.logging_config import configure_logging
 
+load_environment()
 configure_logging()
 
 st.set_page_config(page_title="Smart Health Intelligence Platform", page_icon="🩺")

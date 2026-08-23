@@ -30,7 +30,7 @@ class RetryPolicy:
     jitter_ratio: float = 0.2
     """待機時間に加えるランダムなブレの割合(例: 0.2 = ±20%)。"""
 
-    request_timeout_seconds: float = 20.0
+    request_timeout_seconds: float = 60.0
     """1回の試行あたりのTimeout(秒)。"""
 
     def delay_seconds(self, attempt: int) -> float:
