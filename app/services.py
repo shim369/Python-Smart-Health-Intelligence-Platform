@@ -8,9 +8,9 @@
 from __future__ import annotations
 
 import streamlit as st
-from health_intelligence.config import get_ai_provider
 
 from health_intelligence.auth import Authenticator, SessionTokenStore
+from health_intelligence.config import get_ai_provider
 from health_intelligence.repositories.sqlalchemy import build_uow_factory
 from health_intelligence.services import (
     HealthService,
