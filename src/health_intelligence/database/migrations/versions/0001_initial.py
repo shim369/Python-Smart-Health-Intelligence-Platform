@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
         sa.Column("email", sa.String(), nullable=False, unique=True),
         sa.Column("display_name", sa.String(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
 
     op.create_table(
@@ -50,7 +50,7 @@ def upgrade() -> None:
         sa.Column(
             "user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False
         ),
-        sa.Column("recorded_at", sa.DateTime(), nullable=False),
+        sa.Column("recorded_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("condition_score", sa.Integer(), nullable=True),
         sa.Column(
             "symptoms",
@@ -68,7 +68,7 @@ def upgrade() -> None:
         sa.Column(
             "user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False
         ),
-        sa.Column("consumed_at", sa.DateTime(), nullable=False),
+        sa.Column("consumed_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("meal_type", sa.String(), nullable=False),
         sa.Column("calories", sa.Float(), nullable=False),
         sa.Column("protein_g", sa.Float(), nullable=False),
@@ -84,7 +84,7 @@ def upgrade() -> None:
         sa.Column(
             "user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False
         ),
-        sa.Column("performed_at", sa.DateTime(), nullable=False),
+        sa.Column("performed_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("calories_burned", sa.Float(), nullable=True),
         sa.Column("memo", sa.Text(), nullable=True),
     )
@@ -135,8 +135,8 @@ def upgrade() -> None:
         sa.Column(
             "user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False
         ),
-        sa.Column("bedtime", sa.DateTime(), nullable=False),
-        sa.Column("wake_time", sa.DateTime(), nullable=False),
+        sa.Column("bedtime", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("wake_time", sa.DateTime(timezone=True), nullable=False),
         sa.Column("quality", sa.String(), nullable=True),
     )
     op.create_index("ix_sleep_logs_user_id", "sleep_logs", ["user_id"])
@@ -147,7 +147,7 @@ def upgrade() -> None:
         sa.Column(
             "user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False
         ),
-        sa.Column("recorded_at", sa.DateTime(), nullable=False),
+        sa.Column("recorded_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("weight_kg", sa.Float(), nullable=False),
     )
     op.create_index("ix_weight_logs_user_id", "weight_logs", ["user_id"])
@@ -171,7 +171,7 @@ def upgrade() -> None:
         sa.Column("title", sa.String(), nullable=False),
         sa.Column("instructions", sa.Text(), nullable=False),
         sa.Column("source", sa.String(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_index("ix_recipes_user_id", "recipes", ["user_id"])
 

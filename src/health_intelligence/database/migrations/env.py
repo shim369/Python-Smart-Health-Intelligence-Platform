@@ -19,7 +19,10 @@ from sqlalchemy import engine_from_config, pool
 # 直接 `alembic` コマンドを別ディレクトリから叩く場合の保険として明示する)
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
+from health_intelligence.config import load_environment  # noqa: E402
 from health_intelligence.database.schema import Base  # noqa: E402
+
+load_environment()
 
 config = context.config
 

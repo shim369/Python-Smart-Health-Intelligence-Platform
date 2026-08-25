@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Text
+from sqlalchemy import DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -26,7 +26,7 @@ class UserORM(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     email: Mapped[str] = mapped_column(unique=True)
     display_name: Mapped[str]
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class UserCredentialORM(Base):
@@ -34,7 +34,9 @@ class UserCredentialORM(Base):
 
     __tablename__ = "user_credentials"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), primary_key=True
+    )
     password_hash: Mapped[str]
 
 
@@ -42,8 +44,10 @@ class HealthLogORM(Base):
     __tablename__ = "health_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    recorded_at: Mapped[datetime]
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     condition_score: Mapped[int | None]
     symptoms: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
     memo: Mapped[str | None] = mapped_column(Text)
@@ -53,8 +57,10 @@ class MealLogORM(Base):
     __tablename__ = "meal_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    consumed_at: Mapped[datetime]
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    consumed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     meal_type: Mapped[str]
     calories: Mapped[float]
     protein_g: Mapped[float]
@@ -70,8 +76,10 @@ class WorkoutLogORM(Base):
     __tablename__ = "workout_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    performed_at: Mapped[datetime]
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    performed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     calories_burned: Mapped[float | None]
     memo: Mapped[str | None] = mapped_column(Text)
 
@@ -120,9 +128,11 @@ class SleepLogORM(Base):
     __tablename__ = "sleep_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    bedtime: Mapped[datetime]
-    wake_time: Mapped[datetime]
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    bedtime: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    wake_time: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     quality: Mapped[str | None]
 
 
@@ -130,8 +140,10 @@ class WeightLogORM(Base):
     __tablename__ = "weight_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    recorded_at: Mapped[datetime]
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     weight_kg: Mapped[float]
 
 
@@ -152,11 +164,13 @@ class RecipeORM(Base):
     __tablename__ = "recipes"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
     title: Mapped[str]
     instructions: Mapped[str] = mapped_column(Text)
     source: Mapped[str]
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class RecipeIngredientORM(Base):

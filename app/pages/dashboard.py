@@ -20,7 +20,7 @@ from services import get_recommendation_service, get_weight_service  # noqa: E40
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title("📊 ダッシュボード")
+st.title("ダッシュボード")
 
 recommendation_service = get_recommendation_service()
 report = recommendation_service.get_recommendations(user_id)

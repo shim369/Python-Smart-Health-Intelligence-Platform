@@ -36,7 +36,7 @@ from health_intelligence.domain.models import (  # noqa: E402
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title("📝 ログ入力")
+st.title("ログ入力")
 
 meal_tab, workout_tab, sleep_tab, weight_tab, health_tab = st.tabs(
     ["食事", "運動", "睡眠", "体重", "体調"]
