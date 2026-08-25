@@ -5,7 +5,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# インポート前に app/ ディレクトリを sys.path へ追加
+app_dir = Path(__file__).resolve().parents[1]
+if str(app_dir) not in sys.path:
+    sys.path.insert(0, str(app_dir))
 
 import streamlit as st  # noqa: E402
 from auth_guard import require_login  # noqa: E402
@@ -17,7 +20,7 @@ from health_intelligence.ai.errors import AIProviderError  # noqa: E402
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title("🍳 AIレシピ")
+st.title("AIレシピ")
 
 recipe_service = get_recipe_service()
 
