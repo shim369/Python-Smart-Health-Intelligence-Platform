@@ -30,9 +30,7 @@ class RecipeService:
         self._ai_provider = ai_provider
         self._recipe_cache = RecipeCache()
 
-    def save_recipe(
-        self, recipe: Recipe, ingredients: list[RecipeIngredient]
-    ) -> None:
+    def save_recipe(self, recipe: Recipe, ingredients: list[RecipeIngredient]) -> None:
         """Recipeとその材料一覧を1トランザクションで保存する。
 
         RecipeRepositoryとRecipeIngredientRepositoryという複数
@@ -70,9 +68,7 @@ class RecipeService:
         with self._uow_factory() as uow:
             names: dict[UUID, str] = {}
             for recipe_ingredient in recipe_ingredients:
-                ingredient = uow.ingredients.get_by_id(
-                    recipe_ingredient.ingredient_id
-                )
+                ingredient = uow.ingredients.get_by_id(recipe_ingredient.ingredient_id)
                 if ingredient is not None:
                     names[recipe_ingredient.ingredient_id] = ingredient.name
             return names

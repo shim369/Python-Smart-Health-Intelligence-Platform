@@ -111,14 +111,15 @@ class GeminiProvider:
 
     def _call_once(self, prompt: str) -> GeneratedRecipe:
         try:
-            response = self._client.models.generate_content(
+            # AFCに関する警告を回避するため、Chatセッションを作成して呼び出す
+            chat = self._client.chats.create(
                 model=self._model,
-                contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=GeneratedRecipe,
                 ),
             )
+            response = chat.send_message(prompt)
         except errors.APIError as e:
             code = getattr(e, "code", None)
             if code == 429:
