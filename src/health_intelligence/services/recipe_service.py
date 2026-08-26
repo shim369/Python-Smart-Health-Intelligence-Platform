@@ -99,6 +99,10 @@ class RecipeService:
             instructions=generated.instructions,
             source=RecipeSource.AI_GENERATED,
             created_at=datetime.now(UTC),
+            total_calories=generated.total_calories,
+            protein_g=generated.protein_g,
+            fat_g=generated.fat_g,
+            carbohydrate_g=generated.carbohydrate_g,
         )
 
         with self._uow_factory() as uow:

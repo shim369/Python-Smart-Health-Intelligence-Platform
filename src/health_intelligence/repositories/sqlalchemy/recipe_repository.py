@@ -20,6 +20,10 @@ def _to_domain(orm: RecipeORM) -> Recipe:
         instructions=orm.instructions,
         source=RecipeSource(orm.source),
         created_at=orm.created_at,
+        total_calories=orm.total_calories,
+        protein_g=orm.protein_g,
+        fat_g=orm.fat_g,
+        carbohydrate_g=orm.carbohydrate_g,
     )
 
 
@@ -31,6 +35,10 @@ def _to_orm(recipe: Recipe) -> RecipeORM:
         instructions=recipe.instructions,
         source=recipe.source.value,
         created_at=recipe.created_at,
+        total_calories=recipe.total_calories,
+        protein_g=recipe.protein_g,
+        fat_g=recipe.fat_g,
+        carbohydrate_g=recipe.carbohydrate_g,
     )
 
 

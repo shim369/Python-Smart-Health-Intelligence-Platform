@@ -37,3 +37,11 @@ class GeneratedRecipe(BaseModel):
     title: str
     instructions: str
     ingredients: list[GeneratedRecipeIngredient] = Field(min_length=1)
+    total_calories: float
+    """レシピ全体(材料表記の分量全体)の推定カロリー(kcal)。"""
+    protein_g: float
+    """レシピ全体の推定タンパク質量(g)。"""
+    fat_g: float
+    """レシピ全体の推定脂質量(g)。"""
+    carbohydrate_g: float
+    """レシピ全体の推定炭水化物量(g)。"""

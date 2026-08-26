@@ -46,9 +46,13 @@ class FakeAIProvider:
 
         return GeneratedRecipe(
             title=f"{'・'.join(recipe_input.ingredient_names)}のレシピ",
-            instructions="1. 材料を切る\n2. 加熱する\n3. 盛り付ける",
+            instructions="1. 材料を切る\n2. 電子レンジで加熱する\n3. 盛り付ける",
             ingredients=[
                 GeneratedRecipeIngredient(name=name, amount=1.0, unit="人前")
                 for name in recipe_input.ingredient_names
             ],
+            total_calories=400.0,
+            protein_g=20.0,
+            fat_g=15.0,
+            carbohydrate_g=45.0,
         )

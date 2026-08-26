@@ -19,7 +19,6 @@ import os
 import random
 import time
 
-import httpx
 from google import genai
 from google.genai import errors, types
 
@@ -36,7 +35,7 @@ from health_intelligence.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-_DEFAULT_MODEL = "gemini-3.6-flash"
+_DEFAULT_MODEL = "gemini-2.5-flash"
 """使用するGeminiモデル名。モデルの世代交代が早いため、実際に使う際は
 最新の推奨モデル名を確認して更新すること。"""
 
@@ -45,6 +44,11 @@ def _build_prompt(recipe_input: RecipeInput) -> str:
     lines = [
         "以下の食材を使ったレシピを1件、日本語で提案してください。",
         f"食材: {', '.join(recipe_input.ingredient_names)}",
+        "調理方法は電子レンジのみを使う前提にしてください"
+        "(コンロ・オーブン・フライパンでの加熱は使わないでください)。",
+        "material(材料)に記載した分量全体でのおおよその推定カロリー(kcal)と、"
+        "タンパク質・脂質・炭水化物の推定量(g)も算出して含めてください。"
+        "厳密な栄養計算ではなく目安で構いません。",
     ]
     if recipe_input.dietary_preference:
         lines.append(f"食事制限・好み: {recipe_input.dietary_preference}")
@@ -111,15 +115,14 @@ class GeminiProvider:
 
     def _call_once(self, prompt: str) -> GeneratedRecipe:
         try:
-            # AFCに関する警告を回避するため、Chatセッションを作成して呼び出す
-            chat = self._client.chats.create(
+            response = self._client.models.generate_content(
                 model=self._model,
+                contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=GeneratedRecipe,
                 ),
             )
-            response = chat.send_message(prompt)
         except errors.APIError as e:
             code = getattr(e, "code", None)
             if code == 429:
@@ -127,7 +130,7 @@ class GeminiProvider:
             if code == 503:
                 raise AIServiceUnavailableError(str(e)) from e
             raise AIProviderError(str(e)) from e
-        except (TimeoutError, httpx.ReadTimeout) as e:
+        except TimeoutError as e:
             raise AITimeoutError(str(e)) from e
 
         parsed = response.parsed

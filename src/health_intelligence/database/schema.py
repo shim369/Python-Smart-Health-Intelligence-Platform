@@ -157,13 +157,10 @@ class RecipeORM(Base):
     instructions: Mapped[str] = mapped_column(Text)
     source: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-    # relationship()を明示しないと、SQLAlchemyはrecipesと
-    # recipe_ingredientsの間にFK依存があることをflushの順序決定時に
-    # 認識できず、mapperクラス名のアルファベット順でINSERT順を決めて
-    # しまう(RecipeIngredientORM < RecipeORM)ため、recipesより先に
-    # recipe_ingredientsをINSERTしてFK違反になることがある。
-    recipe_ingredients: Mapped[list[RecipeIngredientORM]] = relationship()
+    total_calories: Mapped[float | None]
+    protein_g: Mapped[float | None]
+    fat_g: Mapped[float | None]
+    carbohydrate_g: Mapped[float | None]
 
 
 class RecipeIngredientORM(Base):
