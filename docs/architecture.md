@@ -1,4 +1,5 @@
 # Smart Health Intelligence Platform
+
 # Architecture Design
 
 ## 1. Overview
@@ -9,22 +10,15 @@
 
 基本的な処理フロー：
 
-```text
-Health Data
-    ↓
-Persistence
-    ↓
-Feature Engineering
-    ↓
-Analysis
-    ↓
-Health Score
-    ↓
-Rule-based Recommendation
-    ↓
-AI / ML
-    ↓
-Recommendation
+```mermaid
+flowchart TD
+    A[Health Data] --> B[Persistence]
+    B --> C[Feature Engineering]
+    C --> D[Analysis]
+    D --> E[Health Score]
+    E --> F[Rule-based Recommendation]
+    F --> G[AI / ML]
+    G --> H[Recommendation]
 ```
 
 ---
@@ -33,17 +27,17 @@ Recommendation
 
 本システムの主な目的は以下とする。
 
-- 健康データを継続的に記録できる
-- 食事・運動・睡眠・体重などを統合的に管理できる
-- 記録データから特徴量を生成できる
-- 健康状態を分析・スコアリングできる
-- ルールベースで改善提案を生成できる
-- Gemini等のAIを利用してレシピを生成できる
-- 将来的にMLによる予測・推薦を導入できる
-- 複数ユーザーが安全に利用できる
-- PostgreSQLを利用してデータを永続化できる
-- Streamlit Community Cloud上で公開可能な構成とする
-- テスト・Lint・型チェックを自動化する
+* 健康データを継続的に記録できる
+* 食事・運動・睡眠・体重などを統合的に管理できる
+* 記録データから特徴量を生成できる
+* 健康状態を分析・スコアリングできる
+* ルールベースで改善提案を生成できる
+* Gemini等のAIを利用してレシピを生成できる
+* 将来的にMLによる予測・推薦を導入できる
+* 複数ユーザーが安全に利用できる
+* PostgreSQLを利用してデータを永続化できる
+* Streamlit Community Cloud上で公開可能な構成とする
+* テスト・Lint・型チェックを自動化する
 
 ---
 
@@ -51,16 +45,16 @@ Recommendation
 
 ### 3.1 Application
 
-- Python 3.13+
-- Streamlit
-- Pydantic
+* Python 3.13+
+* Streamlit
+* Pydantic
 
 ### 3.2 Database
 
-- PostgreSQL
-- SQLAlchemy
-- Alembic
-- psycopg3
+* PostgreSQL
+* SQLAlchemy
+* Alembic
+* psycopg3
 
 PostgreSQLのホスティングサービスはPhase 2で決定する。
 
@@ -68,26 +62,26 @@ PostgreSQLのホスティングサービスはPhase 2で決定する。
 
 ### 3.3 AI
 
-- Google Gemini API
-- `google-genai`
-- Pydantic Structured Output
+* Google Gemini API
+* `google-genai`
+* Pydantic Structured Output
 
 ### 3.4 ML
 
-- LightGBM
-- MLflow
-- pandas
-- scikit-learn 等
+* LightGBM
+* MLflow
+* pandas
+* scikit-learn 等
 
 MLライブラリの最終構成はPhase 8で決定する。
 
 ### 3.5 Development
 
-- uv
-- Ruff
-- mypy
-- pytest / pytest-cov
-- GitHub Actions
+* uv
+* Ruff
+* mypy
+* pytest / pytest-cov
+* GitHub Actions
 
 ---
 
@@ -114,44 +108,21 @@ MLライブラリの最終構成はPhase 8で決定する。
 
 ## 5. High-Level Architecture
 
-```text
-┌───────────────────────────────────────────┐
-│               Streamlit UI                 │
-│                                             │
-│ Dashboard / Logs / Recipe / Authentication │
-└─────────────────────┬───────────────────────┘
-                       │
-                       ▼
-┌───────────────────────────────────────────┐
-│              Service Layer                 │
-│                                             │
-│ Health / Meal / Workout / Sleep / Recipe   │
-│ Recommendation / Authentication            │
-└──────────────┬──────────────┬───────────────┘
-               │              │
-               ▼              ▼
-┌─────────────────────┐  ┌─────────────────────┐
-│    Domain Layer      │  │   AI / ML Layer      │
-│                       │  │                       │
-│ Domain Models         │  │ Gemini Provider       │
-│ Business Rules        │  │ FakeAIProvider        │
-│                       │  │ ML Pipeline           │
-└──────────┬────────────┘  └───────────┬───────────┘
-           │                            │
-           ▼                            ▼
-┌───────────────────────────────────────────┐
-│        Repository / Unit of Work           │
-│                                             │
-│ Repository Pattern                          │
-│ Transaction Management (UoW)                │
-└─────────────────────┬───────────────────────┘
-                       │
-                       ▼
-┌───────────────────────────────────────────┐
-│                PostgreSQL                   │
-│                                             │
-│ Users / Health Logs / Meals / Recipes etc   │
-└───────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    UI["<b>Streamlit UI</b><br/>Dashboard / Logs / Recipe / Authentication"]
+    Service["<b>Service Layer</b><br/>Health / Meal / Workout / Sleep / Recipe<br/>Recommendation / Authentication"]
+    Domain["<b>Domain Layer</b><br/>Domain Models<br/>Business Rules"]
+    AIML["<b>AI / ML Layer</b><br/>Gemini Provider<br/>FakeAIProvider<br/>ML Pipeline"]
+    Repo["<b>Repository / Unit of Work</b><br/>Repository Pattern<br/>Transaction Management (UoW)"]
+    DB[("<b>PostgreSQL</b><br/>Users / Health Logs / Meals / Recipes etc")]
+
+    UI --> Service
+    Service --> Domain
+    Service --> AIML
+    Domain --> Repo
+    AIML --> Repo
+    Repo --> DB
 ```
 
 Domain LayerとAI/ML Layerはいずれも永続化が必要な場合、Repository / Unit of Workを経由してPostgreSQLへアクセスする。AI/ML Layer自体はDomain Modelを利用してデータをやり取りし、SQLAlchemyやPostgreSQLへ直接依存しない。
@@ -175,8 +146,9 @@ app/
 
 基本的な依存関係：
 
-```text
-UI → Service
+```mermaid
+flowchart LR
+    UI[UI] --> Service[Service]
 ```
 
 `UI → Repository` のような直接依存は原則として避ける。
@@ -222,8 +194,11 @@ WeightLog / Ingredient / Recipe / RecipeIngredient
 
 基本境界：
 
-```text
-External Input → Pydantic → Domain dataclass → Service
+```mermaid
+flowchart LR
+    A[External Input] --> B[Pydantic]
+    B --> C[Domain dataclass]
+    C --> D[Service]
 ```
 
 ### 6.5 Repository Layer
@@ -252,14 +227,17 @@ Repositoryはビジネスルールを持たない。「条件付きでMealLogを
 
 ### 7.1 Database / ORM / Migration
 
-- PostgreSQL(特定クラウドサービスに直接依存しない。候補: Neon / Supabase 等。Phase 2で比較・決定)
-- SQLAlchemyを利用。Domain ModelとORM Modelは分離する
-- MigrationはAlembicを利用し、GitでMigrationファイルを管理する
+* PostgreSQL(特定クラウドサービスに直接依存しない。候補: Neon / Supabase 等。Phase 2で比較・決定)
+* SQLAlchemyを利用。Domain ModelとORM Modelは分離する
+* MigrationはAlembicを利用し、GitでMigrationファイルを管理する
 
 ### 7.2 Cloud Architecture
 
-```text
-User Browser → Streamlit Community Cloud → Application → External PostgreSQL
+```mermaid
+flowchart LR
+    User[User Browser] --> Streamlit[Streamlit Community Cloud]
+    Streamlit --> App[Application]
+    App --> DB[(External PostgreSQL)]
 ```
 
 永続データはStreamlit Community Cloudのローカルファイルシステムではなく、外部PostgreSQLへ保存する。
@@ -278,14 +256,15 @@ Database接続情報は環境変数またはStreamlit Secretsから取得する(
 
 ユーザー所有データ(`HealthLog` / `MealLog` / `WorkoutLog` / `SleepLog` / `WeightLog` / `Recipe`)には原則として`user_id`を必須とする。
 
-```text
-User
- ├── HealthLog
- ├── MealLog
- ├── WorkoutLog
- ├── SleepLog
- ├── WeightLog
- └── Recipe
+```mermaid
+flowchart TD
+    User[User]
+    User --> HealthLog
+    User --> MealLog
+    User --> WorkoutLog
+    User --> SleepLog
+    User --> WeightLog
+    User --> Recipe
 ```
 
 ### 8.2 共通データ
@@ -306,16 +285,25 @@ User
 
 主な状態：`authenticated` / `user_id`(必要に応じてUI状態等を保持)。Session Stateを永続データ保存場所として利用しない。
 
-```text
-Session State → user_id → Service → Repository → PostgreSQL
+```mermaid
+flowchart LR
+    Session[Session State] --> UserID[user_id]
+    UserID --> Service
+    Service --> Repository
+    Repository --> DB[(PostgreSQL)]
 ```
 
 ### 9.1 Session Lifecycle
 
-```text
-Application Start → Session Initialization → Authentication
-→ Authenticated User → user_id → Application Usage
-→ Logout → Session State Reset
+```mermaid
+flowchart LR
+    A[Application Start] --> B[Session Initialization]
+    B --> C[Authentication]
+    C --> D[Authenticated User]
+    D --> E[user_id]
+    E --> F[Application Usage]
+    F --> G[Logout]
+    G --> H[Session State Reset]
 ```
 
 Logout時には、認証情報およびユーザー固有のSession Stateを適切にリセットする。
@@ -326,11 +314,16 @@ Logout時には、認証情報およびユーザー固有のSession Stateを適�
 
 AIサービスはProvider Patternによって抽象化する。
 
-```text
-AIProvider (Protocol)
-    ↑
-    ├── GeminiProvider
-    └── FakeAIProvider
+```mermaid
+classDiagram
+    class AIProvider {
+        <<Protocol>>
+    }
+    class GeminiProvider
+    class FakeAIProvider
+
+    AIProvider <|.. GeminiProvider
+    AIProvider <|.. FakeAIProvider
 ```
 
 Service Layerは具体的なGemini APIに直接依存しない。
@@ -346,7 +339,7 @@ Timeout / 429 Rate Limit / 503 Service Unavailable / Validation Error / その�
 #### 10.2.1 Retry / Timeout方針(数値)
 
 | 項目 | 値 |
-|---|---|
+| --- | --- |
 | 最大試行回数 | 3回(初回+リトライ2回) |
 | バックオフ基準秒数 | 1秒 |
 | バックオフ倍率 | 2倍(指数) |
@@ -364,29 +357,46 @@ Timeout / 429 Rate Limit / 503 Service Unavailable / Validation Error / その�
 
 ### 11.1 Recommendation Architecture
 
-```text
-Features → Analysis → Recommendation Engine
-                        ├── Rule-based
-                        └── ML
+```mermaid
+flowchart LR
+    Features --> Analysis
+    Analysis --> Engine[Recommendation Engine]
+    Engine --> RuleBased[Rule-based]
+    Engine --> ML
 ```
 
 Rule-based Recommendationは初期Recommendation Engineとして実装し、同時にML評価時のBaseline、MLが利用できない場合のFallbackとしても利用する。
 
 ### 11.2 ML Architecture
 
-```text
-Health Data → Dataset → Data Quality Check → Feature Dataset
-→ Baseline → LightGBM → Training → Evaluation → Prediction → MLflow
+```mermaid
+flowchart LR
+    HD[Health Data] --> DS[Dataset]
+    DS --> DQC[Data Quality Check]
+    DQC --> FDS[Feature Dataset]
+    FDS --> BL[Baseline]
+    FDS --> LGBM[LightGBM]
+    LGBM --> TR[Training]
+    TR --> EV[Evaluation]
+    EV --> PR[Prediction]
+    PR --> MLflow
 ```
 
 ### 11.3 ML Pipeline Development Strategy
 
 全領域(Nutrition / Weight / Sleep / Workout)を同時に完成させるのではなく、まず1領域でPipeline全体を確立する。
 
-```text
-1領域を選択 → Dataset → Feature Dataset → Rule-based Baseline
-→ LightGBM → Training → Evaluation → MLflow Tracking
-→ 採用判断 → 他領域へ横展開
+```mermaid
+flowchart LR
+    S1[1領域を選択] --> S2[Dataset]
+    S2 --> S3[Feature Dataset]
+    S3 --> S4[Rule-based Baseline]
+    S4 --> S5[LightGBM]
+    S5 --> S6[Training]
+    S6 --> S7[Evaluation]
+    S7 --> S8[MLflow Tracking]
+    S8 --> S9[採用判断]
+    S9 --> S10[他領域へ横展開]
 ```
 
 対象領域はPhase 8開始時点で、データ量・欠損率・Featureの品質・目的変数の定義可能性・予測可能性・Rule-based Baselineの性能・ML導入によるメリットを評価して決定する。
@@ -397,16 +407,16 @@ Parameters / Metrics / Model / Experiment / Evaluation Resultsを記録し、実
 
 ### 11.5 ML Recommendation Strategy
 
-- **ML採用**: MLがRule-based Baselineを十分に上回る場合
-- **ML限定採用**: 領域ごとにMLの採否を判断(例: Nutrition→ML、Sleep→Rule)。すべての領域でMLを採用する必要はない
-- **ML見送り**: MLがBaselineを上回らない場合はRule-basedを継続利用。ML Pipeline自体は構築・評価するが、製品Recommendationへの統合は見送ることができる
+* **ML採用**: MLがRule-based Baselineを十分に上回る場合
+* **ML限定採用**: 領域ごとにMLの採否を判断(例: Nutrition→ML、Sleep→Rule)。すべての領域でMLを採用する必要はない
+* **ML見送り**: MLがBaselineを上回らない場合はRule-basedを継続利用。ML Pipeline自体は構築・評価するが、製品Recommendationへの統合は見送ることができる
 
 #### 11.5.1 判断基準(数値)
 
 Nutrition/Weight/Sleep/Workoutの各領域ごとに、以下の基準で独立して判定する(詳細はrequirements.md 9.3.1)。
 
 | 項目 | 基準 |
-|---|---|
+| --- | --- |
 | 評価指標 | 回帰: MAE、分類: F1スコア(目的変数の型はPhase 8で確定) |
 | 改善率閾値 | Baseline比で相対10%以上の改善 |
 | 過学習チェック | train/validation誤差の差が相対20%以内 |
@@ -421,10 +431,11 @@ MLを製品Recommendationへ統合する場合でも、Rule-based Recommendation
 
 Fallback条件：MLモデルが利用できない / ML推論エラー / 性能が基準未達 / データ不足 / モデル更新中 / 特定領域ではML非採用。
 
-```text
-Recommendation → ML Strategy
-                   ├── OK → ML
-                   └── NG → Rule-based
+```mermaid
+flowchart TD
+    Rec[Recommendation] --> Strategy{ML Strategy Check}
+    Strategy -->|OK| ML[ML Engine]
+    Strategy -->|NG / Error| Rule[Rule-based Fallback]
 ```
 
 ---
@@ -447,8 +458,11 @@ features/
 
 ### 12.2 Analysis
 
-```text
-Features → [Weight / Nutrition / Sleep / Workout Analyzer] → Analysis Result → Health Score
+```mermaid
+flowchart LR
+    F[Features] --> A["[Weight / Nutrition / Sleep / Workout Analyzer]"]
+    A --> AR[Analysis Result]
+    AR --> HS[Health Score]
 ```
 
 Analyzerは可能な限り決定論的に実装する。
@@ -461,10 +475,16 @@ Nutrition/Weight/Sleep/Workout各Scoreを統合してHealth Scoreとする。医
 
 ## 13. Recipe Architecture
 
-```text
-Recipe Service → Recipe Input → Prompt Builder → AIProvider
-→ Structured Output → Pydantic Validation → Recipe Domain Model
-→ Recipe Repository → PostgreSQL
+```mermaid
+flowchart LR
+    RS[Recipe Service] --> RI[Recipe Input]
+    RI --> PB[Prompt Builder]
+    PB --> AI[AIProvider]
+    AI --> SO[Structured Output]
+    SO --> PV[Pydantic Validation]
+    PV --> DM[Recipe Domain Model]
+    DM --> RR[Recipe Repository]
+    RR --> DB[(PostgreSQL)]
 ```
 
 生成済みRecipeはCacheを利用し、不要なAI API呼び出しを抑制する。Recipe作成時など複数Repositoryにまたがる更新では、Unit of Workによって1つのトランザクションとして扱う。
@@ -475,8 +495,10 @@ Recipe Service → Recipe Input → Prompt Builder → AIProvider
 
 Domain ModelとDatabase ORM Modelは同一モデルを必須とせず分離する。
 
-```text
-Domain Model ↕ Mapping ↕ SQLAlchemy ORM Model
+```mermaid
+flowchart LR
+    DM[Domain Model] <--> Mapping[Mapping Function]
+    Mapping <--> ORM[SQLAlchemy ORM Model]
 ```
 
 `Mapped` / `mapped_column` / `ForeignKey` / Index / Database Constraint / Relationship / Cascade / Database-specific type / Persistence metadataはORM側の責務とし、Domain側では直接扱わない。
@@ -489,12 +511,16 @@ Domain Model ↕ Mapping ↕ SQLAlchemy ORM Model
 
 複数Repositoryにまたがる更新処理では、1つのSQLAlchemy Sessionを共有し、1つのトランザクションとして扱う。
 
-```text
-Service → Unit of Work
-            ├── Repository A
-            ├── Repository B
-            └── Repository C
-              → SQLAlchemy Session → PostgreSQL
+```mermaid
+flowchart TD
+    Service --> UoW[Unit of Work]
+    UoW --> RepoA[Repository A]
+    UoW --> RepoB[Repository B]
+    UoW --> RepoC[Repository C]
+    RepoA --> Session[SQLAlchemy Session]
+    RepoB --> Session
+    RepoC --> Session
+    Session --> DB[(PostgreSQL)]
 ```
 
 基本フロー：`Service → UoW begin → Repository operations → 成功時commit / 失敗時rollback`
@@ -509,8 +535,12 @@ Repositoryは原則として独自にSessionを生成・commit・rollbackしな�
 
 ## 16. Dependency Direction
 
-```text
-Presentation → Service → Domain ← Repository → Infrastructure
+```mermaid
+flowchart LR
+    P[Presentation] --> S[Service]
+    S --> D[Domain]
+    R[Repository] --> D
+    R --> I[Infrastructure]
 ```
 
 より具体的には、`Service → Repository Interface ← Repository Implementation → SQLAlchemy → PostgreSQL`。ServiceからRepositoryの抽象へ依存し、具体的なDatabase実装への依存を分離する。
@@ -660,37 +690,3 @@ Python-Smart-Health-Intelligence-Platform/
 21. Database固有の情報をDomain Modelへ漏洩させない
 22. DomainとORM間の変換責務を明確にする
 23. 過度な抽象化を避け、必要になった段階で共通化する
-
----
-
-## 22. 今後の設計課題(優先順位付き)
-
-### 22.1 Phase 1中に確定させるべきもの
-
-Phase 1(8/14〜8/17)の期間内に骨格レベルまで決めておくべき項目。ここが曖昧なままだとPhase 2以降の実装で手戻りが発生しやすい。
-
-- Domain Modelの詳細設計(フィールド、型、Value Objectの導入判断)
-- Domain Model間の関連設計
-- Service Interfaceの骨格、ユースケース単位の設計方針
-- Repository Interfaceの骨格
-- Unit of Workの具体実装方式の方向性(Sessionライフサイクル、RepositoryへのSession注入方式の大枠)
-- Domain Model ↔ ORM ModelのMapping方式(関数ベースで進める、という方針の確定)
-- AIProvider Protocolの詳細(メソッドシグネチャ、Structured Outputのスキーマ形状)
-- Retry / Timeoutの具体値
-- Streamlit Session State Key設計
-
-### 22.2 Phase 2以降で確定すればよいもの
-
-実装を進めながら、または該当フェーズの直前に決定して問題ない項目。
-
-- PostgreSQL Provider決定(Neon / Supabase 等の比較)
-- ER設計、Index設計、Foreign Key、Cascade設定
-- Migration運用方針
-- Connection Pool、Transaction設定の詳細
-- Mapper共通インターフェースの採用判断(重複量を見てから)
-- 認証方式の最終決定、Cookie/ブラウザ更新/タブ共有の挙動確認
-- API Cost / Rate Limitの具体的な運用ルール
-- Recipe Cacheの実装方式
-- ML対象領域の最終選定、Dataset設計、目的変数の定義、Evaluation指標、LightGBM設定
-- MLflow Trackingの具体的なディレクトリ・命名規則
-- UI/Service境界の細部、Error Handling/Loggingの実装詳細
