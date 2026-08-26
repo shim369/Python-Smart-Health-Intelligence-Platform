@@ -162,6 +162,11 @@ class RecipeORM(Base):
     fat_g: Mapped[float | None]
     carbohydrate_g: Mapped[float | None]
 
+    ingredients: Mapped[list[RecipeIngredientORM]] = relationship(
+        back_populates="recipe",
+        cascade="all, delete-orphan",
+    )
+
 
 class RecipeIngredientORM(Base):
     __tablename__ = "recipe_ingredients"
@@ -174,3 +179,6 @@ class RecipeIngredientORM(Base):
     )
     amount: Mapped[float]
     unit: Mapped[str]
+
+    recipe: Mapped[RecipeORM] = relationship(back_populates="ingredients")
+    ingredient: Mapped[IngredientORM] = relationship()

@@ -5,7 +5,7 @@ from __future__ import annotations
 from uuid import UUID
 
 import streamlit as st
-from formatting import format_datetime_jst
+from components.formatting import format_datetime_jst
 
 from health_intelligence.domain.models import Recipe, RecipeIngredient
 
