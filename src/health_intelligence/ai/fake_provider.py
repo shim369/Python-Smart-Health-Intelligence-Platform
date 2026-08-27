@@ -10,8 +10,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from health_intelligence.ai.schemas import (
+    EstimatedMealNutrition,
     GeneratedRecipe,
     GeneratedRecipeIngredient,
+    MealNutritionInput,
     RecipeInput,
 )
 
@@ -31,6 +33,7 @@ class FakeAIProvider:
     """
 
     fixed_recipe: GeneratedRecipe | None = None
+    fixed_meal_nutrition: EstimatedMealNutrition | None = None
     next_error: Exception | None = None
     call_count: int = field(default=0, init=False)
 
@@ -52,6 +55,25 @@ class FakeAIProvider:
                 for name in recipe_input.ingredient_names
             ],
             total_calories=400.0,
+            protein_g=20.0,
+            fat_g=15.0,
+            carbohydrate_g=45.0,
+        )
+
+    def estimate_meal_nutrition(
+        self, meal_input: MealNutritionInput
+    ) -> EstimatedMealNutrition:
+        self.call_count += 1
+
+        if self.next_error is not None:
+            error, self.next_error = self.next_error, None
+            raise error
+
+        if self.fixed_meal_nutrition is not None:
+            return self.fixed_meal_nutrition
+
+        return EstimatedMealNutrition(
+            calories=400.0,
             protein_g=20.0,
             fat_g=15.0,
             carbohydrate_g=45.0,

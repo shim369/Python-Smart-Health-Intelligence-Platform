@@ -57,7 +57,7 @@ def get_health_service() -> HealthService:
 
 @st.cache_resource
 def get_meal_service() -> MealService:
-    return MealService(_uow_factory())
+    return MealService(_uow_factory(), get_ai_provider())
 
 
 @st.cache_resource

@@ -45,3 +45,23 @@ class GeneratedRecipe(BaseModel):
     """レシピ全体の推定脂質量(g)。"""
     carbohydrate_g: float
     """レシピ全体の推定炭水化物量(g)。"""
+
+
+class MealNutritionInput(BaseModel):
+    """食事記録の栄養推定のためのAIへの入力。"""
+
+    description: str = Field(min_length=1)
+    """食べたものの自由記述(例: 「納豆1パック、ご飯茶碗1杯」)。"""
+
+
+class EstimatedMealNutrition(BaseModel):
+    """AIが推定した食事1件分の栄養情報。
+
+    厳密な栄養計算ではなく目安であり、ユーザーは記録前に確認・修正
+    できる想定(requirements.mdの食事記録機能を参照)。
+    """
+
+    calories: float
+    protein_g: float
+    fat_g: float
+    carbohydrate_g: float

@@ -15,7 +15,12 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from health_intelligence.ai.schemas import GeneratedRecipe, RecipeInput
+from health_intelligence.ai.schemas import (
+    EstimatedMealNutrition,
+    GeneratedRecipe,
+    MealNutritionInput,
+    RecipeInput,
+)
 
 
 class AIProvider(Protocol):
@@ -32,5 +37,15 @@ class AIProvider(Protocol):
           `AIRateLimitError` / `AIServiceUnavailableError` を送出
         - Timeout: `AITimeoutError` を送出
         - レスポンスがSchemaを満たさない場合: `AIValidationError` を送出
+        """
+        ...
+
+    def estimate_meal_nutrition(
+        self, meal_input: MealNutritionInput
+    ) -> EstimatedMealNutrition:
+        """食事内容の自由記述からカロリー・PFCを推定する。
+
+        Retry/Timeout/例外の扱いは`generate_recipe`と同様
+        (GeminiProvider等、実装側の責務)。
         """
         ...

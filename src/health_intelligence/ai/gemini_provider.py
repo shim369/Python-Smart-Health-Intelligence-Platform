@@ -18,9 +18,11 @@ from __future__ import annotations
 import os
 import random
 import time
+from typing import TypeVar
 
 from google import genai
 from google.genai import errors, types
+from pydantic import BaseModel
 
 from health_intelligence.ai.errors import (
     AIProviderError,
@@ -30,7 +32,12 @@ from health_intelligence.ai.errors import (
     AIValidationError,
 )
 from health_intelligence.ai.retry_policy import DEFAULT_RETRY_POLICY, RetryPolicy
-from health_intelligence.ai.schemas import GeneratedRecipe, RecipeInput
+from health_intelligence.ai.schemas import (
+    EstimatedMealNutrition,
+    GeneratedRecipe,
+    MealNutritionInput,
+    RecipeInput,
+)
 from health_intelligence.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -39,8 +46,10 @@ _DEFAULT_MODEL = "gemini-3.6-flash"
 """使用するGeminiモデル名。モデルの世代交代が早いため、実際に使う際は
 最新の推奨モデル名を確認して更新すること。"""
 
+_ResponseSchemaT = TypeVar("_ResponseSchemaT", bound=BaseModel)
 
-def _build_prompt(recipe_input: RecipeInput) -> str:
+
+def _build_recipe_prompt(recipe_input: RecipeInput) -> str:
     lines = [
         "以下の食材を使ったレシピを1件、日本語で提案してください。",
         f"食材: {', '.join(recipe_input.ingredient_names)}",
@@ -55,6 +64,18 @@ def _build_prompt(recipe_input: RecipeInput) -> str:
     if recipe_input.calorie_target is not None:
         lines.append(f"目標カロリー: 約{recipe_input.calorie_target:.0f}kcal")
     return "\n".join(lines)
+
+
+def _build_meal_nutrition_prompt(meal_input: MealNutritionInput) -> str:
+    return "\n".join(
+        [
+            "以下の食事内容から、おおよその推定カロリー(kcal)と、"
+            "タンパク質・脂質・炭水化物の推定量(g)を算出してください。",
+            "厳密な栄養計算ではなく目安で構いません。"
+            "分量が曖昧な場合は一般的な1食分の量として見積もってください。",
+            f"食事内容: {meal_input.description}",
+        ]
+    )
 
 
 class GeminiProvider:
@@ -85,12 +106,23 @@ class GeminiProvider:
         )
 
     def generate_recipe(self, recipe_input: RecipeInput) -> GeneratedRecipe:
-        prompt = _build_prompt(recipe_input)
+        prompt = _build_recipe_prompt(recipe_input)
+        return self._call_with_retry(prompt, GeneratedRecipe)
+
+    def estimate_meal_nutrition(
+        self, meal_input: MealNutritionInput
+    ) -> EstimatedMealNutrition:
+        prompt = _build_meal_nutrition_prompt(meal_input)
+        return self._call_with_retry(prompt, EstimatedMealNutrition)
+
+    def _call_with_retry(
+        self, prompt: str, response_schema: type[_ResponseSchemaT]
+    ) -> _ResponseSchemaT:
         last_error: Exception | None = None
 
         for attempt in range(1, self._retry_policy.max_attempts + 1):
             try:
-                return self._call_once(prompt)
+                return self._call_once(prompt, response_schema)
             except (AIRateLimitError, AIServiceUnavailableError) as e:
                 last_error = e
                 if attempt == self._retry_policy.max_attempts:
@@ -113,14 +145,16 @@ class GeminiProvider:
         assert last_error is not None
         raise last_error
 
-    def _call_once(self, prompt: str) -> GeneratedRecipe:
+    def _call_once(
+        self, prompt: str, response_schema: type[_ResponseSchemaT]
+    ) -> _ResponseSchemaT:
         try:
             response = self._client.models.generate_content(
                 model=self._model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
-                    response_schema=GeneratedRecipe,
+                    response_schema=response_schema,
                 ),
             )
         except errors.APIError as e:
@@ -134,9 +168,10 @@ class GeminiProvider:
             raise AITimeoutError(str(e)) from e
 
         parsed = response.parsed
-        if not isinstance(parsed, GeneratedRecipe):
+        if not isinstance(parsed, response_schema):
             raise AIValidationError(
-                "GeminiのレスポンスをGeneratedRecipeとして解釈できませんでした"
+                f"Geminiのレスポンスを{response_schema.__name__}として"
+                "解釈できませんでした"
             )
         return parsed
 

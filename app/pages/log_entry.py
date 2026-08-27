@@ -37,6 +37,7 @@ from services import (  # noqa: E402
     get_workout_service,
 )
 
+from health_intelligence.ai.errors import AIProviderError  # noqa: E402
 from health_intelligence.domain.enums import MealType  # noqa: E402
 from health_intelligence.domain.models import (  # noqa: E402
     HealthLog,
@@ -63,6 +64,35 @@ _MAX_HISTORY_ROWS = 30
 # ============================================================
 with meal_tab:
     st.subheader("新規記録")
+    st.caption(
+        "食べたものを文章で入力すると、AIがカロリー・PFCを推定してフォームに"
+        "反映します(あくまで目安です。記録前に下記フォームで確認・修正してください)。"
+    )
+    meal_description = st.text_input(
+        "食べたもの",
+        placeholder="例: 納豆1パック、ご飯茶碗1杯",
+        key="meal_description",
+    )
+    if st.button("AIで栄養を推定", key="meal_estimate_button"):
+        if not meal_description.strip():
+            st.warning("食べたものを入力してください。")
+        else:
+            with st.spinner("栄養を推定しています..."):
+                try:
+                    estimated = get_meal_service().estimate_nutrition(meal_description)
+                except AIProviderError as e:
+                    st.error(f"栄養推定に失敗しました: {e}")
+                else:
+                    st.session_state["meal_calories_input"] = estimated.calories
+                    st.session_state["meal_protein_input"] = estimated.protein_g
+                    st.session_state["meal_fat_input"] = estimated.fat_g
+                    st.session_state["meal_carb_input"] = estimated.carbohydrate_g
+                    st.success(
+                        "推定結果を下記フォームに反映しました。"
+                        "必要に応じて修正してから記録してください。"
+                    )
+                    st.rerun()
+
     with st.form("meal_form"):
         meal_date = st.date_input("日付", value=date.today(), key="meal_date")
         meal_time = st.time_input("時刻", value=datetime.now().time(), key="meal_time")
@@ -71,10 +101,18 @@ with meal_tab:
             options=list(MealType),
             format_func=lambda m: m.value,
         )
-        calories = st.number_input("カロリー(kcal)", min_value=0.0, step=10.0)
-        protein_g = st.number_input("タンパク質(g)", min_value=0.0, step=1.0)
-        fat_g = st.number_input("脂質(g)", min_value=0.0, step=1.0)
-        carbohydrate_g = st.number_input("炭水化物(g)", min_value=0.0, step=1.0)
+        calories = st.number_input(
+            "カロリー(kcal)", min_value=0.0, step=10.0, key="meal_calories_input"
+        )
+        protein_g = st.number_input(
+            "タンパク質(g)", min_value=0.0, step=1.0, key="meal_protein_input"
+        )
+        fat_g = st.number_input(
+            "脂質(g)", min_value=0.0, step=1.0, key="meal_fat_input"
+        )
+        carbohydrate_g = st.number_input(
+            "炭水化物(g)", min_value=0.0, step=1.0, key="meal_carb_input"
+        )
         memo = st.text_input("メモ(任意)", key="meal_memo")
         submitted = st.form_submit_button("記録する")
 
@@ -91,6 +129,14 @@ with meal_tab:
             memo=memo or None,
         )
         get_meal_service().record_meal_log(meal_log)
+        for key in (
+            "meal_description",
+            "meal_calories_input",
+            "meal_protein_input",
+            "meal_fat_input",
+            "meal_carb_input",
+        ):
+            st.session_state.pop(key, None)
         st.success("食事記録を保存しました。")
         st.rerun()
 
