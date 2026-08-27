@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from health_intelligence.database.schema import WeightLogORM
 from health_intelligence.domain.models import WeightLog
+from health_intelligence.repositories.errors import RecordNotFoundError
 
 
 def _to_domain(orm: WeightLogORM) -> WeightLog:
@@ -48,6 +49,17 @@ class SqlAlchemyWeightLogRepository:
 
     def add(self, weight_log: WeightLog) -> None:
         self._session.add(_to_orm(weight_log))
+
+    def update(self, weight_log: WeightLog) -> None:
+        stmt = select(WeightLogORM).where(
+            WeightLogORM.id == weight_log.weight_log_id,
+            WeightLogORM.user_id == weight_log.user_id,
+        )
+        orm = self._session.scalars(stmt).first()
+        if orm is None:
+            raise RecordNotFoundError(str(weight_log.weight_log_id))
+        orm.recorded_at = weight_log.recorded_at
+        orm.weight_kg = weight_log.weight_kg
 
     def delete(self, user_id: UUID, weight_log_id: UUID) -> None:
         stmt = select(WeightLogORM).where(

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from health_intelligence.database.schema import HealthLogORM
 from health_intelligence.domain.models import HealthLog
+from health_intelligence.repositories.errors import RecordNotFoundError
 
 
 def _to_domain(orm: HealthLogORM) -> HealthLog:
@@ -52,6 +53,19 @@ class SqlAlchemyHealthLogRepository:
 
     def add(self, health_log: HealthLog) -> None:
         self._session.add(_to_orm(health_log))
+
+    def update(self, health_log: HealthLog) -> None:
+        stmt = select(HealthLogORM).where(
+            HealthLogORM.id == health_log.health_log_id,
+            HealthLogORM.user_id == health_log.user_id,
+        )
+        orm = self._session.scalars(stmt).first()
+        if orm is None:
+            raise RecordNotFoundError(str(health_log.health_log_id))
+        orm.recorded_at = health_log.recorded_at
+        orm.condition_score = health_log.condition_score
+        orm.symptoms = list(health_log.symptoms)
+        orm.memo = health_log.memo
 
     def delete(self, user_id: UUID, health_log_id: UUID) -> None:
         stmt = select(HealthLogORM).where(

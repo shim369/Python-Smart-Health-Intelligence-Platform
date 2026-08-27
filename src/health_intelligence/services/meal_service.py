@@ -24,6 +24,15 @@ class MealService:
         with self._uow_factory() as uow:
             return uow.meal_logs.list_by_user(user_id)
 
+    def get_meal_log(self, user_id: UUID, meal_log_id: UUID) -> MealLog | None:
+        with self._uow_factory() as uow:
+            return uow.meal_logs.get_by_id(user_id, meal_log_id)
+
+    def update_meal_log(self, meal_log: MealLog) -> None:
+        with self._uow_factory() as uow:
+            uow.meal_logs.update(meal_log)
+            uow.commit()
+
     def delete_meal_log(self, user_id: UUID, meal_log_id: UUID) -> None:
         with self._uow_factory() as uow:
             uow.meal_logs.delete(user_id, meal_log_id)

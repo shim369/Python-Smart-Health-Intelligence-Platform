@@ -8,6 +8,11 @@ Repositoryはビジネスルールを持たず、CRUD/Queryのみを責務とす
 原則として`user_id`を境界条件として受け取る
 (architecture.md Section 8, requirements.md 13章)。
 
+`update`は、渡されたDomain Modelの`*_id`と`user_id`に一致する
+既存レコードの全フィールドを置き換える(部分更新ではない)。
+対象が見つからない場合は`RecordNotFoundError`を送出する
+(repositories/errors.py参照)。
+
 具体的な実装クラス(例: SQLAlchemyによる実装)はPhase 2で追加する。
 """
 
@@ -60,6 +65,8 @@ class HealthLogRepository(Protocol):
 
     def add(self, health_log: HealthLog) -> None: ...
 
+    def update(self, health_log: HealthLog) -> None: ...
+
     def delete(self, user_id: UUID, health_log_id: UUID) -> None: ...
 
 
@@ -71,6 +78,8 @@ class MealLogRepository(Protocol):
     def list_by_user(self, user_id: UUID) -> list[MealLog]: ...
 
     def add(self, meal_log: MealLog) -> None: ...
+
+    def update(self, meal_log: MealLog) -> None: ...
 
     def delete(self, user_id: UUID, meal_log_id: UUID) -> None: ...
 
@@ -84,6 +93,8 @@ class WorkoutLogRepository(Protocol):
 
     def add(self, workout_log: WorkoutLog) -> None: ...
 
+    def update(self, workout_log: WorkoutLog) -> None: ...
+
     def delete(self, user_id: UUID, workout_log_id: UUID) -> None: ...
 
 
@@ -96,6 +107,8 @@ class SleepLogRepository(Protocol):
 
     def add(self, sleep_log: SleepLog) -> None: ...
 
+    def update(self, sleep_log: SleepLog) -> None: ...
+
     def delete(self, user_id: UUID, sleep_log_id: UUID) -> None: ...
 
 
@@ -107,6 +120,8 @@ class WeightLogRepository(Protocol):
     def list_by_user(self, user_id: UUID) -> list[WeightLog]: ...
 
     def add(self, weight_log: WeightLog) -> None: ...
+
+    def update(self, weight_log: WeightLog) -> None: ...
 
     def delete(self, user_id: UUID, weight_log_id: UUID) -> None: ...
 

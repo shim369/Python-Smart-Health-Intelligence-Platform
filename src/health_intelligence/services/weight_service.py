@@ -24,6 +24,15 @@ class WeightService:
         with self._uow_factory() as uow:
             return uow.weight_logs.list_by_user(user_id)
 
+    def get_weight_log(self, user_id: UUID, weight_log_id: UUID) -> WeightLog | None:
+        with self._uow_factory() as uow:
+            return uow.weight_logs.get_by_id(user_id, weight_log_id)
+
+    def update_weight_log(self, weight_log: WeightLog) -> None:
+        with self._uow_factory() as uow:
+            uow.weight_logs.update(weight_log)
+            uow.commit()
+
     def delete_weight_log(self, user_id: UUID, weight_log_id: UUID) -> None:
         with self._uow_factory() as uow:
             uow.weight_logs.delete(user_id, weight_log_id)

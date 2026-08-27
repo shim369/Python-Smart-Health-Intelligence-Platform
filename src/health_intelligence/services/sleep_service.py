@@ -24,6 +24,15 @@ class SleepService:
         with self._uow_factory() as uow:
             return uow.sleep_logs.list_by_user(user_id)
 
+    def get_sleep_log(self, user_id: UUID, sleep_log_id: UUID) -> SleepLog | None:
+        with self._uow_factory() as uow:
+            return uow.sleep_logs.get_by_id(user_id, sleep_log_id)
+
+    def update_sleep_log(self, sleep_log: SleepLog) -> None:
+        with self._uow_factory() as uow:
+            uow.sleep_logs.update(sleep_log)
+            uow.commit()
+
     def delete_sleep_log(self, user_id: UUID, sleep_log_id: UUID) -> None:
         with self._uow_factory() as uow:
             uow.sleep_logs.delete(user_id, sleep_log_id)

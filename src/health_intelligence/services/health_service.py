@@ -24,6 +24,15 @@ class HealthService:
         with self._uow_factory() as uow:
             return uow.health_logs.list_by_user(user_id)
 
+    def get_health_log(self, user_id: UUID, health_log_id: UUID) -> HealthLog | None:
+        with self._uow_factory() as uow:
+            return uow.health_logs.get_by_id(user_id, health_log_id)
+
+    def update_health_log(self, health_log: HealthLog) -> None:
+        with self._uow_factory() as uow:
+            uow.health_logs.update(health_log)
+            uow.commit()
+
     def delete_health_log(self, user_id: UUID, health_log_id: UUID) -> None:
         with self._uow_factory() as uow:
             uow.health_logs.delete(user_id, health_log_id)

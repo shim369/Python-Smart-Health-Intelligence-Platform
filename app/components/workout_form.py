@@ -33,10 +33,13 @@ def build_workout_log(
     user_id: UUID,
     performed_at: datetime,
     memo: str | None = None,
+    workout_log_id: UUID | None = None,
 ) -> WorkoutLog:
     """data_editorの行データからWorkoutLogを組み立てる。
 
     exercise_nameまたはcategoryが空の行は無視する。
+    `workout_log_id`を指定すると、新規発行せずそのIDを使う
+    (既存レコードの編集・更新時に同一IDを維持するため)。
     """
     grouped: dict[tuple[str, str], list[dict[str, object]]] = {}
     order: list[tuple[str, str]] = []
@@ -89,9 +92,52 @@ def build_workout_log(
             )
 
     return WorkoutLog(
-        workout_log_id=uuid4(),
+        workout_log_id=workout_log_id or uuid4(),
         user_id=user_id,
         performed_at=performed_at,
         exercises=exercises,
         memo=memo,
     )
+
+
+def workout_log_to_rows(workout_log: WorkoutLog) -> list[dict[str, object]]:
+    """WorkoutLogをdata_editorの行データ(dictのリスト)へ逆変換する。
+
+    `build_workout_log`の逆方向。既存の運動記録を編集フォームへ
+    再現するために使う。1つのWorkoutExercise(strength、複数セット)は
+    セット数だけ行に展開する(build_workout_logのグルーピングと対称)。
+    """
+    rows: list[dict[str, object]] = []
+    for exercise in workout_log.exercises:
+        if exercise.category == ExerciseCategory.CARDIO:
+            rows.append(
+                {
+                    "exercise_name": exercise.exercise_name,
+                    "category": exercise.category.value,
+                    "duration_minutes": exercise.duration_minutes,
+                    "reps": None,
+                    "weight_kg": None,
+                }
+            )
+        else:
+            if not exercise.sets:
+                rows.append(
+                    {
+                        "exercise_name": exercise.exercise_name,
+                        "category": exercise.category.value,
+                        "duration_minutes": None,
+                        "reps": None,
+                        "weight_kg": None,
+                    }
+                )
+            for workout_set in exercise.sets:
+                rows.append(
+                    {
+                        "exercise_name": exercise.exercise_name,
+                        "category": exercise.category.value,
+                        "duration_minutes": None,
+                        "reps": workout_set.reps,
+                        "weight_kg": workout_set.weight_kg,
+                    }
+                )
+    return rows

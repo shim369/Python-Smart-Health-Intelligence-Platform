@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from health_intelligence.database.schema import SleepLogORM
 from health_intelligence.domain.enums import SleepQuality
 from health_intelligence.domain.models import SleepLog
+from health_intelligence.repositories.errors import RecordNotFoundError
 
 
 def _to_domain(orm: SleepLogORM) -> SleepLog:
@@ -51,6 +52,18 @@ class SqlAlchemySleepLogRepository:
 
     def add(self, sleep_log: SleepLog) -> None:
         self._session.add(_to_orm(sleep_log))
+
+    def update(self, sleep_log: SleepLog) -> None:
+        stmt = select(SleepLogORM).where(
+            SleepLogORM.id == sleep_log.sleep_log_id,
+            SleepLogORM.user_id == sleep_log.user_id,
+        )
+        orm = self._session.scalars(stmt).first()
+        if orm is None:
+            raise RecordNotFoundError(str(sleep_log.sleep_log_id))
+        orm.bedtime = sleep_log.bedtime
+        orm.wake_time = sleep_log.wake_time
+        orm.quality = sleep_log.quality.value if sleep_log.quality is not None else None
 
     def delete(self, user_id: UUID, sleep_log_id: UUID) -> None:
         stmt = select(SleepLogORM).where(

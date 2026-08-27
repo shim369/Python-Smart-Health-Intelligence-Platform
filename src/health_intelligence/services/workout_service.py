@@ -24,6 +24,15 @@ class WorkoutService:
         with self._uow_factory() as uow:
             return uow.workout_logs.list_by_user(user_id)
 
+    def get_workout_log(self, user_id: UUID, workout_log_id: UUID) -> WorkoutLog | None:
+        with self._uow_factory() as uow:
+            return uow.workout_logs.get_by_id(user_id, workout_log_id)
+
+    def update_workout_log(self, workout_log: WorkoutLog) -> None:
+        with self._uow_factory() as uow:
+            uow.workout_logs.update(workout_log)
+            uow.commit()
+
     def delete_workout_log(self, user_id: UUID, workout_log_id: UUID) -> None:
         with self._uow_factory() as uow:
             uow.workout_logs.delete(user_id, workout_log_id)

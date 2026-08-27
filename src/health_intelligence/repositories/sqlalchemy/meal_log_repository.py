@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from health_intelligence.database.schema import MealLogORM
 from health_intelligence.domain.enums import MealType
 from health_intelligence.domain.models import MealLog
+from health_intelligence.repositories.errors import RecordNotFoundError
 
 
 def _to_domain(orm: MealLogORM) -> MealLog:
@@ -59,6 +60,22 @@ class SqlAlchemyMealLogRepository:
 
     def add(self, meal_log: MealLog) -> None:
         self._session.add(_to_orm(meal_log))
+
+    def update(self, meal_log: MealLog) -> None:
+        stmt = select(MealLogORM).where(
+            MealLogORM.id == meal_log.meal_log_id,
+            MealLogORM.user_id == meal_log.user_id,
+        )
+        orm = self._session.scalars(stmt).first()
+        if orm is None:
+            raise RecordNotFoundError(str(meal_log.meal_log_id))
+        orm.consumed_at = meal_log.consumed_at
+        orm.meal_type = meal_log.meal_type.value
+        orm.calories = meal_log.calories
+        orm.protein_g = meal_log.protein_g
+        orm.fat_g = meal_log.fat_g
+        orm.carbohydrate_g = meal_log.carbohydrate_g
+        orm.memo = meal_log.memo
 
     def delete(self, user_id: UUID, meal_log_id: UUID) -> None:
         stmt = select(MealLogORM).where(

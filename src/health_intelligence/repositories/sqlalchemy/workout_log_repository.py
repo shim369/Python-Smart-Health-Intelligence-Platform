@@ -19,6 +19,7 @@ from health_intelligence.database.schema import (
 )
 from health_intelligence.domain.enums import ExerciseCategory
 from health_intelligence.domain.models import WorkoutExercise, WorkoutLog, WorkoutSet
+from health_intelligence.repositories.errors import RecordNotFoundError
 
 
 def _to_domain(orm: WorkoutLogORM) -> WorkoutLog:
@@ -43,6 +44,33 @@ def _to_domain(orm: WorkoutLogORM) -> WorkoutLog:
     )
 
 
+def _build_exercise_orms(
+    exercises: list[WorkoutExercise],
+) -> list[WorkoutExerciseORM]:
+    """WorkoutExerciseのリストから、対応するORM(子のWorkoutSetORM含む)
+    のリストを組み立てる。`add`(新規作成)と`update`(既存差し替え)の
+    両方から利用する共通ロジック。"""
+    return [
+        WorkoutExerciseORM(
+            id=uuid4(),
+            order_index=exercise_index,
+            exercise_name=exercise.exercise_name,
+            category=exercise.category.value,
+            duration_minutes=exercise.duration_minutes,
+            sets=[
+                WorkoutSetORM(
+                    id=uuid4(),
+                    order_index=set_index,
+                    reps=workout_set.reps,
+                    weight_kg=workout_set.weight_kg,
+                )
+                for set_index, workout_set in enumerate(exercise.sets)
+            ],
+        )
+        for exercise_index, exercise in enumerate(exercises)
+    ]
+
+
 def _to_orm(workout_log: WorkoutLog) -> WorkoutLogORM:
     return WorkoutLogORM(
         id=workout_log.workout_log_id,
@@ -50,25 +78,7 @@ def _to_orm(workout_log: WorkoutLog) -> WorkoutLogORM:
         performed_at=workout_log.performed_at,
         calories_burned=workout_log.calories_burned,
         memo=workout_log.memo,
-        exercises=[
-            WorkoutExerciseORM(
-                id=uuid4(),
-                order_index=exercise_index,
-                exercise_name=exercise.exercise_name,
-                category=exercise.category.value,
-                duration_minutes=exercise.duration_minutes,
-                sets=[
-                    WorkoutSetORM(
-                        id=uuid4(),
-                        order_index=set_index,
-                        reps=workout_set.reps,
-                        weight_kg=workout_set.weight_kg,
-                    )
-                    for set_index, workout_set in enumerate(exercise.sets)
-                ],
-            )
-            for exercise_index, exercise in enumerate(workout_log.exercises)
-        ],
+        exercises=_build_exercise_orms(workout_log.exercises),
     )
 
 
@@ -93,6 +103,27 @@ class SqlAlchemyWorkoutLogRepository:
         # exercises/setsはcascade="all, delete-orphan"設定により、
         # WorkoutLogORMをaddするだけで子オブジェクトも合わせて永続化される。
         self._session.add(_to_orm(workout_log))
+
+    def update(self, workout_log: WorkoutLog) -> None:
+        """既存のWorkoutLogを更新する。
+
+        `exercises`を新しいORMリストへまるごと差し替える。
+        `cascade="all, delete-orphan"`(database/schema.py参照)により、
+        除外されたWorkoutExerciseORM/WorkoutSetORMは自動的に削除され、
+        新しいものが追加される。個々の種目・セットを1件ずつ差分更新
+        するより単純で、種目の追加・削除・並び替えも自然に扱える。
+        """
+        stmt = select(WorkoutLogORM).where(
+            WorkoutLogORM.id == workout_log.workout_log_id,
+            WorkoutLogORM.user_id == workout_log.user_id,
+        )
+        orm = self._session.scalars(stmt).first()
+        if orm is None:
+            raise RecordNotFoundError(str(workout_log.workout_log_id))
+        orm.performed_at = workout_log.performed_at
+        orm.calories_burned = workout_log.calories_burned
+        orm.memo = workout_log.memo
+        orm.exercises = _build_exercise_orms(workout_log.exercises)
 
     def delete(self, user_id: UUID, workout_log_id: UUID) -> None:
         stmt = select(WorkoutLogORM).where(
