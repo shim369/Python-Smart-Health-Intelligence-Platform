@@ -277,6 +277,10 @@ with meal_tab:
                     value=selected_meal.carbohydrate_g,
                 )
                 edit_memo = st.text_input("メモ(任意)", value=selected_meal.memo or "")
+                delete_confirmed = st.checkbox(
+                    "本当に削除しますか?(元に戻せません)",
+                    key=f"meal_delete_confirm_{selected_meal.meal_log_id}",
+                )
                 col1, col2 = st.columns(2)
                 update_clicked = col1.form_submit_button("更新する")
                 delete_clicked = col2.form_submit_button("削除する")
@@ -298,9 +302,14 @@ with meal_tab:
                 st.rerun()
 
             if delete_clicked:
-                meal_service.delete_meal_log(user_id, selected_meal.meal_log_id)
-                st.success("削除しました。")
-                st.rerun()
+                if not delete_confirmed:
+                    st.warning(
+                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
+                    )
+                else:
+                    meal_service.delete_meal_log(user_id, selected_meal.meal_log_id)
+                    st.success("削除しました。")
+                    st.rerun()
 
 
 # ============================================================
@@ -568,6 +577,10 @@ with workout_tab:
                 st.session_state[edit_state_key].append(_new_workout_entry())
                 st.rerun()
 
+            workout_delete_confirmed = st.checkbox(
+                "本当に削除しますか?(元に戻せません)",
+                key=f"workout_delete_confirm_{selected_workout.workout_log_id}",
+            )
             col1, col2 = st.columns(2)
             if col1.button(
                 "更新する", key=f"workout_update_{selected_workout.workout_log_id}"
@@ -592,12 +605,17 @@ with workout_tab:
             if col2.button(
                 "削除する", key=f"workout_delete_{selected_workout.workout_log_id}"
             ):
-                workout_service.delete_workout_log(
-                    user_id, selected_workout.workout_log_id
-                )
-                st.session_state.pop(edit_state_key, None)
-                st.success("削除しました。")
-                st.rerun()
+                if not workout_delete_confirmed:
+                    st.warning(
+                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
+                    )
+                else:
+                    workout_service.delete_workout_log(
+                        user_id, selected_workout.workout_log_id
+                    )
+                    st.session_state.pop(edit_state_key, None)
+                    st.success("削除しました。")
+                    st.rerun()
 
 
 # ============================================================
@@ -677,6 +695,10 @@ with sleep_tab:
                 edit_wake_time = st.time_input(
                     "起床時刻", value=jst_time_of(selected_sleep.wake_time)
                 )
+                sleep_delete_confirmed = st.checkbox(
+                    "本当に削除しますか?(元に戻せません)",
+                    key=f"sleep_delete_confirm_{selected_sleep.sleep_log_id}",
+                )
                 col1, col2 = st.columns(2)
                 update_sleep_clicked = col1.form_submit_button("更新する")
                 delete_sleep_clicked = col2.form_submit_button("削除する")
@@ -699,9 +721,14 @@ with sleep_tab:
                     st.rerun()
 
             if delete_sleep_clicked:
-                sleep_service.delete_sleep_log(user_id, selected_sleep.sleep_log_id)
-                st.success("削除しました。")
-                st.rerun()
+                if not sleep_delete_confirmed:
+                    st.warning(
+                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
+                    )
+                else:
+                    sleep_service.delete_sleep_log(user_id, selected_sleep.sleep_log_id)
+                    st.success("削除しました。")
+                    st.rerun()
 
 
 # ============================================================
@@ -771,6 +798,10 @@ with weight_tab:
                 edit_weight_kg = st.number_input(
                     "体重(kg)", min_value=0.0, step=0.1, value=selected_weight.weight_kg
                 )
+                weight_delete_confirmed = st.checkbox(
+                    "本当に削除しますか?(元に戻せません)",
+                    key=f"weight_delete_confirm_{selected_weight.weight_log_id}",
+                )
                 col1, col2 = st.columns(2)
                 update_weight_clicked = col1.form_submit_button("更新する")
                 delete_weight_clicked = col2.form_submit_button("削除する")
@@ -787,9 +818,16 @@ with weight_tab:
                 st.rerun()
 
             if delete_weight_clicked:
-                weight_service.delete_weight_log(user_id, selected_weight.weight_log_id)
-                st.success("削除しました。")
-                st.rerun()
+                if not weight_delete_confirmed:
+                    st.warning(
+                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
+                    )
+                else:
+                    weight_service.delete_weight_log(
+                        user_id, selected_weight.weight_log_id
+                    )
+                    st.success("削除しました。")
+                    st.rerun()
 
 
 # ============================================================
@@ -886,6 +924,10 @@ with health_tab:
                 edit_health_memo = st.text_input(
                     "メモ(任意)", value=selected_health.memo or ""
                 )
+                health_delete_confirmed = st.checkbox(
+                    "本当に削除しますか?(元に戻せません)",
+                    key=f"health_delete_confirm_{selected_health.health_log_id}",
+                )
                 col1, col2 = st.columns(2)
                 update_health_clicked = col1.form_submit_button("更新する")
                 delete_health_clicked = col2.form_submit_button("削除する")
@@ -907,6 +949,13 @@ with health_tab:
                 st.rerun()
 
             if delete_health_clicked:
-                health_service.delete_health_log(user_id, selected_health.health_log_id)
-                st.success("削除しました。")
-                st.rerun()
+                if not health_delete_confirmed:
+                    st.warning(
+                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
+                    )
+                else:
+                    health_service.delete_health_log(
+                        user_id, selected_health.health_log_id
+                    )
+                    st.success("削除しました。")
+                    st.rerun()
