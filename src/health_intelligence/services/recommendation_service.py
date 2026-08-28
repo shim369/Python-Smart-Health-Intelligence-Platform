@@ -20,6 +20,7 @@ from health_intelligence.features import (
     compute_weight_features,
     compute_workout_features,
 )
+from health_intelligence.ml.dataset import DataQualityReport, check_data_quality
 from health_intelligence.ml.weight_predictor import WeightPredictorService
 from health_intelligence.recommendation import (
     Recommendation,
@@ -133,3 +134,42 @@ class RecommendationService:
         return RecommendationReport(
             health_score=health_score, recommendations=recommendations
         )
+
+    def get_ml_progress(self, user_id: UUID) -> DataQualityReport:
+        """体重予測MLパイプライン(ml/dataset.py)が要求するデータ量・
+        欠損率の基準に対する、ユーザーの現在の進捗を返す。
+
+        最初のログ記録日から今日までを対象期間とし、`check_data_quality`
+        と同じ基準(MIN_DAYS=60日、欠損率30%未満)で判定する。ログが
+        1件も無い場合は0日として扱う。
+        """
+        with self._uow_factory() as uow:
+            meal_logs = uow.meal_logs.list_by_user(user_id)
+            sleep_logs = uow.sleep_logs.list_by_user(user_id)
+            workout_logs = uow.workout_logs.list_by_user(user_id)
+            weight_logs = uow.weight_logs.list_by_user(user_id)
+
+        candidate_dates = (
+            [m.consumed_at.date() for m in meal_logs]
+            + [s.wake_time.date() for s in sleep_logs]
+            + [w.performed_at.date() for w in workout_logs]
+            + [w.recorded_at.date() for w in weight_logs]
+        )
+        if not candidate_dates:
+            return check_data_quality([])
+
+        start_date = min(candidate_dates)
+        end_date = datetime.now(UTC).date()
+        num_days = (end_date - start_date).days + 1
+
+        daily_features = [
+            compute_daily_features(
+                start_date + timedelta(days=offset),
+                meal_logs=meal_logs,
+                sleep_logs=sleep_logs,
+                workout_logs=workout_logs,
+                weight_logs=weight_logs,
+            )
+            for offset in range(num_days)
+        ]
+        return check_data_quality(daily_features)

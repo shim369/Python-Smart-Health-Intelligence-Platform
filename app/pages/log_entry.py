@@ -28,6 +28,12 @@ from components.formatting import (  # noqa: E402
     jst_date_of,
     jst_time_of,
 )
+from components.quick_entry import (  # noqa: E402
+    exercise_template_to_row,
+    frequent_exercise_templates,
+    frequent_meal_templates,
+    most_recent_meal,
+)
 from components.workout_form import build_workout_log, workout_log_to_rows  # noqa: E402
 from services import (  # noqa: E402
     get_health_service,
@@ -64,6 +70,58 @@ _MAX_HISTORY_ROWS = 30
 # ============================================================
 with meal_tab:
     st.subheader("新規記録")
+
+    all_meal_logs = get_meal_service().list_meal_logs(user_id)
+    last_meal = most_recent_meal(all_meal_logs)
+    meal_templates = frequent_meal_templates(all_meal_logs)
+
+    quick_meal_col1, quick_meal_col2 = st.columns(2)
+    with quick_meal_col1:
+        if st.button(
+            "前回と同じ内容を入力",
+            key="meal_repeat_button",
+            disabled=last_meal is None,
+            use_container_width=True,
+        ):
+            assert last_meal is not None
+            st.session_state["meal_type_input"] = last_meal.meal_type
+            st.session_state["meal_calories_input"] = last_meal.calories
+            st.session_state["meal_protein_input"] = last_meal.protein_g
+            st.session_state["meal_fat_input"] = last_meal.fat_g
+            st.session_state["meal_carb_input"] = last_meal.carbohydrate_g
+            st.session_state["meal_memo"] = last_meal.memo or ""
+            st.rerun()
+    with quick_meal_col2:
+        if meal_templates:
+            selected_meal_template = st.selectbox(
+                "よく使う食事",
+                options=meal_templates,
+                format_func=lambda t: f"{t.memo}({t.usage_count}回)",
+                key="meal_template_select",
+                label_visibility="collapsed",
+            )
+            if (
+                st.button("選んだ食事を入力", key="meal_template_apply_button")
+                and selected_meal_template is not None
+            ):
+                st.session_state["meal_type_input"] = selected_meal_template.meal_type
+                st.session_state["meal_calories_input"] = (
+                    selected_meal_template.calories
+                )
+                st.session_state["meal_protein_input"] = (
+                    selected_meal_template.protein_g
+                )
+                st.session_state["meal_fat_input"] = selected_meal_template.fat_g
+                st.session_state["meal_carb_input"] = (
+                    selected_meal_template.carbohydrate_g
+                )
+                st.session_state["meal_memo"] = selected_meal_template.memo
+                st.rerun()
+        else:
+            st.caption(
+                "よく使う食事はまだありません(メモ付きで記録すると候補に出ます)。"
+            )
+
     st.caption(
         "食べたものを文章で入力すると、AIがカロリー・PFCを推定してフォームに"
         "反映します(あくまで目安です。記録前に下記フォームで確認・修正してください)。"
@@ -100,6 +158,7 @@ with meal_tab:
             "食事区分",
             options=list(MealType),
             format_func=lambda m: m.value,
+            key="meal_type_input",
         )
         calories = st.number_input(
             "カロリー(kcal)", min_value=0.0, step=10.0, key="meal_calories_input"
@@ -131,10 +190,12 @@ with meal_tab:
         get_meal_service().record_meal_log(meal_log)
         for key in (
             "meal_description",
+            "meal_type_input",
             "meal_calories_input",
             "meal_protein_input",
             "meal_fat_input",
             "meal_carb_input",
+            "meal_memo",
         ):
             st.session_state.pop(key, None)
         st.success("食事記録を保存しました。")
@@ -143,9 +204,9 @@ with meal_tab:
     st.divider()
     st.subheader("過去の記録")
     meal_service = get_meal_service()
-    meal_logs = sorted(
-        meal_service.list_meal_logs(user_id), key=lambda m: m.consumed_at, reverse=True
-    )[:_MAX_HISTORY_ROWS]
+    meal_logs = sorted(all_meal_logs, key=lambda m: m.consumed_at, reverse=True)[
+        :_MAX_HISTORY_ROWS
+    ]
 
     if not meal_logs:
         st.info("まだ記録がありません。")
@@ -246,21 +307,24 @@ with workout_tab:
         "同じ種目名・カテゴリの行はまとめて1種目・複数セットとして"
         "保存されます(例: レッグプレスを2行入力すると2セット扱い)。"
     )
+    _DEFAULT_WORKOUT_ROW = {
+        "exercise_name": "",
+        "category": "strength",
+        "duration_minutes": None,
+        "reps": None,
+        "weight_kg": None,
+    }
+    if "workout_new_rows" not in st.session_state:
+        st.session_state["workout_new_rows"] = [dict(_DEFAULT_WORKOUT_ROW)]
+
+    all_workout_logs = get_workout_service().list_workout_logs(user_id)
+    exercise_templates = frequent_exercise_templates(all_workout_logs)
+
     workout_date = st.date_input("日付", value=date.today(), key="workout_date")
     workout_time = st.time_input(
         "時刻", value=datetime.now().time(), key="workout_time"
     )
-    default_rows = pd.DataFrame(
-        [
-            {
-                "exercise_name": "",
-                "category": "strength",
-                "duration_minutes": None,
-                "reps": None,
-                "weight_kg": None,
-            }
-        ]
-    )
+    default_rows = pd.DataFrame(st.session_state["workout_new_rows"])
     edited = st.data_editor(
         default_rows,
         num_rows="dynamic",
@@ -271,6 +335,46 @@ with workout_tab:
         },
         key="workout_editor",
     )
+
+    quick_workout_col1, quick_workout_col2 = st.columns([1, 2])
+    with quick_workout_col1:
+        if st.button(
+            "前回と同じメニューを入力",
+            key="workout_repeat_button",
+            disabled=not all_workout_logs,
+            use_container_width=True,
+        ):
+            last_workout = max(all_workout_logs, key=lambda w: w.performed_at)
+            st.session_state["workout_new_rows"] = workout_log_to_rows(last_workout)
+            st.session_state.pop("workout_editor", None)
+            st.rerun()
+    with quick_workout_col2:
+        if exercise_templates:
+            selected_exercise_templates = st.multiselect(
+                "よく使う種目を追加",
+                options=exercise_templates,
+                format_func=lambda t: (
+                    f"{t.exercise_name}({t.category.value}・{t.usage_count}回)"
+                ),
+                key="workout_template_select",
+                label_visibility="collapsed",
+            )
+            if st.button("選択した種目を追加する", key="workout_template_apply_button"):
+                current_rows = [
+                    r
+                    for r in edited.to_dict(orient="records")
+                    if str(r.get("exercise_name") or "").strip()
+                ]
+                current_rows.extend(
+                    exercise_template_to_row(t) for t in selected_exercise_templates
+                )
+                st.session_state["workout_new_rows"] = current_rows or [
+                    dict(_DEFAULT_WORKOUT_ROW)
+                ]
+                st.session_state.pop("workout_editor", None)
+                st.rerun()
+        else:
+            st.caption("よく使う種目はまだありません。")
 
     if st.button("運動記録を保存する"):
         rows = edited.to_dict(orient="records")
@@ -283,6 +387,8 @@ with workout_tab:
             st.error("有効な種目が入力されていません。")
         else:
             get_workout_service().record_workout_log(workout_log)
+            st.session_state["workout_new_rows"] = [dict(_DEFAULT_WORKOUT_ROW)]
+            st.session_state.pop("workout_editor", None)
             st.success(f"運動記録({len(workout_log.exercises)}種目)を保存しました。")
             st.rerun()
 
@@ -290,7 +396,7 @@ with workout_tab:
     st.subheader("過去の記録")
     workout_service = get_workout_service()
     workout_logs = sorted(
-        workout_service.list_workout_logs(user_id),
+        all_workout_logs,
         key=lambda w: w.performed_at,
         reverse=True,
     )[:_MAX_HISTORY_ROWS]

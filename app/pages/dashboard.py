@@ -17,6 +17,8 @@ import streamlit as st  # noqa: E402
 from auth_guard import require_login  # noqa: E402
 from services import get_recommendation_service, get_weight_service  # noqa: E402
 
+from health_intelligence.ml.dataset import MIN_DAYS  # noqa: E402
+
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
@@ -45,6 +47,22 @@ else:
             st.warning(f"[{recommendation.domain}] {recommendation.message}")
         else:
             st.info(f"[{recommendation.domain}] {recommendation.message}")
+
+st.subheader("学習データの蓄積状況")
+st.caption(
+    "AIによる体重予測に必要なデータ量(食事・睡眠・運動・体重の記録が"
+    "揃っている日数)の進捗です。基準を満たすまではルールベースの"
+    "改善提案のみが表示されます。"
+)
+ml_progress = recommendation_service.get_ml_progress(user_id)
+st.progress(
+    min(ml_progress.total_days / MIN_DAYS, 1.0),
+    text=f"学習データ: {ml_progress.total_days}/{MIN_DAYS}日",
+)
+if ml_progress.is_sufficient:
+    st.success(ml_progress.reason)
+else:
+    st.caption(ml_progress.reason)
 
 st.subheader("体重推移")
 weight_service = get_weight_service()
