@@ -13,7 +13,11 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "app"))
 
-from components.workout_form import build_workout_log  # noqa: E402
+from components.workout_form import (  # noqa: E402
+    build_workout_log,
+    entries_to_rows,
+    rows_to_entries,
+)
 
 
 def test_build_workout_log_groups_same_exercise_into_sets() -> None:
@@ -84,3 +88,109 @@ def test_empty_rows_are_ignored() -> None:
     )
 
     assert log.exercises == []
+
+
+def test_rows_to_entries_groups_sets_and_ignores_empty_rows() -> None:
+    rows = [
+        {
+            "exercise_name": "有酸素運動",
+            "category": "cardio",
+            "duration_minutes": 25,
+            "reps": None,
+            "weight_kg": None,
+        },
+        {
+            "exercise_name": "レッグプレス",
+            "category": "strength",
+            "duration_minutes": None,
+            "reps": 10,
+            "weight_kg": 75,
+        },
+        {
+            "exercise_name": "レッグプレス",
+            "category": "strength",
+            "duration_minutes": None,
+            "reps": 8,
+            "weight_kg": 80,
+        },
+        {
+            "exercise_name": "",
+            "category": "",
+            "duration_minutes": None,
+            "reps": None,
+            "weight_kg": None,
+        },
+    ]
+
+    entries = rows_to_entries(rows)
+
+    assert entries == [
+        {
+            "exercise_name": "有酸素運動",
+            "category": "cardio",
+            "duration_minutes": 25,
+            "sets": [],
+        },
+        {
+            "exercise_name": "レッグプレス",
+            "category": "strength",
+            "duration_minutes": None,
+            "sets": [
+                {"reps": 10, "weight_kg": 75},
+                {"reps": 8, "weight_kg": 80},
+            ],
+        },
+    ]
+
+
+def test_entries_to_rows_is_inverse_of_rows_to_entries() -> None:
+    rows = [
+        {
+            "exercise_name": "有酸素運動",
+            "category": "cardio",
+            "duration_minutes": 25,
+            "reps": None,
+            "weight_kg": None,
+        },
+        {
+            "exercise_name": "レッグプレス",
+            "category": "strength",
+            "duration_minutes": None,
+            "reps": 10,
+            "weight_kg": 75,
+        },
+        {
+            "exercise_name": "レッグプレス",
+            "category": "strength",
+            "duration_minutes": None,
+            "reps": 8,
+            "weight_kg": 80,
+        },
+    ]
+
+    entries = rows_to_entries(rows)
+
+    assert entries_to_rows(entries) == rows
+
+
+def test_entries_to_rows_keeps_exercise_with_no_sets_as_placeholder_row() -> None:
+    entries = [
+        {
+            "exercise_name": "スクワット",
+            "category": "strength",
+            "duration_minutes": None,
+            "sets": [],
+        }
+    ]
+
+    rows = entries_to_rows(entries)
+
+    assert rows == [
+        {
+            "exercise_name": "スクワット",
+            "category": "strength",
+            "duration_minutes": None,
+            "reps": None,
+            "weight_kg": None,
+        }
+    ]

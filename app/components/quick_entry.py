@@ -119,12 +119,20 @@ def frequent_exercise_templates(
     return templates[:limit]
 
 
-def exercise_template_to_row(template: ExerciseTemplate) -> dict[str, object]:
-    """ExerciseTemplateを`build_workout_log`が受け付ける行データへ変換する。"""
+def exercise_template_to_entry(template: ExerciseTemplate) -> dict[str, object]:
+    """ExerciseTemplateを種目カードUI用のエントリ辞書(components/workout_form.py
+    の`entries_to_rows`が受け付けるネスト構造)へ変換する。
+    """
+    if template.category == ExerciseCategory.CARDIO:
+        return {
+            "exercise_name": template.exercise_name,
+            "category": template.category.value,
+            "duration_minutes": template.last_duration_minutes,
+            "sets": [],
+        }
     return {
         "exercise_name": template.exercise_name,
         "category": template.category.value,
-        "duration_minutes": template.last_duration_minutes,
-        "reps": template.last_reps,
-        "weight_kg": template.last_weight_kg,
+        "duration_minutes": None,
+        "sets": [{"reps": template.last_reps, "weight_kg": template.last_weight_kg}],
     }

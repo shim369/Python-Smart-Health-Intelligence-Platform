@@ -15,7 +15,7 @@ from uuid import uuid4
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "app"))
 
 from components.quick_entry import (  # noqa: E402
-    exercise_template_to_row,
+    exercise_template_to_entry,
     frequent_exercise_templates,
     frequent_meal_templates,
     most_recent_meal,
@@ -170,7 +170,7 @@ def test_frequent_exercise_templates_respects_limit() -> None:
     assert len(templates) == 4
 
 
-def test_exercise_template_to_row_converts_for_build_workout_log() -> None:
+def test_exercise_template_to_entry_converts_strength_template() -> None:
     logs = [
         _workout(
             performed_at=datetime(2026, 6, 1, tzinfo=UTC),
@@ -185,12 +185,36 @@ def test_exercise_template_to_row_converts_for_build_workout_log() -> None:
     ]
 
     template = frequent_exercise_templates(logs)[0]
-    row = exercise_template_to_row(template)
+    entry = exercise_template_to_entry(template)
 
-    assert row == {
+    assert entry == {
         "exercise_name": "ベンチプレス",
         "category": "strength",
         "duration_minutes": None,
-        "reps": 8,
-        "weight_kg": 60,
+        "sets": [{"reps": 8, "weight_kg": 60}],
+    }
+
+
+def test_exercise_template_to_entry_converts_cardio_template() -> None:
+    logs = [
+        _workout(
+            performed_at=datetime(2026, 6, 1, tzinfo=UTC),
+            exercises=[
+                WorkoutExercise(
+                    exercise_name="ランニング",
+                    category=ExerciseCategory.CARDIO,
+                    duration_minutes=30,
+                )
+            ],
+        )
+    ]
+
+    template = frequent_exercise_templates(logs)[0]
+    entry = exercise_template_to_entry(template)
+
+    assert entry == {
+        "exercise_name": "ランニング",
+        "category": "cardio",
+        "duration_minutes": 30,
+        "sets": [],
     }

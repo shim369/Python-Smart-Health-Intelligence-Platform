@@ -29,12 +29,17 @@ from components.formatting import (  # noqa: E402
     jst_time_of,
 )
 from components.quick_entry import (  # noqa: E402
-    exercise_template_to_row,
+    exercise_template_to_entry,
     frequent_exercise_templates,
     frequent_meal_templates,
     most_recent_meal,
 )
-from components.workout_form import build_workout_log, workout_log_to_rows  # noqa: E402
+from components.workout_form import (  # noqa: E402
+    build_workout_log,
+    entries_to_rows,
+    rows_to_entries,
+    workout_log_to_rows,
+)
 from services import (  # noqa: E402
     get_health_service,
     get_meal_service,
@@ -301,21 +306,117 @@ with meal_tab:
 # ============================================================
 # 運動
 # ============================================================
+def _new_workout_entry(category: str = "strength") -> dict[str, object]:
+    """種目カード1件分の初期状態を生成する。`_id`はウィジェットキーの安定した
+    紐付け用で、保存時(entries_to_rows)には無視される。
+    """
+    return {
+        "_id": uuid4().hex,
+        "exercise_name": "",
+        "category": category,
+        "duration_minutes": None,
+        "sets": [{"reps": None, "weight_kg": None}],
+    }
+
+
+def _render_workout_entries(
+    entries: list[dict[str, object]], *, key_prefix: str
+) -> None:
+    """種目カードのリストをスマホでもタップしやすい縦積みUIとして描画する。
+
+    `entries`(セッション状態のリスト)を直接書き換えるため、呼び出し側は
+    描画後にそのまま`entries_to_rows(entries)`で保存用の行データへ変換できる。
+    種目の削除・セット追加/削除はその場でst.rerun()し、data_editorの
+    ような表操作ではなく単純なタップ操作で完結させる。
+    """
+    remove_entry_id: str | None = None
+
+    for entry in entries:
+        eid = entry["_id"]
+        with st.container(border=True):
+            name_col, del_col = st.columns([4, 1])
+            entry["exercise_name"] = name_col.text_input(
+                "種目名",
+                value=entry.get("exercise_name") or "",
+                placeholder="例: レッグプレス",
+                key=f"{key_prefix}_wo_name_{eid}",
+            )
+            if del_col.button(
+                "🗑削除", key=f"{key_prefix}_wo_del_{eid}", use_container_width=True
+            ):
+                remove_entry_id = eid
+
+            entry["category"] = st.radio(
+                "カテゴリ",
+                options=["strength", "cardio"],
+                format_func=lambda c: "筋トレ" if c == "strength" else "有酸素",
+                horizontal=True,
+                index=0 if entry.get("category", "strength") == "strength" else 1,
+                key=f"{key_prefix}_wo_cat_{eid}",
+            )
+
+            if entry["category"] == "cardio":
+                entry["duration_minutes"] = st.number_input(
+                    "時間(分)",
+                    min_value=0,
+                    step=1,
+                    value=entry.get("duration_minutes"),
+                    key=f"{key_prefix}_wo_dur_{eid}",
+                )
+            else:
+                sets = entry.setdefault("sets", [])
+                if not sets:
+                    sets.append({"reps": None, "weight_kg": None})
+
+                remove_set_index: int | None = None
+                for i, workout_set in enumerate(sets):
+                    label_col, reps_col, weight_col, set_del_col = st.columns(
+                        [1, 2, 2, 1]
+                    )
+                    label_col.markdown(f"**{i + 1}セット目**")
+                    workout_set["reps"] = reps_col.number_input(
+                        "回数",
+                        min_value=0,
+                        step=1,
+                        value=workout_set.get("reps"),
+                        key=f"{key_prefix}_wo_reps_{eid}_{i}",
+                        label_visibility="collapsed",
+                    )
+                    workout_set["weight_kg"] = weight_col.number_input(
+                        "重量(kg)",
+                        min_value=0.0,
+                        step=1.0,
+                        value=workout_set.get("weight_kg"),
+                        key=f"{key_prefix}_wo_weight_{eid}_{i}",
+                        label_visibility="collapsed",
+                    )
+                    if len(sets) > 1 and set_del_col.button(
+                        "×", key=f"{key_prefix}_wo_setdel_{eid}_{i}"
+                    ):
+                        remove_set_index = i
+
+                if remove_set_index is not None:
+                    sets.pop(remove_set_index)
+                    st.rerun()
+
+                if st.button(
+                    "+ セット追加",
+                    key=f"{key_prefix}_wo_addset_{eid}",
+                    use_container_width=True,
+                ):
+                    sets.append({"reps": None, "weight_kg": None})
+                    st.rerun()
+
+    if remove_entry_id is not None:
+        entries[:] = [e for e in entries if e["_id"] != remove_entry_id]
+        st.rerun()
+
+
 with workout_tab:
     st.subheader("新規記録")
-    st.caption(
-        "同じ種目名・カテゴリの行はまとめて1種目・複数セットとして"
-        "保存されます(例: レッグプレスを2行入力すると2セット扱い)。"
-    )
-    _DEFAULT_WORKOUT_ROW = {
-        "exercise_name": "",
-        "category": "strength",
-        "duration_minutes": None,
-        "reps": None,
-        "weight_kg": None,
-    }
-    if "workout_new_rows" not in st.session_state:
-        st.session_state["workout_new_rows"] = [dict(_DEFAULT_WORKOUT_ROW)]
+
+    if "workout_entries" not in st.session_state:
+        st.session_state["workout_entries"] = [_new_workout_entry()]
 
     all_workout_logs = get_workout_service().list_workout_logs(user_id)
     exercise_templates = frequent_exercise_templates(all_workout_logs)
@@ -323,17 +424,6 @@ with workout_tab:
     workout_date = st.date_input("日付", value=date.today(), key="workout_date")
     workout_time = st.time_input(
         "時刻", value=datetime.now().time(), key="workout_time"
-    )
-    default_rows = pd.DataFrame(st.session_state["workout_new_rows"])
-    edited = st.data_editor(
-        default_rows,
-        num_rows="dynamic",
-        column_config={
-            "category": st.column_config.SelectboxColumn(
-                "カテゴリ", options=["cardio", "strength"]
-            ),
-        },
-        key="workout_editor",
     )
 
     quick_workout_col1, quick_workout_col2 = st.columns([1, 2])
@@ -345,8 +435,10 @@ with workout_tab:
             use_container_width=True,
         ):
             last_workout = max(all_workout_logs, key=lambda w: w.performed_at)
-            st.session_state["workout_new_rows"] = workout_log_to_rows(last_workout)
-            st.session_state.pop("workout_editor", None)
+            new_entries = rows_to_entries(workout_log_to_rows(last_workout))
+            for e in new_entries:
+                e["_id"] = uuid4().hex
+            st.session_state["workout_entries"] = new_entries or [_new_workout_entry()]
             st.rerun()
     with quick_workout_col2:
         if exercise_templates:
@@ -360,24 +452,34 @@ with workout_tab:
                 label_visibility="collapsed",
             )
             if st.button("選択した種目を追加する", key="workout_template_apply_button"):
-                current_rows = [
-                    r
-                    for r in edited.to_dict(orient="records")
-                    if str(r.get("exercise_name") or "").strip()
+                current_entries = [
+                    e
+                    for e in st.session_state["workout_entries"]
+                    if str(e.get("exercise_name") or "").strip()
                 ]
-                current_rows.extend(
-                    exercise_template_to_row(t) for t in selected_exercise_templates
-                )
-                st.session_state["workout_new_rows"] = current_rows or [
-                    dict(_DEFAULT_WORKOUT_ROW)
+                for t in selected_exercise_templates:
+                    new_entry = exercise_template_to_entry(t)
+                    new_entry["_id"] = uuid4().hex
+                    current_entries.append(new_entry)
+                st.session_state["workout_entries"] = current_entries or [
+                    _new_workout_entry()
                 ]
-                st.session_state.pop("workout_editor", None)
                 st.rerun()
         else:
             st.caption("よく使う種目はまだありません。")
 
-    if st.button("運動記録を保存する"):
-        rows = edited.to_dict(orient="records")
+    _render_workout_entries(st.session_state["workout_entries"], key_prefix="new")
+
+    if st.button("+ 種目を追加", key="workout_add_entry", use_container_width=True):
+        st.session_state["workout_entries"].append(_new_workout_entry())
+        st.rerun()
+
+    if st.button(
+        "運動記録を保存する",
+        type="primary",
+        use_container_width=True,
+    ):
+        rows = entries_to_rows(st.session_state["workout_entries"])
         workout_log = build_workout_log(
             rows,
             user_id=user_id,
@@ -387,8 +489,7 @@ with workout_tab:
             st.error("有効な種目が入力されていません。")
         else:
             get_workout_service().record_workout_log(workout_log)
-            st.session_state["workout_new_rows"] = [dict(_DEFAULT_WORKOUT_ROW)]
-            st.session_state.pop("workout_editor", None)
+            st.session_state["workout_entries"] = [_new_workout_entry()]
             st.success(f"運動記録({len(workout_log.exercises)}種目)を保存しました。")
             st.rerun()
 
@@ -445,23 +546,33 @@ with workout_tab:
                 value=jst_time_of(selected_workout.performed_at),
                 key=f"workout_edit_time_{selected_workout.workout_log_id}",
             )
-            edit_default_rows = pd.DataFrame(workout_log_to_rows(selected_workout))
-            edited_existing = st.data_editor(
-                edit_default_rows,
-                num_rows="dynamic",
-                column_config={
-                    "category": st.column_config.SelectboxColumn(
-                        "カテゴリ", options=["cardio", "strength"]
-                    ),
-                },
-                key=f"workout_edit_editor_{selected_workout.workout_log_id}",
+            edit_state_key = f"workout_edit_entries_{selected_workout.workout_log_id}"
+            if edit_state_key not in st.session_state:
+                edit_entries = rows_to_entries(workout_log_to_rows(selected_workout))
+                for e in edit_entries:
+                    e["_id"] = uuid4().hex
+                st.session_state[edit_state_key] = edit_entries or [
+                    _new_workout_entry()
+                ]
+
+            _render_workout_entries(
+                st.session_state[edit_state_key],
+                key_prefix=f"edit_{selected_workout.workout_log_id}",
             )
+
+            if st.button(
+                "+ 種目を追加",
+                key=f"workout_edit_add_entry_{selected_workout.workout_log_id}",
+                use_container_width=True,
+            ):
+                st.session_state[edit_state_key].append(_new_workout_entry())
+                st.rerun()
 
             col1, col2 = st.columns(2)
             if col1.button(
                 "更新する", key=f"workout_update_{selected_workout.workout_log_id}"
             ):
-                updated_rows = edited_existing.to_dict(orient="records")
+                updated_rows = entries_to_rows(st.session_state[edit_state_key])
                 updated_workout = build_workout_log(
                     updated_rows,
                     user_id=user_id,
@@ -474,6 +585,7 @@ with workout_tab:
                     st.error("有効な種目が入力されていません。")
                 else:
                     workout_service.update_workout_log(updated_workout)
+                    st.session_state.pop(edit_state_key, None)
                     st.success("更新しました。")
                     st.rerun()
 
@@ -483,6 +595,7 @@ with workout_tab:
                 workout_service.delete_workout_log(
                     user_id, selected_workout.workout_log_id
                 )
+                st.session_state.pop(edit_state_key, None)
                 st.success("削除しました。")
                 st.rerun()
 
