@@ -165,6 +165,7 @@ services/
 ├── workout_service.py
 ├── sleep_service.py
 ├── weight_service.py
+├── learning_service.py
 ├── recommendation_service.py
 └── recipe_service.py
 ```
@@ -181,7 +182,7 @@ Serviceは具体的なPostgreSQL実装へ直接依存しない。
 
 ```text
 User / HealthLog / MealLog / WorkoutLog / SleepLog
-WeightLog / Ingredient / Recipe / RecipeIngredient
+WeightLog / LearningLog / Ingredient / Recipe / RecipeIngredient
 ```
 
 データベース固有の仕様やStreamlit固有の処理を持たせない。
@@ -213,6 +214,7 @@ repositories/
 ├── workout_log_repository.py
 ├── sleep_log_repository.py
 ├── weight_log_repository.py
+├── learning_log_repository.py
 ├── ingredient_repository.py
 └── recipe_repository.py
 ```
@@ -254,7 +256,7 @@ Database接続情報は環境変数またはStreamlit Secretsから取得する(
 
 ### 8.1 基本方針
 
-ユーザー所有データ(`HealthLog` / `MealLog` / `WorkoutLog` / `SleepLog` / `WeightLog` / `Recipe`)には原則として`user_id`を必須とする。
+ユーザー所有データ(`HealthLog` / `MealLog` / `WorkoutLog` / `SleepLog` / `WeightLog` / `LearningLog` / `Recipe`)には原則として`user_id`を必須とする。
 
 ```mermaid
 flowchart TD
@@ -264,6 +266,7 @@ flowchart TD
     User --> WorkoutLog
     User --> SleepLog
     User --> WeightLog
+    User --> LearningLog
     User --> Recipe
 ```
 
@@ -597,6 +600,7 @@ Python-Smart-Health-Intelligence-Platform/
 │       │   │   ├── workout_log.py
 │       │   │   ├── sleep_log.py
 │       │   │   ├── weight_log.py
+│       │   │   ├── learning_log.py
 │       │   │   ├── ingredient.py
 │       │   │   ├── recipe.py
 │       │   │   └── recipe_ingredient.py
@@ -609,6 +613,7 @@ Python-Smart-Health-Intelligence-Platform/
 │       │   ├── workout_service.py
 │       │   ├── sleep_service.py
 │       │   ├── weight_service.py
+│       │   ├── learning_service.py
 │       │   ├── recommendation_service.py
 │       │   └── recipe_service.py
 │       ├── repositories/
@@ -622,6 +627,7 @@ Python-Smart-Health-Intelligence-Platform/
 │       │       ├── workout_log_repository.py
 │       │       ├── sleep_log_repository.py
 │       │       ├── weight_log_repository.py
+│       │       ├── learning_log_repository.py
 │       │       ├── ingredient_repository.py
 │       │       ├── recipe_repository.py
 │       │       └── unit_of_work.py
@@ -648,10 +654,7 @@ Python-Smart-Health-Intelligence-Platform/
 ├── docs/
 │   ├── architecture.md
 │   ├── requirements.md
-│   ├── database.md
-│   ├── authentication.md
-│   ├── recipe-generation.md
-│   └── ml-pipeline.md
+│   └── database.md
 │
 ├── .env.example
 ├── .gitignore
