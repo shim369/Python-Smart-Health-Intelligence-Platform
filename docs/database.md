@@ -26,7 +26,7 @@ erDiagram
         datetime created_at
     }
     USER_CREDENTIALS {
-        uuid user_id PK_FK
+        uuid user_id PK, FK
         string password_hash
     }
     HEALTH_LOGS {
@@ -116,8 +116,8 @@ erDiagram
         float carbohydrate_g
     }
     RECIPE_INGREDIENTS {
-        uuid recipe_id PK_FK
-        uuid ingredient_id PK_FK
+        uuid recipe_id PK, FK
+        uuid ingredient_id PK, FK
         float amount
         string unit
     }
