@@ -15,7 +15,12 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from health_intelligence.domain.enums import ExerciseCategory, MealType
-from health_intelligence.domain.models import MealLog, WorkoutExercise, WorkoutLog
+from health_intelligence.domain.models import (
+    LearningLog,
+    MealLog,
+    WorkoutExercise,
+    WorkoutLog,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +71,44 @@ def frequent_meal_templates(
             usage_count=len(logs),
         )
         for (memo, meal_type), logs in groups.items()
+    ]
+    templates.sort(key=lambda t: t.usage_count, reverse=True)
+    return templates[:limit]
+
+
+def most_recent_learning_log(learning_logs: list[LearningLog]) -> LearningLog | None:
+    """直近の学習ログを返す(「前回と同じ内容を入力」用)。"""
+    if not learning_logs:
+        return None
+    return max(learning_logs, key=lambda log: log.started_at)
+
+
+@dataclass(frozen=True, slots=True)
+class KeywordTemplate:
+    """よく使う技術的成長キーワードの候補。"""
+
+    keyword: str
+    usage_count: int
+
+
+def frequent_learning_keywords(
+    learning_logs: list[LearningLog], *, limit: int = 8
+) -> list[KeywordTemplate]:
+    """よく使う技術的成長キーワードを、使用頻度が高い順に返す。
+
+    1件の学習ログが複数キーワードを持つため(例: "Python", "SQL")、
+    メール/運動のテンプレートとは異なりログ単位ではなくキーワード
+    単位で集計する。カテゴリを問わず全ログを対象とする(同じ
+    キーワードが複数カテゴリで使い回されるケースを想定)。
+    """
+    counts: dict[str, int] = {}
+    for log in learning_logs:
+        for keyword in log.keywords:
+            counts[keyword] = counts.get(keyword, 0) + 1
+
+    templates = [
+        KeywordTemplate(keyword=keyword, usage_count=count)
+        for keyword, count in counts.items()
     ]
     templates.sort(key=lambda t: t.usage_count, reverse=True)
     return templates[:limit]

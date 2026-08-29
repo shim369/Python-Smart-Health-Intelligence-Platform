@@ -49,6 +49,21 @@ class HealthLogORM(Base):
     memo: Mapped[str | None] = mapped_column(Text)
 
 
+class LearningLogORM(Base):
+    __tablename__ = "learning_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    category: Mapped[str]
+    location: Mapped[str | None]
+    content: Mapped[str | None] = mapped_column(Text)
+    breakdown: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
+    duration_minutes: Mapped[int | None]
+    keywords: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
+    notes: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
+
+
 class MealLogORM(Base):
     __tablename__ = "meal_logs"
 

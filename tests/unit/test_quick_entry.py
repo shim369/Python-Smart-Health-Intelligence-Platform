@@ -17,12 +17,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "app"))
 from components.quick_entry import (  # noqa: E402
     exercise_template_to_entry,
     frequent_exercise_templates,
+    frequent_learning_keywords,
     frequent_meal_templates,
+    most_recent_learning_log,
     most_recent_meal,
 )
 
-from health_intelligence.domain.enums import ExerciseCategory, MealType  # noqa: E402
+from health_intelligence.domain.enums import (  # noqa: E402
+    ExerciseCategory,
+    LearningCategory,
+    MealType,
+)
 from health_intelligence.domain.models import (  # noqa: E402
+    LearningLog,
     MealLog,
     WorkoutExercise,
     WorkoutLog,
@@ -54,6 +61,68 @@ def test_most_recent_meal_returns_latest_by_consumed_at() -> None:
 
     assert most_recent_meal([older, newer]) is newer
     assert most_recent_meal([]) is None
+
+
+def _learning(
+    *,
+    started_at: datetime,
+    category: LearningCategory = LearningCategory.EXAM_STUDY,
+    keywords: list[str] | None = None,
+) -> LearningLog:
+    return LearningLog(
+        learning_log_id=uuid4(),
+        user_id=_USER_ID,
+        started_at=started_at,
+        category=category,
+        keywords=keywords or [],
+    )
+
+
+def test_most_recent_learning_log_returns_latest_by_started_at() -> None:
+    older = _learning(started_at=datetime(2026, 6, 1, tzinfo=UTC))
+    newer = _learning(started_at=datetime(2026, 6, 2, tzinfo=UTC))
+
+    assert most_recent_learning_log([older, newer]) is newer
+    assert most_recent_learning_log([]) is None
+
+
+def test_frequent_learning_keywords_ranks_by_usage_across_logs() -> None:
+    logs = [
+        _learning(
+            started_at=datetime(2026, 6, 1, tzinfo=UTC),
+            keywords=["Python", "SQL"],
+        ),
+        _learning(
+            started_at=datetime(2026, 6, 2, tzinfo=UTC),
+            category=LearningCategory.PORTFOLIO_DEV,
+            keywords=["Python", "Docker"],
+        ),
+        _learning(
+            started_at=datetime(2026, 6, 3, tzinfo=UTC),
+            category=LearningCategory.RESEARCH,
+            keywords=["Python"],
+        ),
+    ]
+
+    templates = frequent_learning_keywords(logs)
+
+    assert templates[0].keyword == "Python"
+    assert templates[0].usage_count == 3
+    assert {t.keyword for t in templates} == {"Python", "SQL", "Docker"}
+
+
+def test_frequent_learning_keywords_respects_limit_and_ignores_no_keywords() -> None:
+    logs = [
+        _learning(started_at=datetime(2026, 6, 1, tzinfo=UTC), keywords=[]),
+        *[
+            _learning(started_at=datetime(2026, 6, i, tzinfo=UTC), keywords=[f"kw{i}"])
+            for i in range(2, 8)
+        ],
+    ]
+
+    templates = frequent_learning_keywords(logs, limit=3)
+
+    assert len(templates) == 3
 
 
 def test_frequent_meal_templates_ranks_by_usage_and_ignores_empty_memo() -> None:

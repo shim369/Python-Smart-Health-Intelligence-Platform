@@ -6,6 +6,7 @@
 """
 
 from health_intelligence.services.health_service import HealthService
+from health_intelligence.services.learning_service import LearningService
 from health_intelligence.services.meal_service import MealService
 from health_intelligence.services.recipe_service import RecipeService
 from health_intelligence.services.recommendation_service import (
@@ -18,6 +19,7 @@ from health_intelligence.services.workout_service import WorkoutService
 
 __all__ = [
     "HealthService",
+    "LearningService",
     "MealService",
     "RecipeService",
     "RecommendationService",

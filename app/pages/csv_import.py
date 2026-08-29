@@ -142,6 +142,7 @@ def _render_import_tab(
         if st.button(
             f"有効な{len(result.logs)}件をインポートする",
             key=f"{key_prefix}_import_button",
+            type="primary",
         ):
             for log in result.logs:
                 record_fn(log)

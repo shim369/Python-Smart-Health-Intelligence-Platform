@@ -24,6 +24,7 @@ from uuid import UUID
 from health_intelligence.domain.models import (
     HealthLog,
     Ingredient,
+    LearningLog,
     MealLog,
     Recipe,
     RecipeIngredient,
@@ -68,6 +69,20 @@ class HealthLogRepository(Protocol):
     def update(self, health_log: HealthLog) -> None: ...
 
     def delete(self, user_id: UUID, health_log_id: UUID) -> None: ...
+
+
+class LearningLogRepository(Protocol):
+    """LearningLogの永続化を担うRepository。"""
+
+    def get_by_id(self, user_id: UUID, learning_log_id: UUID) -> LearningLog | None: ...
+
+    def list_by_user(self, user_id: UUID) -> list[LearningLog]: ...
+
+    def add(self, learning_log: LearningLog) -> None: ...
+
+    def update(self, learning_log: LearningLog) -> None: ...
+
+    def delete(self, user_id: UUID, learning_log_id: UUID) -> None: ...
 
 
 class MealLogRepository(Protocol):

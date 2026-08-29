@@ -19,6 +19,7 @@ from typing import Protocol, Self
 from health_intelligence.repositories.protocols import (
     HealthLogRepository,
     IngredientRepository,
+    LearningLogRepository,
     MealLogRepository,
     RecipeIngredientRepository,
     RecipeRepository,
@@ -49,6 +50,7 @@ class UnitOfWork(Protocol):
     users: UserRepository
     user_credentials: UserCredentialRepository
     health_logs: HealthLogRepository
+    learning_logs: LearningLogRepository
     meal_logs: MealLogRepository
     workout_logs: WorkoutLogRepository
     sleep_logs: SleepLogRepository

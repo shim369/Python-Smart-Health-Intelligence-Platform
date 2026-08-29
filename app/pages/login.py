@@ -55,7 +55,7 @@ with register_tab:
         reg_password = st.text_input(
             "パスワード", type="password", key="register_password"
         )
-        register_submitted = st.form_submit_button("登録する")
+        register_submitted = st.form_submit_button("登録する", type="primary")
 
     if register_submitted:
         authenticator = get_authenticator()

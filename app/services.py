@@ -14,6 +14,7 @@ from health_intelligence.config import get_ai_provider
 from health_intelligence.repositories.sqlalchemy import build_uow_factory
 from health_intelligence.services import (
     HealthService,
+    LearningService,
     MealService,
     RecipeService,
     RecommendationService,
@@ -53,6 +54,11 @@ def get_user_service() -> UserService:
 @st.cache_resource
 def get_health_service() -> HealthService:
     return HealthService(_uow_factory())
+
+
+@st.cache_resource
+def get_learning_service() -> LearningService:
+    return LearningService(_uow_factory())
 
 
 @st.cache_resource

@@ -43,3 +43,25 @@ class RecipeSource(StrEnum):
 
     MANUAL = "manual"
     AI_GENERATED = "ai_generated"
+
+
+class LearningCategory(StrEnum):
+    """LearningLogの学習区分。
+
+    区分ごとに使用するフィールドが異なる(試験勉強はcontent/breakdown、
+    キャリア戦略はnotesを使う等)。learning_log.py参照。
+    """
+
+    EXAM_STUDY = "exam_study"
+    PORTFOLIO_DEV = "portfolio_dev"
+    RESEARCH = "research"
+    CAREER_STRATEGY = "career_strategy"
+
+
+class LearningLocation(StrEnum):
+    """LearningLogを記録した場所。"""
+
+    HOME = "home"
+    GYM = "gym"
+    COWORKING_SPACE = "coworking_space"
+    CAFE = "cafe"
