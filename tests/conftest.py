@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TypeVar
 from uuid import UUID
 
@@ -15,6 +16,15 @@ from dotenv import load_dotenv
 from health_intelligence.domain.models import User
 
 load_dotenv()
+
+# `.env.test`が存在する場合、DATABASE_URL等をテスト専用DBへ上書きする
+# (override=True)。tests/integration/test_user_isolation.py や
+# tests/unit/test_migrations.pyはDATABASE_URLへ実際にデータを書き込み・
+# 全テーブルをdrop/再作成するため、日常使っているDB(.envのDATABASE_URL)
+# を巻き込まないための分離。`.env.test`が無い環境(CI等)では何も
+# 起きず、従来通り.envのDATABASE_URLがそのまま使われる。
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(dotenv_path=_PROJECT_ROOT / ".env.test", override=True)
 
 T = TypeVar("T")
 

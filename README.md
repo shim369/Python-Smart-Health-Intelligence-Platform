@@ -60,6 +60,26 @@ cp .env.example .env
 uv run alembic upgrade head
 ```
 
+### 3.5. (推奨) テスト用DBの分離
+
+`tests/unit/test_migrations.py`は`DATABASE_URL`に対して実際に
+`alembic downgrade base`(全テーブルdrop)→`upgrade head`を行い、
+`tests/integration/`もDATABASE_URLへ実データを書き込む。`.env`に
+日常使っているDBを設定していると、`pytest`(全体)を実行するたびに
+そのDBが空にリセットされ、登録したユーザー等が消えてしまう。
+
+これを避けるには、使い捨てて構わない別のDB(Neonの別ブランチ・別
+プロジェクト、ローカルPostgres等)を用意し、`.env.test`に設定する。
+
+```bash
+cp .env.test.example .env.test
+```
+
+`.env.test`が存在すると、`tests/conftest.py`が起動時に`DATABASE_URL`
+をこちらで上書きするため、`pytest`が日常用DBに触れなくなる
+(`.env.test`が無ければ従来通り`.env`のDATABASE_URLがテストにも
+使われる。CI等はこの既定動作を利用する)。
+
 ### 4. アプリの起動
 
 ```bash
