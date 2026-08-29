@@ -28,6 +28,7 @@ from auth_guard import require_login  # noqa: E402
 from components.csv_import import (  # noqa: E402
     ImportResult,
     parse_health_rows,
+    parse_learning_rows,
     parse_meal_rows,
     parse_sleep_rows,
     parse_weight_rows,
@@ -36,6 +37,7 @@ from components.csv_import import (  # noqa: E402
 from components.formatting import format_datetime_jst  # noqa: E402
 from services import (  # noqa: E402
     get_health_service,
+    get_learning_service,
     get_meal_service,
     get_sleep_service,
     get_weight_service,
@@ -155,7 +157,8 @@ def _render_import_tab(
     sleep_tab,
     weight_tab,
     health_tab,
-) = st.tabs(["食事", "運動", "睡眠", "体重", "体調"])
+    learning_tab,
+) = st.tabs(["食事", "運動", "睡眠", "体重", "体調", "学習"])
 
 
 with meal_tab:
@@ -271,5 +274,49 @@ with health_tab:
             "日時": lambda h: format_datetime_jst(h.recorded_at),
             "スコア": lambda h: h.condition_score,
             "症状": lambda h: "、".join(h.symptoms),
+        },
+    )
+
+with learning_tab:
+    _render_import_tab(
+        label="学習",
+        key_prefix="learning",
+        header=[
+            "date",
+            "time",
+            "category",
+            "location",
+            "content",
+            "breakdown",
+            "duration_minutes",
+            "keywords",
+            "notes",
+        ],
+        example_row=[
+            "2026-06-01",
+            "20:00",
+            "exam_study",
+            "home",
+            "Chapter1 過去問",
+            "Chapter1;Chapter2",
+            "60",
+            "Python;SQL",
+            "",
+        ],
+        caption=(
+            "categoryは exam_study(試験勉強) / portfolio_dev(PF開発) / "
+            "research(調べ物) / career_strategy(キャリア・プロダクト戦略設計)"
+            "のいずれか。locationは任意で home/gym/coworking_space/cafeの"
+            "いずれか。breakdown・keywords・notesは任意で、複数ある場合は"
+            "セミコロン(;)区切りで記入してください。"
+        ),
+        parse_fn=parse_learning_rows,
+        record_fn=lambda log: get_learning_service().record_learning_log(log),
+        preview_columns={
+            "日時": lambda learning: format_datetime_jst(learning.started_at),
+            "カテゴリ": lambda learning: learning.category.value,
+            "内容": lambda learning: (
+                learning.content or "、".join(learning.keywords) or "-"
+            ),
         },
     )

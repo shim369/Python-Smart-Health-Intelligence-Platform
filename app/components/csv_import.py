@@ -25,9 +25,16 @@ from uuid import UUID, uuid4
 from components.formatting import combine_jst_to_utc
 from components.workout_form import build_workout_log
 
-from health_intelligence.domain.enums import ExerciseCategory, MealType, SleepQuality
+from health_intelligence.domain.enums import (
+    ExerciseCategory,
+    LearningCategory,
+    LearningLocation,
+    MealType,
+    SleepQuality,
+)
 from health_intelligence.domain.models import (
     HealthLog,
+    LearningLog,
     MealLog,
     SleepLog,
     WeightLog,
@@ -354,5 +361,85 @@ def parse_workout_rows(
             )
             continue
         logs.append(workout_log)
+
+    return ImportResult(logs=logs, errors=errors)
+
+
+def parse_learning_rows(
+    rows: list[dict[str, str]], *, user_id: UUID
+) -> ImportResult[LearningLog]:
+    """学習ログCSVを解析する。
+
+    列: date(必須), time(任意・省略時00:00), category(exam_study/
+    portfolio_dev/research/career_strategy、必須), location(任意:
+    home/gym/coworking_space/cafe), content(任意), breakdown(任意、
+    セミコロン区切り), duration_minutes(任意), keywords(任意、
+    セミコロン区切り), notes(任意、セミコロン区切り)
+
+    breakdown/keywords/notesは、他の複数値フィールド(symptoms)と同様に
+    セミコロン区切りとする(CSVの区切り文字であるカンマや、アプリUI側の
+    スラッシュ区切りとの衝突を避けるため)。
+    """
+    logs: list[LearningLog] = []
+    errors: list[ImportRowError] = []
+
+    for row_number, row in enumerate(rows, start=2):
+        try:
+            started_date = _parse_date(row.get("date", ""), field="date")
+            started_time = _parse_time(
+                row.get("time", ""), field="time", default=time_type(0, 0)
+            )
+
+            category_text = (row.get("category") or "").strip()
+            if not category_text:
+                raise ValueError("categoryが空です")
+            try:
+                category = LearningCategory(category_text)
+            except ValueError as e:
+                valid = ", ".join(c.value for c in LearningCategory)
+                raise ValueError(
+                    f"categoryが不正です({valid}のいずれか): {category_text!r}"
+                ) from e
+
+            location_text = (row.get("location") or "").strip()
+            if location_text:
+                try:
+                    location = LearningLocation(location_text)
+                except ValueError as e:
+                    valid = ", ".join(loc.value for loc in LearningLocation)
+                    raise ValueError(
+                        f"locationが不正です({valid}のいずれか): {location_text!r}"
+                    ) from e
+            else:
+                location = None
+
+            duration_minutes = _parse_optional_int(row.get("duration_minutes"))
+        except ValueError as e:
+            errors.append(ImportRowError(row_number=row_number, message=str(e)))
+            continue
+
+        content = (row.get("content") or "").strip() or None
+        breakdown = [
+            s.strip() for s in (row.get("breakdown") or "").split(";") if s.strip()
+        ]
+        keywords = [
+            s.strip() for s in (row.get("keywords") or "").split(";") if s.strip()
+        ]
+        notes = [s.strip() for s in (row.get("notes") or "").split(";") if s.strip()]
+
+        logs.append(
+            LearningLog(
+                learning_log_id=uuid4(),
+                user_id=user_id,
+                started_at=combine_jst_to_utc(started_date, started_time),
+                category=category,
+                location=location,
+                content=content,
+                breakdown=breakdown,
+                duration_minutes=duration_minutes,
+                keywords=keywords,
+                notes=notes,
+            )
+        )
 
     return ImportResult(logs=logs, errors=errors)

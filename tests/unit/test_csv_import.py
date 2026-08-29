@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "app"))
 
 from components.csv_import import (  # noqa: E402
     parse_health_rows,
+    parse_learning_rows,
     parse_meal_rows,
     parse_sleep_rows,
     parse_weight_rows,
@@ -234,3 +235,68 @@ def test_parse_workout_rows_rejects_invalid_category() -> None:
 
     assert result.logs == []
     assert len(result.errors) == 1
+
+
+def test_parse_learning_rows_success_with_multi_value_fields() -> None:
+    rows = [
+        {
+            "date": "2026-06-01",
+            "time": "20:00",
+            "category": "exam_study",
+            "location": "home",
+            "content": "Chapter1 過去問",
+            "breakdown": "Chapter1;Chapter2",
+            "duration_minutes": "60",
+            "keywords": "Python;SQL",
+            "notes": "",
+        },
+        {
+            "date": "2026-06-02",
+            "time": "",
+            "category": "career_strategy",
+            "location": "",
+            "content": "",
+            "breakdown": "",
+            "duration_minutes": "180",
+            "keywords": "",
+            "notes": "案A;案B",
+        },
+    ]
+
+    result = parse_learning_rows(rows, user_id=uuid4())
+
+    assert result.errors == []
+    assert len(result.logs) == 2
+    first = result.logs[0]
+    assert first.category.value == "exam_study"
+    assert first.location is not None
+    assert first.location.value == "home"
+    assert first.breakdown == ["Chapter1", "Chapter2"]
+    assert first.keywords == ["Python", "SQL"]
+    second = result.logs[1]
+    assert second.location is None
+    assert second.notes == ["案A", "案B"]
+
+
+def test_parse_learning_rows_rejects_invalid_category_and_location() -> None:
+    rows = [
+        {
+            "date": "2026-06-01",
+            "time": "20:00",
+            "category": "not-a-category",
+            "location": "",
+            "duration_minutes": "",
+        },
+        {
+            "date": "2026-06-02",
+            "time": "20:00",
+            "category": "research",
+            "location": "not-a-place",
+            "duration_minutes": "",
+        },
+    ]
+
+    result = parse_learning_rows(rows, user_id=uuid4())
+
+    assert result.logs == []
+    assert len(result.errors) == 2
