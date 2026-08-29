@@ -75,6 +75,7 @@ from health_intelligence.domain.models import (  # noqa: E402
     MealLog,
     SleepLog,
     WeightLog,
+    WorkoutLog,
 )
 
 auth_state = require_login()
@@ -108,6 +109,54 @@ _MAX_HISTORY_ROWS = 30
 # ============================================================
 # 食事
 # ============================================================
+@st.dialog("食事記録を編集")
+def _meal_edit_dialog(log: MealLog) -> None:
+    meal_service = get_meal_service()
+    edit_date = st.date_input("日付", value=jst_date_of(log.consumed_at))
+    edit_time = st.time_input("時刻", value=jst_time_of(log.consumed_at))
+    edit_meal_type = st.selectbox(
+        "食事区分",
+        options=list(MealType),
+        index=list(MealType).index(log.meal_type),
+        format_func=lambda m: m.value,
+    )
+    edit_calories = st.number_input("カロリー(kcal)", min_value=0.0, step=10.0, value=log.calories)
+    edit_protein_g = st.number_input("タンパク質(g)", min_value=0.0, step=1.0, value=log.protein_g)
+    edit_fat_g = st.number_input("脂質(g)", min_value=0.0, step=1.0, value=log.fat_g)
+    edit_carbohydrate_g = st.number_input(
+        "炭水化物(g)", min_value=0.0, step=1.0, value=log.carbohydrate_g
+    )
+    edit_memo = st.text_input("メモ(任意)", value=log.memo or "")
+    delete_confirmed = st.checkbox(
+        "本当に削除しますか?(元に戻せません)", key=f"meal_delete_confirm_{log.meal_log_id}"
+    )
+    col1, col2 = st.columns(2)
+    if col1.button(
+        "更新する", type="primary", key=f"meal_update_{log.meal_log_id}", width="stretch"
+    ):
+        updated = MealLog(
+            meal_log_id=log.meal_log_id,
+            user_id=user_id,
+            consumed_at=combine_jst_to_utc(edit_date, edit_time),
+            meal_type=edit_meal_type,
+            calories=edit_calories,
+            protein_g=edit_protein_g,
+            fat_g=edit_fat_g,
+            carbohydrate_g=edit_carbohydrate_g,
+            memo=edit_memo or None,
+        )
+        meal_service.update_meal_log(updated)
+        st.success("更新しました。")
+        st.rerun()
+    if col2.button("削除する", key=f"meal_delete_{log.meal_log_id}", width="stretch"):
+        if not delete_confirmed:
+            st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
+        else:
+            meal_service.delete_meal_log(user_id, log.meal_log_id)
+            st.success("削除しました。")
+            st.rerun()
+
+
 with meal_tab:
     st.subheader("新規記録")
 
@@ -121,7 +170,7 @@ with meal_tab:
             "前回と同じ内容を入力",
             key="meal_repeat_button",
             disabled=last_meal is None,
-            use_container_width=True,
+            width="stretch",
         ):
             assert last_meal is not None
             st.session_state["meal_type_input"] = last_meal.meal_type
@@ -233,13 +282,12 @@ with meal_tab:
 
     st.divider()
     st.subheader("過去の記録")
-    meal_service = get_meal_service()
     meal_logs = sorted(all_meal_logs, key=lambda m: m.consumed_at, reverse=True)[:_MAX_HISTORY_ROWS]
 
     if not meal_logs:
         st.info("まだ記録がありません。")
     else:
-        st.dataframe(
+        meal_table_event = st.dataframe(
             pd.DataFrame(
                 {
                     "日時": [format_datetime_jst(m.consumed_at) for m in meal_logs],
@@ -251,81 +299,19 @@ with meal_tab:
                 }
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
+            on_select="rerun",
+            selection_mode="single-row",
+            key="meal_table",
         )
+        meal_selected_rows = meal_table_event.selection.rows
+        selected_meal = meal_logs[meal_selected_rows[0]] if meal_selected_rows else None
 
-        selected_meal = st.selectbox(
-            "編集する記録を選択",
-            options=meal_logs,
-            format_func=lambda m: (
-                f"{format_datetime_jst(m.consumed_at)} {m.meal_type.value} {m.calories:.0f}kcal"
-            ),
-            key="meal_select",
-        )
-
-        if selected_meal is not None:
-            with st.form(f"meal_edit_form_{selected_meal.meal_log_id}"):
-                edit_date = st.date_input("日付", value=jst_date_of(selected_meal.consumed_at))
-                edit_time = st.time_input("時刻", value=jst_time_of(selected_meal.consumed_at))
-                edit_meal_type = st.selectbox(
-                    "食事区分",
-                    options=list(MealType),
-                    index=list(MealType).index(selected_meal.meal_type),
-                    format_func=lambda m: m.value,
-                )
-                edit_calories = st.number_input(
-                    "カロリー(kcal)",
-                    min_value=0.0,
-                    step=10.0,
-                    value=selected_meal.calories,
-                )
-                edit_protein_g = st.number_input(
-                    "タンパク質(g)",
-                    min_value=0.0,
-                    step=1.0,
-                    value=selected_meal.protein_g,
-                )
-                edit_fat_g = st.number_input(
-                    "脂質(g)", min_value=0.0, step=1.0, value=selected_meal.fat_g
-                )
-                edit_carbohydrate_g = st.number_input(
-                    "炭水化物(g)",
-                    min_value=0.0,
-                    step=1.0,
-                    value=selected_meal.carbohydrate_g,
-                )
-                edit_memo = st.text_input("メモ(任意)", value=selected_meal.memo or "")
-                delete_confirmed = st.checkbox(
-                    "本当に削除しますか?(元に戻せません)",
-                    key=f"meal_delete_confirm_{selected_meal.meal_log_id}",
-                )
-                col1, col2 = st.columns(2)
-                update_clicked = col1.form_submit_button("更新する", type="primary")
-                delete_clicked = col2.form_submit_button("削除する")
-
-            if update_clicked:
-                updated = MealLog(
-                    meal_log_id=selected_meal.meal_log_id,
-                    user_id=user_id,
-                    consumed_at=combine_jst_to_utc(edit_date, edit_time),
-                    meal_type=edit_meal_type,
-                    calories=edit_calories,
-                    protein_g=edit_protein_g,
-                    fat_g=edit_fat_g,
-                    carbohydrate_g=edit_carbohydrate_g,
-                    memo=edit_memo or None,
-                )
-                meal_service.update_meal_log(updated)
-                st.success("更新しました。")
-                st.rerun()
-
-            if delete_clicked:
-                if not delete_confirmed:
-                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
-                else:
-                    meal_service.delete_meal_log(user_id, selected_meal.meal_log_id)
-                    st.success("削除しました。")
-                    st.rerun()
+        if (
+            st.button("編集する", key="meal_edit_open_button", disabled=selected_meal is None)
+            and selected_meal is not None
+        ):
+            _meal_edit_dialog(selected_meal)
 
 
 # ============================================================
@@ -364,7 +350,7 @@ def _render_workout_entries(entries: list[dict[str, object]], *, key_prefix: str
                 placeholder="例: レッグプレス",
                 key=f"{key_prefix}_wo_name_{eid}",
             )
-            if del_col.button("🗑削除", key=f"{key_prefix}_wo_del_{eid}", use_container_width=True):
+            if del_col.button("🗑削除", key=f"{key_prefix}_wo_del_{eid}", width="stretch"):
                 remove_entry_id = eid
 
             entry["category"] = st.radio(
@@ -416,28 +402,91 @@ def _render_workout_entries(entries: list[dict[str, object]], *, key_prefix: str
 
                 if remove_set_index is not None:
                     sets.pop(remove_set_index)
-                    st.rerun()
+                    st.rerun(scope="fragment")
 
                 if st.button(
                     "+ セット追加",
                     key=f"{key_prefix}_wo_addset_{eid}",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     sets.append({"reps": None, "weight_kg": None})
-                    st.rerun()
+                    st.rerun(scope="fragment")
 
     if remove_entry_id is not None:
         entries[:] = [e for e in entries if e["_id"] != remove_entry_id]
-        st.rerun()
+        st.rerun(scope="fragment")
 
 
-with workout_tab:
-    st.subheader("新規記録")
+@st.dialog("運動記録を編集", width="large")
+def _workout_edit_dialog(log: WorkoutLog) -> None:
+    workout_service = get_workout_service()
+    edit_workout_date = st.date_input(
+        "日付", value=jst_date_of(log.performed_at), key=f"workout_edit_date_{log.workout_log_id}"
+    )
+    edit_workout_time = st.time_input(
+        "時刻", value=jst_time_of(log.performed_at), key=f"workout_edit_time_{log.workout_log_id}"
+    )
+    edit_state_key = f"workout_edit_entries_{log.workout_log_id}"
+    if edit_state_key not in st.session_state:
+        edit_entries = rows_to_entries(workout_log_to_rows(log))
+        for e in edit_entries:
+            e["_id"] = uuid4().hex
+        st.session_state[edit_state_key] = edit_entries or [_new_workout_entry()]
 
+    _render_workout_entries(
+        st.session_state[edit_state_key], key_prefix=f"edit_{log.workout_log_id}"
+    )
+
+    if st.button(
+        "+ 種目を追加",
+        key=f"workout_edit_add_entry_{log.workout_log_id}",
+        width="stretch",
+    ):
+        st.session_state[edit_state_key].append(_new_workout_entry())
+        st.rerun(scope="fragment")
+
+    workout_delete_confirmed = st.checkbox(
+        "本当に削除しますか?(元に戻せません)",
+        key=f"workout_delete_confirm_{log.workout_log_id}",
+    )
+    col1, col2 = st.columns(2)
+    if col1.button("更新する", key=f"workout_update_{log.workout_log_id}", type="primary"):
+        updated_rows = entries_to_rows(st.session_state[edit_state_key])
+        updated_workout = build_workout_log(
+            updated_rows,
+            user_id=user_id,
+            performed_at=combine_jst_to_utc(edit_workout_date, edit_workout_time),
+            workout_log_id=log.workout_log_id,
+        )
+        if not updated_workout.exercises:
+            st.error("有効な種目が入力されていません。")
+        else:
+            workout_service.update_workout_log(updated_workout)
+            st.session_state.pop(edit_state_key, None)
+            st.success("更新しました。")
+            st.rerun()
+
+    if col2.button("削除する", key=f"workout_delete_{log.workout_log_id}"):
+        if not workout_delete_confirmed:
+            st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
+        else:
+            workout_service.delete_workout_log(user_id, log.workout_log_id)
+            st.session_state.pop(edit_state_key, None)
+            st.success("削除しました。")
+            st.rerun()
+
+
+@st.fragment
+def _render_workout_new_record_section(all_workout_logs: list[WorkoutLog]) -> None:
+    """新規記録フォームをフラグメント化し、種目名・回数などの入力による
+    再実行をこのフラグメント内に留める(食事・体重等はst.form内の入力
+    なのでウィジェット変更のたびに全体再実行されないが、運動は種目の
+    動的追加/削除に対応するためst.formが使えず、フラグメント化しないと
+    1文字入力するたびに全タブ分のDB再読み込みが走り体感が重くなる)。
+    """
     if "workout_entries" not in st.session_state:
         st.session_state["workout_entries"] = [_new_workout_entry()]
 
-    all_workout_logs = get_workout_service().list_workout_logs(user_id)
     exercise_templates = frequent_exercise_templates(all_workout_logs)
 
     workout_date = st.date_input("日付", value=date.today(), key="workout_date")
@@ -449,14 +498,14 @@ with workout_tab:
             "前回と同じメニューを入力",
             key="workout_repeat_button",
             disabled=not all_workout_logs,
-            use_container_width=True,
+            width="stretch",
         ):
             last_workout = max(all_workout_logs, key=lambda w: w.performed_at)
             new_entries = rows_to_entries(workout_log_to_rows(last_workout))
             for e in new_entries:
                 e["_id"] = uuid4().hex
             st.session_state["workout_entries"] = new_entries or [_new_workout_entry()]
-            st.rerun()
+            st.rerun(scope="fragment")
     with quick_workout_col2:
         if exercise_templates:
             selected_exercise_templates = st.multiselect(
@@ -477,20 +526,20 @@ with workout_tab:
                     new_entry["_id"] = uuid4().hex
                     current_entries.append(new_entry)
                 st.session_state["workout_entries"] = current_entries or [_new_workout_entry()]
-                st.rerun()
+                st.rerun(scope="fragment")
         else:
             st.caption("よく使う種目はまだありません。")
 
     _render_workout_entries(st.session_state["workout_entries"], key_prefix="new")
 
-    if st.button("+ 種目を追加", key="workout_add_entry", use_container_width=True):
+    if st.button("+ 種目を追加", key="workout_add_entry", width="stretch"):
         st.session_state["workout_entries"].append(_new_workout_entry())
-        st.rerun()
+        st.rerun(scope="fragment")
 
     if st.button(
         "運動記録を保存する",
         type="primary",
-        use_container_width=True,
+        width="stretch",
     ):
         rows = entries_to_rows(st.session_state["workout_entries"])
         workout_log = build_workout_log(
@@ -506,9 +555,15 @@ with workout_tab:
             st.success(f"運動記録({len(workout_log.exercises)}種目)を保存しました。")
             st.rerun()
 
+
+with workout_tab:
+    st.subheader("新規記録")
+
+    all_workout_logs = get_workout_service().list_workout_logs(user_id)
+    _render_workout_new_record_section(all_workout_logs)
+
     st.divider()
     st.subheader("過去の記録")
-    workout_service = get_workout_service()
     workout_logs = sorted(
         all_workout_logs,
         key=lambda w: w.performed_at,
@@ -518,93 +573,74 @@ with workout_tab:
     if not workout_logs:
         st.info("まだ記録がありません。")
     else:
-        for w in workout_logs:
-            with st.expander(f"{format_datetime_jst(w.performed_at)}（{len(w.exercises)}種目）"):
-                for exercise in w.exercises:
-                    st.text(format_exercise_line(exercise))
-
-        selected_workout_index = st.selectbox(
-            "編集する記録を選択",
-            options=range(len(workout_logs)),
-            format_func=lambda i: (
-                f"{format_datetime_jst(workout_logs[i].performed_at)} "
-                f"({len(workout_logs[i].exercises)}種目)"
+        workout_table_event = st.dataframe(
+            pd.DataFrame(
+                {
+                    "日時": [format_datetime_jst(w.performed_at) for w in workout_logs],
+                    "種目数": [len(w.exercises) for w in workout_logs],
+                    "種目": [
+                        " / ".join(format_exercise_line(e) for e in w.exercises)
+                        for w in workout_logs
+                    ],
+                }
             ),
-            key="workout_select",
+            hide_index=True,
+            width="stretch",
+            on_select="rerun",
+            selection_mode="single-row",
+            key="workout_table",
         )
-        selected_workout = (
-            workout_logs[selected_workout_index] if selected_workout_index is not None else None
-        )
+        workout_selected_rows = workout_table_event.selection.rows
+        selected_workout = workout_logs[workout_selected_rows[0]] if workout_selected_rows else None
 
-        if selected_workout is not None:
-            edit_workout_date = st.date_input(
-                "日付",
-                value=jst_date_of(selected_workout.performed_at),
-                key=f"workout_edit_date_{selected_workout.workout_log_id}",
-            )
-            edit_workout_time = st.time_input(
-                "時刻",
-                value=jst_time_of(selected_workout.performed_at),
-                key=f"workout_edit_time_{selected_workout.workout_log_id}",
-            )
-            edit_state_key = f"workout_edit_entries_{selected_workout.workout_log_id}"
-            if edit_state_key not in st.session_state:
-                edit_entries = rows_to_entries(workout_log_to_rows(selected_workout))
-                for e in edit_entries:
-                    e["_id"] = uuid4().hex
-                st.session_state[edit_state_key] = edit_entries or [_new_workout_entry()]
-
-            _render_workout_entries(
-                st.session_state[edit_state_key],
-                key_prefix=f"edit_{selected_workout.workout_log_id}",
-            )
-
-            if st.button(
-                "+ 種目を追加",
-                key=f"workout_edit_add_entry_{selected_workout.workout_log_id}",
-                use_container_width=True,
-            ):
-                st.session_state[edit_state_key].append(_new_workout_entry())
-                st.rerun()
-
-            workout_delete_confirmed = st.checkbox(
-                "本当に削除しますか?(元に戻せません)",
-                key=f"workout_delete_confirm_{selected_workout.workout_log_id}",
-            )
-            col1, col2 = st.columns(2)
-            if col1.button(
-                "更新する",
-                key=f"workout_update_{selected_workout.workout_log_id}",
-                type="primary",
-            ):
-                updated_rows = entries_to_rows(st.session_state[edit_state_key])
-                updated_workout = build_workout_log(
-                    updated_rows,
-                    user_id=user_id,
-                    performed_at=combine_jst_to_utc(edit_workout_date, edit_workout_time),
-                    workout_log_id=selected_workout.workout_log_id,
-                )
-                if not updated_workout.exercises:
-                    st.error("有効な種目が入力されていません。")
-                else:
-                    workout_service.update_workout_log(updated_workout)
-                    st.session_state.pop(edit_state_key, None)
-                    st.success("更新しました。")
-                    st.rerun()
-
-            if col2.button("削除する", key=f"workout_delete_{selected_workout.workout_log_id}"):
-                if not workout_delete_confirmed:
-                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
-                else:
-                    workout_service.delete_workout_log(user_id, selected_workout.workout_log_id)
-                    st.session_state.pop(edit_state_key, None)
-                    st.success("削除しました。")
-                    st.rerun()
+        if (
+            st.button("編集する", key="workout_edit_open_button", disabled=selected_workout is None)
+            and selected_workout is not None
+        ):
+            _workout_edit_dialog(selected_workout)
 
 
 # ============================================================
 # 睡眠
 # ============================================================
+@st.dialog("睡眠記録を編集")
+def _sleep_edit_dialog(log: SleepLog) -> None:
+    sleep_service = get_sleep_service()
+    edit_bedtime_date = st.date_input("就寝日", value=jst_date_of(log.bedtime))
+    edit_bedtime_time = st.time_input("就寝時刻", value=jst_time_of(log.bedtime))
+    edit_wake_date = st.date_input("起床日", value=jst_date_of(log.wake_time))
+    edit_wake_time = st.time_input("起床時刻", value=jst_time_of(log.wake_time))
+    delete_confirmed = st.checkbox(
+        "本当に削除しますか?(元に戻せません)", key=f"sleep_delete_confirm_{log.sleep_log_id}"
+    )
+    col1, col2 = st.columns(2)
+    if col1.button(
+        "更新する", type="primary", key=f"sleep_update_{log.sleep_log_id}", width="stretch"
+    ):
+        new_bedtime = combine_jst_to_utc(edit_bedtime_date, edit_bedtime_time)
+        new_wake_time = combine_jst_to_utc(edit_wake_date, edit_wake_time)
+        if new_wake_time <= new_bedtime:
+            st.error("起床時刻は就寝時刻より後にしてください。")
+        else:
+            updated_sleep = SleepLog(
+                sleep_log_id=log.sleep_log_id,
+                user_id=user_id,
+                bedtime=new_bedtime,
+                wake_time=new_wake_time,
+                quality=log.quality,
+            )
+            sleep_service.update_sleep_log(updated_sleep)
+            st.success("更新しました。")
+            st.rerun()
+    if col2.button("削除する", key=f"sleep_delete_{log.sleep_log_id}", width="stretch"):
+        if not delete_confirmed:
+            st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
+        else:
+            sleep_service.delete_sleep_log(user_id, log.sleep_log_id)
+            st.success("削除しました。")
+            st.rerun()
+
+
 with sleep_tab:
     st.subheader("新規記録")
     with st.form("sleep_form"):
@@ -640,7 +676,7 @@ with sleep_tab:
     if not sleep_logs:
         st.info("まだ記録がありません。")
     else:
-        st.dataframe(
+        sleep_table_event = st.dataframe(
             pd.DataFrame(
                 {
                     "就寝": [format_datetime_jst(s.bedtime) for s in sleep_logs],
@@ -650,67 +686,58 @@ with sleep_tab:
                 }
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
+            on_select="rerun",
+            selection_mode="single-row",
+            key="sleep_table",
         )
+        sleep_selected_rows = sleep_table_event.selection.rows
+        selected_sleep = sleep_logs[sleep_selected_rows[0]] if sleep_selected_rows else None
 
-        selected_sleep = st.selectbox(
-            "編集する記録を選択",
-            options=sleep_logs,
-            format_func=lambda s: f"{format_datetime_jst(s.bedtime)} 就寝 ({s.duration_minutes}分)",
-            key="sleep_select",
-        )
-
-        if selected_sleep is not None:
-            with st.form(f"sleep_edit_form_{selected_sleep.sleep_log_id}"):
-                edit_bedtime_date = st.date_input(
-                    "就寝日", value=jst_date_of(selected_sleep.bedtime)
-                )
-                edit_bedtime_time = st.time_input(
-                    "就寝時刻", value=jst_time_of(selected_sleep.bedtime)
-                )
-                edit_wake_date = st.date_input(
-                    "起床日", value=jst_date_of(selected_sleep.wake_time)
-                )
-                edit_wake_time = st.time_input(
-                    "起床時刻", value=jst_time_of(selected_sleep.wake_time)
-                )
-                sleep_delete_confirmed = st.checkbox(
-                    "本当に削除しますか?(元に戻せません)",
-                    key=f"sleep_delete_confirm_{selected_sleep.sleep_log_id}",
-                )
-                col1, col2 = st.columns(2)
-                update_sleep_clicked = col1.form_submit_button("更新する", type="primary")
-                delete_sleep_clicked = col2.form_submit_button("削除する")
-
-            if update_sleep_clicked:
-                new_bedtime = combine_jst_to_utc(edit_bedtime_date, edit_bedtime_time)
-                new_wake_time = combine_jst_to_utc(edit_wake_date, edit_wake_time)
-                if new_wake_time <= new_bedtime:
-                    st.error("起床時刻は就寝時刻より後にしてください。")
-                else:
-                    updated_sleep = SleepLog(
-                        sleep_log_id=selected_sleep.sleep_log_id,
-                        user_id=user_id,
-                        bedtime=new_bedtime,
-                        wake_time=new_wake_time,
-                        quality=selected_sleep.quality,
-                    )
-                    sleep_service.update_sleep_log(updated_sleep)
-                    st.success("更新しました。")
-                    st.rerun()
-
-            if delete_sleep_clicked:
-                if not sleep_delete_confirmed:
-                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
-                else:
-                    sleep_service.delete_sleep_log(user_id, selected_sleep.sleep_log_id)
-                    st.success("削除しました。")
-                    st.rerun()
+        if (
+            st.button("編集する", key="sleep_edit_open_button", disabled=selected_sleep is None)
+            and selected_sleep is not None
+        ):
+            _sleep_edit_dialog(selected_sleep)
 
 
 # ============================================================
 # 体重
 # ============================================================
+@st.dialog("体重記録を編集")
+def _weight_edit_dialog(log: WeightLog) -> None:
+    weight_service = get_weight_service()
+    edit_weight_date = st.date_input("日付", value=jst_date_of(log.recorded_at))
+    edit_weight_time = st.time_input("時刻", value=jst_time_of(log.recorded_at))
+    edit_weight_kg = st.number_input("体重(kg)", min_value=0.0, step=0.1, value=log.weight_kg)
+    delete_confirmed = st.checkbox(
+        "本当に削除しますか?(元に戻せません)", key=f"weight_delete_confirm_{log.weight_log_id}"
+    )
+    col1, col2 = st.columns(2)
+    if col1.button(
+        "更新する",
+        type="primary",
+        key=f"weight_update_{log.weight_log_id}",
+        width="stretch",
+    ):
+        updated_weight = WeightLog(
+            weight_log_id=log.weight_log_id,
+            user_id=user_id,
+            recorded_at=combine_jst_to_utc(edit_weight_date, edit_weight_time),
+            weight_kg=edit_weight_kg,
+        )
+        weight_service.update_weight_log(updated_weight)
+        st.success("更新しました。")
+        st.rerun()
+    if col2.button("削除する", key=f"weight_delete_{log.weight_log_id}", width="stretch"):
+        if not delete_confirmed:
+            st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
+        else:
+            weight_service.delete_weight_log(user_id, log.weight_log_id)
+            st.success("削除しました。")
+            st.rerun()
+
+
 with weight_tab:
     st.subheader("新規記録")
     with st.form("weight_form"):
@@ -742,7 +769,7 @@ with weight_tab:
     if not weight_logs:
         st.info("まだ記録がありません。")
     else:
-        st.dataframe(
+        weight_table_event = st.dataframe(
             pd.DataFrame(
                 {
                     "日時": [format_datetime_jst(w.recorded_at) for w in weight_logs],
@@ -750,58 +777,65 @@ with weight_tab:
                 }
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
+            on_select="rerun",
+            selection_mode="single-row",
+            key="weight_table",
         )
+        weight_selected_rows = weight_table_event.selection.rows
+        selected_weight = weight_logs[weight_selected_rows[0]] if weight_selected_rows else None
 
-        selected_weight = st.selectbox(
-            "編集する記録を選択",
-            options=weight_logs,
-            format_func=lambda w: f"{format_datetime_jst(w.recorded_at)} {w.weight_kg}kg",
-            key="weight_select",
-        )
-
-        if selected_weight is not None:
-            with st.form(f"weight_edit_form_{selected_weight.weight_log_id}"):
-                edit_weight_date = st.date_input(
-                    "日付", value=jst_date_of(selected_weight.recorded_at)
-                )
-                edit_weight_time = st.time_input(
-                    "時刻", value=jst_time_of(selected_weight.recorded_at)
-                )
-                edit_weight_kg = st.number_input(
-                    "体重(kg)", min_value=0.0, step=0.1, value=selected_weight.weight_kg
-                )
-                weight_delete_confirmed = st.checkbox(
-                    "本当に削除しますか?(元に戻せません)",
-                    key=f"weight_delete_confirm_{selected_weight.weight_log_id}",
-                )
-                col1, col2 = st.columns(2)
-                update_weight_clicked = col1.form_submit_button("更新する", type="primary")
-                delete_weight_clicked = col2.form_submit_button("削除する")
-
-            if update_weight_clicked:
-                updated_weight = WeightLog(
-                    weight_log_id=selected_weight.weight_log_id,
-                    user_id=user_id,
-                    recorded_at=combine_jst_to_utc(edit_weight_date, edit_weight_time),
-                    weight_kg=edit_weight_kg,
-                )
-                weight_service.update_weight_log(updated_weight)
-                st.success("更新しました。")
-                st.rerun()
-
-            if delete_weight_clicked:
-                if not weight_delete_confirmed:
-                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
-                else:
-                    weight_service.delete_weight_log(user_id, selected_weight.weight_log_id)
-                    st.success("削除しました。")
-                    st.rerun()
+        if (
+            st.button("編集する", key="weight_edit_open_button", disabled=selected_weight is None)
+            and selected_weight is not None
+        ):
+            _weight_edit_dialog(selected_weight)
 
 
 # ============================================================
 # 体調
 # ============================================================
+@st.dialog("体調記録を編集")
+def _health_edit_dialog(log: HealthLog) -> None:
+    health_service = get_health_service()
+    edit_health_date = st.date_input("日付", value=jst_date_of(log.recorded_at))
+    edit_health_time = st.time_input("時刻", value=jst_time_of(log.recorded_at))
+    edit_condition_score = st.slider(
+        "体調スコア(1=不調 〜 5=良好)", min_value=1, max_value=5, value=log.condition_score or 3
+    )
+    edit_symptoms_text = st.text_input("症状(カンマ区切り、任意)", value=", ".join(log.symptoms))
+    edit_health_memo = st.text_input("メモ(任意)", value=log.memo or "")
+    delete_confirmed = st.checkbox(
+        "本当に削除しますか?(元に戻せません)", key=f"health_delete_confirm_{log.health_log_id}"
+    )
+    col1, col2 = st.columns(2)
+    if col1.button(
+        "更新する",
+        type="primary",
+        key=f"health_update_{log.health_log_id}",
+        width="stretch",
+    ):
+        edit_symptoms = [s.strip() for s in edit_symptoms_text.split(",") if s.strip()]
+        updated_health = HealthLog(
+            health_log_id=log.health_log_id,
+            user_id=user_id,
+            recorded_at=combine_jst_to_utc(edit_health_date, edit_health_time),
+            condition_score=edit_condition_score,
+            symptoms=edit_symptoms,
+            memo=edit_health_memo or None,
+        )
+        health_service.update_health_log(updated_health)
+        st.success("更新しました。")
+        st.rerun()
+    if col2.button("削除する", key=f"health_delete_{log.health_log_id}", width="stretch"):
+        if not delete_confirmed:
+            st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
+        else:
+            health_service.delete_health_log(user_id, log.health_log_id)
+            st.success("削除しました。")
+            st.rerun()
+
+
 with health_tab:
     st.subheader("新規記録")
     with st.form("health_form"):
@@ -840,7 +874,7 @@ with health_tab:
     if not health_logs:
         st.info("まだ記録がありません。")
     else:
-        st.dataframe(
+        health_table_event = st.dataframe(
             pd.DataFrame(
                 {
                     "日時": [format_datetime_jst(h.recorded_at) for h in health_logs],
@@ -850,70 +884,19 @@ with health_tab:
                 }
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
+            on_select="rerun",
+            selection_mode="single-row",
+            key="health_table",
         )
+        health_selected_rows = health_table_event.selection.rows
+        selected_health = health_logs[health_selected_rows[0]] if health_selected_rows else None
 
-        selected_health_index = st.selectbox(
-            "編集する記録を選択",
-            options=range(len(health_logs)),
-            format_func=lambda i: (
-                f"{format_datetime_jst(health_logs[i].recorded_at)} "
-                f"スコア{health_logs[i].condition_score}"
-            ),
-            key="health_select",
-        )
-        selected_health = (
-            health_logs[selected_health_index] if selected_health_index is not None else None
-        )
-
-        if selected_health is not None:
-            with st.form(f"health_edit_form_{selected_health.health_log_id}"):
-                edit_health_date = st.date_input(
-                    "日付", value=jst_date_of(selected_health.recorded_at)
-                )
-                edit_health_time = st.time_input(
-                    "時刻", value=jst_time_of(selected_health.recorded_at)
-                )
-                edit_condition_score = st.slider(
-                    "体調スコア(1=不調 〜 5=良好)",
-                    min_value=1,
-                    max_value=5,
-                    value=selected_health.condition_score or 3,
-                )
-                edit_symptoms_text = st.text_input(
-                    "症状(カンマ区切り、任意)",
-                    value=", ".join(selected_health.symptoms),
-                )
-                edit_health_memo = st.text_input("メモ(任意)", value=selected_health.memo or "")
-                health_delete_confirmed = st.checkbox(
-                    "本当に削除しますか?(元に戻せません)",
-                    key=f"health_delete_confirm_{selected_health.health_log_id}",
-                )
-                col1, col2 = st.columns(2)
-                update_health_clicked = col1.form_submit_button("更新する", type="primary")
-                delete_health_clicked = col2.form_submit_button("削除する")
-
-            if update_health_clicked:
-                edit_symptoms = [s.strip() for s in edit_symptoms_text.split(",") if s.strip()]
-                updated_health = HealthLog(
-                    health_log_id=selected_health.health_log_id,
-                    user_id=user_id,
-                    recorded_at=combine_jst_to_utc(edit_health_date, edit_health_time),
-                    condition_score=edit_condition_score,
-                    symptoms=edit_symptoms,
-                    memo=edit_health_memo or None,
-                )
-                health_service.update_health_log(updated_health)
-                st.success("更新しました。")
-                st.rerun()
-
-            if delete_health_clicked:
-                if not health_delete_confirmed:
-                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
-                else:
-                    health_service.delete_health_log(user_id, selected_health.health_log_id)
-                    st.success("削除しました。")
-                    st.rerun()
+        if (
+            st.button("編集する", key="health_edit_open_button", disabled=selected_health is None)
+            and selected_health is not None
+        ):
+            _health_edit_dialog(selected_health)
 
 
 # ============================================================
@@ -1040,17 +1023,85 @@ def _render_learning_category_fields(
     }
 
 
-with learning_tab:
-    st.subheader("新規記録")
+@st.dialog("学習記録を編集", width="large")
+def _learning_edit_dialog(log: LearningLog) -> None:
+    learning_service = get_learning_service()
+    edit_learning_date = st.date_input(
+        "日付", value=jst_date_of(log.started_at), key=f"learning_edit_date_{log.learning_log_id}"
+    )
+    edit_learning_time = st.time_input(
+        "時刻", value=jst_time_of(log.started_at), key=f"learning_edit_time_{log.learning_log_id}"
+    )
+    edit_learning_location = st.selectbox(
+        "場所",
+        options=[None, *LearningLocation],
+        index=[None, *LearningLocation].index(log.location),
+        format_func=lambda location: _LEARNING_LOCATION_LABELS[location],
+        key=f"learning_edit_location_{log.learning_log_id}",
+    )
+    edit_learning_category = st.selectbox(
+        "カテゴリ",
+        options=list(LearningCategory),
+        index=list(LearningCategory).index(log.category),
+        format_func=lambda category: _LEARNING_CATEGORY_LABELS[category],
+        key=f"learning_edit_category_{log.learning_log_id}",
+    )
 
-    all_learning_logs = get_learning_service().list_learning_logs(user_id)
+    edit_learning_fields = _render_learning_category_fields(
+        edit_learning_category,
+        key=(lambda base, _id=log.learning_log_id: f"{base}_{_id}"),
+        prefill=log,
+    )
+
+    delete_confirmed = st.checkbox(
+        "本当に削除しますか?(元に戻せません)",
+        key=f"learning_delete_confirm_{log.learning_log_id}",
+    )
+    col1, col2 = st.columns(2)
+    if col1.button(
+        "更新する",
+        key=f"learning_update_{log.learning_log_id}",
+        type="primary",
+        width="stretch",
+    ):
+        updated_learning = LearningLog(
+            learning_log_id=log.learning_log_id,
+            user_id=user_id,
+            started_at=combine_jst_to_utc(edit_learning_date, edit_learning_time),
+            category=edit_learning_category,
+            location=edit_learning_location,
+            content=edit_learning_fields["content"],
+            breakdown=edit_learning_fields["breakdown"],
+            duration_minutes=edit_learning_fields["duration_minutes"],
+            keywords=edit_learning_fields["keywords"],
+            notes=edit_learning_fields["notes"],
+        )
+        learning_service.update_learning_log(updated_learning)
+        st.success("更新しました。")
+        st.rerun()
+    if col2.button("削除する", key=f"learning_delete_{log.learning_log_id}", width="stretch"):
+        if not delete_confirmed:
+            st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
+        else:
+            learning_service.delete_learning_log(user_id, log.learning_log_id)
+            st.success("削除しました。")
+            st.rerun()
+
+
+@st.fragment
+def _render_learning_new_record_section(all_learning_logs: list[LearningLog]) -> None:
+    """新規記録フォームをフラグメント化し、内容・キーワード等の入力による
+    再実行をこのフラグメント内に留める(運動タブと同じ理由で動的な
+    キーワード追加等に対応するためst.formが使えず、フラグメント化しないと
+    1文字入力するたびに全タブ分のDB再読み込みが走り体感が重くなる)。
+    """
     last_learning_log = most_recent_learning_log(all_learning_logs)
 
     if st.button(
         "前回と同じ内容を入力",
         key="learning_repeat_button",
         disabled=last_learning_log is None,
-        use_container_width=True,
+        width="stretch",
     ):
         assert last_learning_log is not None
         st.session_state["learning_category_input"] = last_learning_log.category
@@ -1067,7 +1118,7 @@ with learning_tab:
         )
         st.session_state["learning_keywords_text"] = join_slash_list(last_learning_log.keywords)
         st.session_state["learning_notes_text"] = join_lines_list(last_learning_log.notes)
-        st.rerun()
+        st.rerun(scope="fragment")
 
     learning_date = st.date_input("日付", value=date.today(), key="learning_date")
     learning_time = st.time_input("時刻", value=datetime.now().time(), key="learning_time")
@@ -1106,7 +1157,7 @@ with learning_tab:
                     if keyword not in current_keywords:
                         current_keywords.append(keyword)
                 st.session_state["learning_keywords_text"] = join_slash_list(current_keywords)
-                st.rerun()
+                st.rerun(scope="fragment")
         else:
             st.caption("よく使うキーワードはまだありません。")
 
@@ -1118,7 +1169,7 @@ with learning_tab:
         "記録する",
         key="learning_submit_button",
         type="primary",
-        use_container_width=True,
+        width="stretch",
     ):
         learning_log = LearningLog(
             learning_log_id=uuid4(),
@@ -1148,6 +1199,13 @@ with learning_tab:
         st.success("学習記録を保存しました。")
         st.rerun()
 
+
+with learning_tab:
+    st.subheader("新規記録")
+
+    all_learning_logs = get_learning_service().list_learning_logs(user_id)
+    _render_learning_new_record_section(all_learning_logs)
+
     st.divider()
     st.subheader("過去の記録")
     learning_service = get_learning_service()
@@ -1158,7 +1216,7 @@ with learning_tab:
     if not learning_logs:
         st.info("まだ記録がありません。")
     else:
-        st.dataframe(
+        learning_table_event = st.dataframe(
             pd.DataFrame(
                 {
                     "日時": [
@@ -1181,87 +1239,20 @@ with learning_tab:
                 }
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
+            on_select="rerun",
+            selection_mode="single-row",
+            key="learning_table",
         )
-
-        selected_learning_index = st.selectbox(
-            "編集する記録を選択",
-            options=range(len(learning_logs)),
-            format_func=lambda i: (
-                f"{format_datetime_jst(learning_logs[i].started_at)} "
-                f"{_LEARNING_CATEGORY_LABELS[learning_logs[i].category]}"
-            ),
-            key="learning_select",
-        )
+        learning_selected_rows = learning_table_event.selection.rows
         selected_learning = (
-            learning_logs[selected_learning_index] if selected_learning_index is not None else None
+            learning_logs[learning_selected_rows[0]] if learning_selected_rows else None
         )
 
-        if selected_learning is not None:
-            edit_learning_date = st.date_input(
-                "日付",
-                value=jst_date_of(selected_learning.started_at),
-                key=f"learning_edit_date_{selected_learning.learning_log_id}",
+        if (
+            st.button(
+                "編集する", key="learning_edit_open_button", disabled=selected_learning is None
             )
-            edit_learning_time = st.time_input(
-                "時刻",
-                value=jst_time_of(selected_learning.started_at),
-                key=f"learning_edit_time_{selected_learning.learning_log_id}",
-            )
-            edit_learning_location = st.selectbox(
-                "場所",
-                options=[None, *LearningLocation],
-                index=[None, *LearningLocation].index(selected_learning.location),
-                format_func=lambda location: _LEARNING_LOCATION_LABELS[location],
-                key=f"learning_edit_location_{selected_learning.learning_log_id}",
-            )
-            edit_learning_category = st.selectbox(
-                "カテゴリ",
-                options=list(LearningCategory),
-                index=list(LearningCategory).index(selected_learning.category),
-                format_func=lambda category: _LEARNING_CATEGORY_LABELS[category],
-                key=f"learning_edit_category_{selected_learning.learning_log_id}",
-            )
-
-            edit_learning_fields = _render_learning_category_fields(
-                edit_learning_category,
-                key=(lambda base, _id=selected_learning.learning_log_id: f"{base}_{_id}"),
-                prefill=selected_learning,
-            )
-
-            learning_delete_confirmed = st.checkbox(
-                "本当に削除しますか?(元に戻せません)",
-                key=f"learning_delete_confirm_{selected_learning.learning_log_id}",
-            )
-            col1, col2 = st.columns(2)
-            if col1.button(
-                "更新する",
-                key=f"learning_update_{selected_learning.learning_log_id}",
-                type="primary",
-            ):
-                updated_learning = LearningLog(
-                    learning_log_id=selected_learning.learning_log_id,
-                    user_id=user_id,
-                    started_at=combine_jst_to_utc(edit_learning_date, edit_learning_time),
-                    category=edit_learning_category,
-                    location=edit_learning_location,
-                    content=edit_learning_fields["content"],
-                    breakdown=edit_learning_fields["breakdown"],
-                    duration_minutes=edit_learning_fields["duration_minutes"],
-                    keywords=edit_learning_fields["keywords"],
-                    notes=edit_learning_fields["notes"],
-                )
-                learning_service.update_learning_log(updated_learning)
-                st.success("更新しました。")
-                st.rerun()
-
-            if col2.button(
-                "削除する",
-                key=f"learning_delete_{selected_learning.learning_log_id}",
-            ):
-                if not learning_delete_confirmed:
-                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
-                else:
-                    learning_service.delete_learning_log(user_id, selected_learning.learning_log_id)
-                    st.success("削除しました。")
-                    st.rerun()
+            and selected_learning is not None
+        ):
+            _learning_edit_dialog(selected_learning)

@@ -98,7 +98,12 @@ def _render_import_tab(
         key=f"{key_prefix}_template_download",
     )
 
-    uploaded = st.file_uploader("CSVファイルを選択", type="csv", key=f"{key_prefix}_uploader")
+    uploader_version_key = f"{key_prefix}_uploader_version"
+    uploader_version = st.session_state.get(uploader_version_key, 0)
+
+    uploaded = st.file_uploader(
+        "CSVファイルを選択", type="csv", key=f"{key_prefix}_uploader_{uploader_version}"
+    )
     if uploaded is None:
         return
 
@@ -125,7 +130,7 @@ def _render_import_tab(
                 }
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
 
     if result.logs:
@@ -134,7 +139,7 @@ def _render_import_tab(
                 {name: [fn(log) for log in result.logs] for name, fn in preview_columns.items()}
             ),
             hide_index=True,
-            use_container_width=True,
+            width="stretch",
         )
 
         if st.button(
@@ -144,7 +149,9 @@ def _render_import_tab(
         ):
             for log in result.logs:
                 record_fn(log)
+            st.session_state[uploader_version_key] = uploader_version + 1
             st.success(f"{len(result.logs)}件のログをインポートしました。")
+            st.rerun()
 
 
 (
