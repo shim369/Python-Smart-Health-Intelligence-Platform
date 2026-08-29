@@ -35,6 +35,7 @@ from components.csv_import import (  # noqa: E402
     parse_workout_rows,
 )
 from components.formatting import format_datetime_jst  # noqa: E402
+from components.workout_form import format_exercise_line  # noqa: E402
 from services import (  # noqa: E402
     get_health_service,
     get_learning_service,
@@ -218,7 +219,7 @@ with workout_tab:
         preview_columns={
             "日時": lambda w: format_datetime_jst(w.performed_at),
             "種目数": lambda w: len(w.exercises),
-            "種目": lambda w: "、".join(e.exercise_name for e in w.exercises),
+            "種目": lambda w: " / ".join(format_exercise_line(e) for e in w.exercises),
         },
     )
 

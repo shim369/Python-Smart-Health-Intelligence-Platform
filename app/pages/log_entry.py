@@ -50,6 +50,7 @@ from components.quick_entry import (  # noqa: E402
 from components.workout_form import (  # noqa: E402
     build_workout_log,
     entries_to_rows,
+    format_exercise_line,
     rows_to_entries,
     workout_log_to_rows,
 )
@@ -517,17 +518,10 @@ with workout_tab:
     if not workout_logs:
         st.info("まだ記録がありません。")
     else:
-        st.dataframe(
-            pd.DataFrame(
-                {
-                    "日時": [format_datetime_jst(w.performed_at) for w in workout_logs],
-                    "種目数": [len(w.exercises) for w in workout_logs],
-                    "種目": ["、".join(e.exercise_name for e in w.exercises) for w in workout_logs],
-                }
-            ),
-            hide_index=True,
-            use_container_width=True,
-        )
+        for w in workout_logs:
+            with st.expander(f"{format_datetime_jst(w.performed_at)}（{len(w.exercises)}種目）"):
+                for exercise in w.exercises:
+                    st.text(format_exercise_line(exercise))
 
         selected_workout_index = st.selectbox(
             "編集する記録を選択",

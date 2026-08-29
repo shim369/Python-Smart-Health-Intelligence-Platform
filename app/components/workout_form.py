@@ -227,3 +227,43 @@ def workout_log_to_rows(workout_log: WorkoutLog) -> list[dict[str, object]]:
                     }
                 )
     return rows
+
+
+def _format_weight(weight_kg: float) -> str:
+    """75.0のような余分な小数を削り、72.5のような値はそのまま残す。"""
+    return f"{weight_kg:g}"
+
+
+def format_exercise_line(exercise: WorkoutExercise) -> str:
+    """WorkoutExerciseを「種目名：値」の1行テキストへ整形する。
+
+    過去の記録一覧で、種目名だけでなく回数・重量・セット数を確認できる
+    ようにするための表示用関数(手記(kiroku等)でよく使われる
+    「スクワット：30回 × 2」のような記法に合わせる)。
+
+    有酸素運動は「名前：N分」。筋力トレーニングは、連続する同じ
+    (reps, weight_kg)のセットをまとめて「N回(Wkg) × M」とし、セットの
+    途中でreps・weightが変わる場合はカンマ区切りで複数グループを並べる
+    (例: "10回(30kg) × 1, 10回(20kg) × 1")。
+    """
+    if exercise.category == ExerciseCategory.CARDIO:
+        duration = exercise.duration_minutes
+        value = f"{duration}分" if duration is not None else "-"
+        return f"{exercise.exercise_name}：{value}"
+
+    if not exercise.sets:
+        return f"{exercise.exercise_name}：-"
+
+    groups: list[tuple[int, float | None, int]] = []
+    for workout_set in exercise.sets:
+        if groups and groups[-1][0] == workout_set.reps and groups[-1][1] == workout_set.weight_kg:
+            last_reps, last_weight, last_count = groups[-1]
+            groups[-1] = (last_reps, last_weight, last_count + 1)
+        else:
+            groups.append((workout_set.reps, workout_set.weight_kg, 1))
+
+    parts = []
+    for reps, weight, count in groups:
+        weight_text = f"({_format_weight(weight)}kg)" if weight is not None else ""
+        parts.append(f"{reps}回{weight_text} × {count}")
+    return f"{exercise.exercise_name}：{', '.join(parts)}"
