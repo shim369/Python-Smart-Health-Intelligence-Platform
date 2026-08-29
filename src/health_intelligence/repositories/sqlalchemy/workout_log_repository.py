@@ -10,7 +10,7 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from health_intelligence.database.schema import (
     WorkoutExerciseORM,
@@ -20,6 +20,12 @@ from health_intelligence.database.schema import (
 from health_intelligence.domain.enums import ExerciseCategory
 from health_intelligence.domain.models import WorkoutExercise, WorkoutLog, WorkoutSet
 from health_intelligence.repositories.errors import RecordNotFoundError
+
+_EXERCISES_WITH_SETS = selectinload(WorkoutLogORM.exercises).selectinload(WorkoutExerciseORM.sets)
+"""exercises・setsを個別クエリの遅延ロードに任せず一括で事前読み込みする。
+デフォルト(lazy="select")のままだと、一覧取得時に記録件数×種目数分の
+N+1クエリが発生し、CSV一括インポート後などレコード数が多い場合に
+著しく遅くなる。"""
 
 
 def _to_domain(orm: WorkoutLogORM) -> WorkoutLog:
@@ -89,14 +95,20 @@ class SqlAlchemyWorkoutLogRepository:
         self._session = session
 
     def get_by_id(self, user_id: UUID, workout_log_id: UUID) -> WorkoutLog | None:
-        stmt = select(WorkoutLogORM).where(
-            WorkoutLogORM.id == workout_log_id, WorkoutLogORM.user_id == user_id
+        stmt = (
+            select(WorkoutLogORM)
+            .where(WorkoutLogORM.id == workout_log_id, WorkoutLogORM.user_id == user_id)
+            .options(_EXERCISES_WITH_SETS)
         )
         orm = self._session.scalars(stmt).first()
         return _to_domain(orm) if orm is not None else None
 
     def list_by_user(self, user_id: UUID) -> list[WorkoutLog]:
-        stmt = select(WorkoutLogORM).where(WorkoutLogORM.user_id == user_id)
+        stmt = (
+            select(WorkoutLogORM)
+            .where(WorkoutLogORM.user_id == user_id)
+            .options(_EXERCISES_WITH_SETS)
+        )
         return [_to_domain(orm) for orm in self._session.scalars(stmt)]
 
     def add(self, workout_log: WorkoutLog) -> None:
