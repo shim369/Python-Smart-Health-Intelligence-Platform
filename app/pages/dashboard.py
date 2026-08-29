@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from datetime import UTC, datetime, timedelta  # noqa: E402
 
+import altair as alt  # noqa: E402
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 from auth_guard import require_login  # noqa: E402
@@ -72,9 +73,27 @@ recent_logs = [w for w in weight_logs if w.recorded_at >= datetime.now(UTC) - ti
 if recent_logs:
     recent_logs.sort(key=lambda w: w.recorded_at)
     df = pd.DataFrame(
-        {"体重(kg)": [w.weight_kg for w in recent_logs]},
-        index=[w.recorded_at.date() for w in recent_logs],
+        {
+            "日付": [w.recorded_at.date() for w in recent_logs],
+            "体重(kg)": [w.weight_kg for w in recent_logs],
+        }
     )
-    st.line_chart(df)
+    # y軸は50〜75kgを5kg刻みで固定表示する(体重の目標レンジに合わせた
+    # 見やすさのための固定範囲。実測値がこの範囲外の場合は軸の外に
+    # はみ出して表示される)。
+    chart = (
+        alt.Chart(df)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("日付:T", title="日付"),
+            y=alt.Y(
+                "体重(kg):Q",
+                title="体重(kg)",
+                scale=alt.Scale(domain=[50, 75]),
+                axis=alt.Axis(values=list(range(50, 76, 5))),
+            ),
+        )
+    )
+    st.altair_chart(chart, use_container_width=True)
 else:
     st.info("直近90日間の体重記録がありません。")
