@@ -52,9 +52,7 @@ with register_tab:
     with st.form("register_form"):
         reg_email = st.text_input("メールアドレス", key="register_email")
         reg_display_name = st.text_input("表示名", key="register_display_name")
-        reg_password = st.text_input(
-            "パスワード", type="password", key="register_password"
-        )
+        reg_password = st.text_input("パスワード", type="password", key="register_password")
         register_submitted = st.form_submit_button("登録する", type="primary")
 
     if register_submitted:

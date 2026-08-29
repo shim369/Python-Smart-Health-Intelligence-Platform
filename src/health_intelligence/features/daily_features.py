@@ -56,9 +56,7 @@ def compute_daily_features(
     fat_g = sum(m.fat_g for m in day_meals) if day_meals else None
     carbohydrate_g = sum(m.carbohydrate_g for m in day_meals) if day_meals else None
 
-    sleep_duration_minutes = (
-        sum(s.duration_minutes for s in day_sleeps) if day_sleeps else None
-    )
+    sleep_duration_minutes = sum(s.duration_minutes for s in day_sleeps) if day_sleeps else None
 
     workout_duration_minutes = None
     if day_workouts:

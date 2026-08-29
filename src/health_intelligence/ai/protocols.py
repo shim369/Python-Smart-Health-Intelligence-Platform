@@ -40,9 +40,7 @@ class AIProvider(Protocol):
         """
         ...
 
-    def estimate_meal_nutrition(
-        self, meal_input: MealNutritionInput
-    ) -> EstimatedMealNutrition:
+    def estimate_meal_nutrition(self, meal_input: MealNutritionInput) -> EstimatedMealNutrition:
         """食事内容の自由記述からカロリー・PFCを推定する。
 
         Retry/Timeout/例外の扱いは`generate_recipe`と同様

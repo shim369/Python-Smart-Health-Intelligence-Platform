@@ -48,9 +48,7 @@ class SqlAlchemyMealLogRepository:
         self._session = session
 
     def get_by_id(self, user_id: UUID, meal_log_id: UUID) -> MealLog | None:
-        stmt = select(MealLogORM).where(
-            MealLogORM.id == meal_log_id, MealLogORM.user_id == user_id
-        )
+        stmt = select(MealLogORM).where(MealLogORM.id == meal_log_id, MealLogORM.user_id == user_id)
         orm = self._session.scalars(stmt).first()
         return _to_domain(orm) if orm is not None else None
 
@@ -78,9 +76,7 @@ class SqlAlchemyMealLogRepository:
         orm.memo = meal_log.memo
 
     def delete(self, user_id: UUID, meal_log_id: UUID) -> None:
-        stmt = select(MealLogORM).where(
-            MealLogORM.id == meal_log_id, MealLogORM.user_id == user_id
-        )
+        stmt = select(MealLogORM).where(MealLogORM.id == meal_log_id, MealLogORM.user_id == user_id)
         orm = self._session.scalars(stmt).first()
         if orm is not None:
             self._session.delete(orm)

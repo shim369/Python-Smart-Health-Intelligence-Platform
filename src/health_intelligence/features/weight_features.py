@@ -32,9 +32,7 @@ def compute_weight_features(weight_logs: list[WeightLog]) -> WeightFeatures:
     moving_average_kg = sum(w.weight_kg for w in recent) / len(recent)
 
     if len(ordered) < 2:
-        return WeightFeatures(
-            moving_average_kg=moving_average_kg, change_kg=None, change_rate=None
-        )
+        return WeightFeatures(moving_average_kg=moving_average_kg, change_kg=None, change_rate=None)
 
     first_weight = ordered[0].weight_kg
     last_weight = ordered[-1].weight_kg

@@ -87,9 +87,7 @@ def build_workout_log(
                 for r in group_rows
                 if r.get("reps") not in (None, "")
             ]
-            exercises.append(
-                WorkoutExercise(exercise_name=name, category=category, sets=sets)
-            )
+            exercises.append(WorkoutExercise(exercise_name=name, category=category, sets=sets))
 
     return WorkoutLog(
         workout_log_id=workout_log_id or uuid4(),

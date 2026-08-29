@@ -57,9 +57,7 @@ class RecipeService:
         with self._uow_factory() as uow:
             return uow.recipe_ingredients.list_by_recipe(recipe_id)
 
-    def get_ingredient_names(
-        self, recipe_ingredients: list[RecipeIngredient]
-    ) -> dict[UUID, str]:
+    def get_ingredient_names(self, recipe_ingredients: list[RecipeIngredient]) -> dict[UUID, str]:
         """RecipeIngredientのingredient_idからIngredient名を引く。
 
         Presentation Layer(app/)がIngredientRepositoryへ直接

@@ -48,9 +48,7 @@ class SqlAlchemyIngredientRepository:
 
     def get_by_name(self, name: str) -> Ingredient | None:
         """大文字小文字を区別せず名前で検索する(get or create用)。"""
-        stmt = select(IngredientORM).where(
-            func.lower(IngredientORM.name) == name.lower()
-        )
+        stmt = select(IngredientORM).where(func.lower(IngredientORM.name) == name.lower())
         orm = self._session.scalars(stmt).first()
         return _to_domain(orm) if orm is not None else None
 

@@ -25,9 +25,7 @@ IMPROVEMENT_THRESHOLD = 0.10
 OVERFIT_GAP_THRESHOLD = 0.20
 """requirements.md 9.3.1: train/validation誤差の差が相対20%以内。"""
 
-TrainPredictFn = Callable[
-    [list[list[float]], list[float], list[list[float]]], list[float]
-]
+TrainPredictFn = Callable[[list[list[float]], list[float], list[list[float]]], list[float]]
 """(X_train, y_train, X_predict) -> y_predict という学習+推論関数。"""
 
 
@@ -89,9 +87,7 @@ def evaluate(
 
     mean_baseline_mae = sum(f.baseline_mae for f in fold_results) / len(fold_results)
     mean_model_val_mae = sum(f.model_val_mae for f in fold_results) / len(fold_results)
-    mean_model_train_mae = sum(f.model_train_mae for f in fold_results) / len(
-        fold_results
-    )
+    mean_model_train_mae = sum(f.model_train_mae for f in fold_results) / len(fold_results)
 
     improvement_rate = (
         (mean_baseline_mae - mean_model_val_mae) / mean_baseline_mae
@@ -109,8 +105,7 @@ def evaluate(
     if is_overfitting:
         ml_adopted = False
         reason = (
-            f"過学習チェックに抵触(乖離{overfit_gap:.0%} > "
-            f"{OVERFIT_GAP_THRESHOLD:.0%})のため見送り"
+            f"過学習チェックに抵触(乖離{overfit_gap:.0%} > {OVERFIT_GAP_THRESHOLD:.0%})のため見送り"
         )
     elif improvement_rate >= IMPROVEMENT_THRESHOLD:
         ml_adopted = True

@@ -58,24 +58,16 @@ class RecommendationService:
 
         with self._uow_factory() as uow:
             meal_logs = [
-                m
-                for m in uow.meal_logs.list_by_user(user_id)
-                if m.consumed_at >= recent_since
+                m for m in uow.meal_logs.list_by_user(user_id) if m.consumed_at >= recent_since
             ]
             sleep_logs = [
-                s
-                for s in uow.sleep_logs.list_by_user(user_id)
-                if s.wake_time >= recent_since
+                s for s in uow.sleep_logs.list_by_user(user_id) if s.wake_time >= recent_since
             ]
             workout_logs = [
-                w
-                for w in uow.workout_logs.list_by_user(user_id)
-                if w.performed_at >= recent_since
+                w for w in uow.workout_logs.list_by_user(user_id) if w.performed_at >= recent_since
             ]
             weight_logs = [
-                w
-                for w in uow.weight_logs.list_by_user(user_id)
-                if w.recorded_at >= weight_since
+                w for w in uow.weight_logs.list_by_user(user_id) if w.recorded_at >= weight_since
             ]
 
         nutrition_features = compute_nutrition_features(meal_logs)
@@ -92,6 +84,4 @@ class RecommendationService:
 
         recommendations = self._recommendation_engine.generate(health_score)
 
-        return RecommendationReport(
-            health_score=health_score, recommendations=recommendations
-        )
+        return RecommendationReport(health_score=health_score, recommendations=recommendations)

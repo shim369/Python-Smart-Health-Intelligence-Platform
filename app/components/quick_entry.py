@@ -43,9 +43,7 @@ def most_recent_meal(meal_logs: list[MealLog]) -> MealLog | None:
     return max(meal_logs, key=lambda m: m.consumed_at)
 
 
-def frequent_meal_templates(
-    meal_logs: list[MealLog], *, limit: int = 5
-) -> list[MealTemplate]:
+def frequent_meal_templates(meal_logs: list[MealLog], *, limit: int = 5) -> list[MealTemplate]:
     """よく使う食事の候補を、使用頻度が高い順に返す。
 
     memoが空のログはテンプレート化できない(何を食べたか特定できない
@@ -107,8 +105,7 @@ def frequent_learning_keywords(
             counts[keyword] = counts.get(keyword, 0) + 1
 
     templates = [
-        KeywordTemplate(keyword=keyword, usage_count=count)
-        for keyword, count in counts.items()
+        KeywordTemplate(keyword=keyword, usage_count=count) for keyword, count in counts.items()
     ]
     templates.sort(key=lambda t: t.usage_count, reverse=True)
     return templates[:limit]
@@ -134,9 +131,7 @@ def frequent_exercise_templates(
     (exercise_name, category)ごとに集計し、直近のセッションでの
     duration_minutes / 最終セットのreps・weight_kgをデフォルト値とする。
     """
-    groups: dict[
-        tuple[str, ExerciseCategory], list[tuple[WorkoutExercise, datetime]]
-    ] = {}
+    groups: dict[tuple[str, ExerciseCategory], list[tuple[WorkoutExercise, datetime]]] = {}
     for log in workout_logs:
         for exercise in log.exercises:
             key = (exercise.exercise_name, exercise.category)

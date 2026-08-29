@@ -36,8 +36,7 @@ def _get_database_url() -> str:
     url = os.environ.get("DATABASE_URL")
     if not url:
         raise RuntimeError(
-            "環境変数 DATABASE_URL が設定されていません。"
-            " Migrationを実行する前に設定してください。"
+            "環境変数 DATABASE_URL が設定されていません。 Migrationを実行する前に設定してください。"
         )
     return url
 

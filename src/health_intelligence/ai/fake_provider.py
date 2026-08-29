@@ -60,9 +60,7 @@ class FakeAIProvider:
             carbohydrate_g=45.0,
         )
 
-    def estimate_meal_nutrition(
-        self, meal_input: MealNutritionInput
-    ) -> EstimatedMealNutrition:
+    def estimate_meal_nutrition(self, meal_input: MealNutritionInput) -> EstimatedMealNutrition:
         self.call_count += 1
 
         if self.next_error is not None:

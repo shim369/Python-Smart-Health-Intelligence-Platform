@@ -101,9 +101,7 @@ class WorkoutExerciseORM(Base):
     __tablename__ = "workout_exercises"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
-    workout_log_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("workout_logs.id"), index=True
-    )
+    workout_log_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workout_logs.id"), index=True)
     order_index: Mapped[int]
     exercise_name: Mapped[str]
     category: Mapped[str]
@@ -186,12 +184,8 @@ class RecipeORM(Base):
 class RecipeIngredientORM(Base):
     __tablename__ = "recipe_ingredients"
 
-    recipe_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("recipes.id"), primary_key=True
-    )
-    ingredient_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("ingredients.id"), primary_key=True
-    )
+    recipe_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("recipes.id"), primary_key=True)
+    ingredient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ingredients.id"), primary_key=True)
     amount: Mapped[float]
     unit: Mapped[str]
 

@@ -49,9 +49,7 @@ class SqlAlchemyRecipeRepository:
         self._session = session
 
     def get_by_id(self, user_id: UUID, recipe_id: UUID) -> Recipe | None:
-        stmt = select(RecipeORM).where(
-            RecipeORM.id == recipe_id, RecipeORM.user_id == user_id
-        )
+        stmt = select(RecipeORM).where(RecipeORM.id == recipe_id, RecipeORM.user_id == user_id)
         orm = self._session.scalars(stmt).first()
         return _to_domain(orm) if orm is not None else None
 
@@ -63,9 +61,7 @@ class SqlAlchemyRecipeRepository:
         self._session.add(_to_orm(recipe))
 
     def delete(self, user_id: UUID, recipe_id: UUID) -> None:
-        stmt = select(RecipeORM).where(
-            RecipeORM.id == recipe_id, RecipeORM.user_id == user_id
-        )
+        stmt = select(RecipeORM).where(RecipeORM.id == recipe_id, RecipeORM.user_id == user_id)
         orm = self._session.scalars(stmt).first()
         if orm is not None:
             self._session.delete(orm)

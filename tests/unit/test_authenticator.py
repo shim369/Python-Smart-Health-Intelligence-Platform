@@ -12,16 +12,12 @@ from health_intelligence.auth.authenticator import (
 
 @pytest.fixture
 def authenticator(make_fake_uow_factory, fake_user_repo, fake_credential_repo):
-    uow_factory = make_fake_uow_factory(
-        users=fake_user_repo, user_credentials=fake_credential_repo
-    )
+    uow_factory = make_fake_uow_factory(users=fake_user_repo, user_credentials=fake_credential_repo)
     return Authenticator(uow_factory)
 
 
 def test_register_and_authenticate(authenticator: Authenticator) -> None:
-    user = authenticator.register(
-        email="taro@example.com", display_name="Taro", password="hunter2"
-    )
+    user = authenticator.register(email="taro@example.com", display_name="Taro", password="hunter2")
 
     authed = authenticator.authenticate(email="taro@example.com", password="hunter2")
 
@@ -33,19 +29,13 @@ def test_duplicate_email_is_rejected(authenticator: Authenticator) -> None:
     authenticator.register(email="taro@example.com", display_name="Taro", password="x")
 
     with pytest.raises(EmailAlreadyRegisteredError):
-        authenticator.register(
-            email="taro@example.com", display_name="Taro2", password="y"
-        )
+        authenticator.register(email="taro@example.com", display_name="Taro2", password="y")
 
 
 def test_wrong_password_is_rejected(authenticator: Authenticator) -> None:
-    authenticator.register(
-        email="taro@example.com", display_name="Taro", password="correct"
-    )
+    authenticator.register(email="taro@example.com", display_name="Taro", password="correct")
 
-    assert (
-        authenticator.authenticate(email="taro@example.com", password="wrong") is None
-    )
+    assert authenticator.authenticate(email="taro@example.com", password="wrong") is None
 
 
 def test_unknown_user_is_rejected(authenticator: Authenticator) -> None:
@@ -84,6 +74,4 @@ def test_race_condition_at_db_level_is_translated_to_public_error(
     authenticator = Authenticator(uow_factory)
 
     with pytest.raises(EmailAlreadyRegisteredError):
-        authenticator.register(
-            email="race@example.com", display_name="Race", password="x"
-        )
+        authenticator.register(email="race@example.com", display_name="Race", password="x")

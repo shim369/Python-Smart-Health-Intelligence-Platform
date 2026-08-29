@@ -23,9 +23,7 @@ def hash_password(password: str) -> str:
     返す。この文字列1つだけでverify_passwordによる検証が完結する。
     """
     salt = secrets.token_bytes(_SALT_BYTES)
-    derived = hashlib.pbkdf2_hmac(
-        _ALGORITHM, password.encode("utf-8"), salt, _ITERATIONS
-    )
+    derived = hashlib.pbkdf2_hmac(_ALGORITHM, password.encode("utf-8"), salt, _ITERATIONS)
     return f"{_ALGORITHM}${_ITERATIONS}${salt.hex()}${derived.hex()}"
 
 

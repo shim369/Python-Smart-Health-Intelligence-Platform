@@ -53,9 +53,7 @@ def check_data_quality(daily_features: list[DailyFeatures]) -> DataQualityReport
         )
 
     missing_count = sum(
-        1
-        for d in daily_features
-        if any(getattr(d, field) is None for field in _REQUIRED_FIELDS)
+        1 for d in daily_features if any(getattr(d, field) is None for field in _REQUIRED_FIELDS)
     )
     missing_rate = missing_count / total_days
 

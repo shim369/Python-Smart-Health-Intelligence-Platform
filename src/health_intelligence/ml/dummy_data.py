@@ -21,9 +21,7 @@ from health_intelligence.features.daily_features import DailyFeatures
 _KCAL_PER_KG = 7700.0
 
 
-def generate_dummy_daily_features(
-    *, num_days: int = 90, seed: int = 42
-) -> list[DailyFeatures]:
+def generate_dummy_daily_features(*, num_days: int = 90, seed: int = 42) -> list[DailyFeatures]:
     """`num_days`日分のダミーDailyFeaturesを日付昇順で生成する。"""
     rng = random.Random(seed)
     start_date = date(2026, 1, 1)

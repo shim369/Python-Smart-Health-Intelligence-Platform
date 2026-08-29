@@ -24,9 +24,7 @@ class LearningService:
         with self._uow_factory() as uow:
             return uow.learning_logs.list_by_user(user_id)
 
-    def get_learning_log(
-        self, user_id: UUID, learning_log_id: UUID
-    ) -> LearningLog | None:
+    def get_learning_log(self, user_id: UUID, learning_log_id: UUID) -> LearningLog | None:
         with self._uow_factory() as uow:
             return uow.learning_logs.get_by_id(user_id, learning_log_id)
 

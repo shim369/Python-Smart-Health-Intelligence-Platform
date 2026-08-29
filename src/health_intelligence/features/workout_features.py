@@ -30,9 +30,7 @@ def compute_workout_features(workout_logs: list[WorkoutLog]) -> WorkoutFeatures:
             else:
                 for workout_set in exercise.sets:
                     if workout_set.weight_kg is not None:
-                        total_strength_volume_kg += (
-                            workout_set.reps * workout_set.weight_kg
-                        )
+                        total_strength_volume_kg += workout_set.reps * workout_set.weight_kg
 
     return WorkoutFeatures(
         session_count=session_count,

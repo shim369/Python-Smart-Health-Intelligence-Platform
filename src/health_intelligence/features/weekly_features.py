@@ -40,13 +40,9 @@ def compute_weekly_features(daily_features: list[DailyFeatures]) -> WeeklyFeatur
     calories = [d.calories for d in daily_features if d.calories is not None]
     protein = [d.protein_g for d in daily_features if d.protein_g is not None]
     fat = [d.fat_g for d in daily_features if d.fat_g is not None]
-    carbohydrate = [
-        d.carbohydrate_g for d in daily_features if d.carbohydrate_g is not None
-    ]
+    carbohydrate = [d.carbohydrate_g for d in daily_features if d.carbohydrate_g is not None]
     sleep = [
-        d.sleep_duration_minutes
-        for d in daily_features
-        if d.sleep_duration_minutes is not None
+        d.sleep_duration_minutes for d in daily_features if d.sleep_duration_minutes is not None
     ]
     workout_days = [d for d in daily_features if d.workout_duration_minutes]
 
@@ -57,7 +53,5 @@ def compute_weekly_features(daily_features: list[DailyFeatures]) -> WeeklyFeatur
         average_carbohydrate_g=_average(carbohydrate),
         average_sleep_duration_minutes=_average(sleep),
         workout_count=len(workout_days),
-        total_workout_duration_minutes=sum(
-            d.workout_duration_minutes or 0 for d in daily_features
-        ),
+        total_workout_duration_minutes=sum(d.workout_duration_minutes or 0 for d in daily_features),
     )

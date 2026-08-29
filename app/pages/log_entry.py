@@ -144,22 +144,14 @@ with meal_tab:
                 and selected_meal_template is not None
             ):
                 st.session_state["meal_type_input"] = selected_meal_template.meal_type
-                st.session_state["meal_calories_input"] = (
-                    selected_meal_template.calories
-                )
-                st.session_state["meal_protein_input"] = (
-                    selected_meal_template.protein_g
-                )
+                st.session_state["meal_calories_input"] = selected_meal_template.calories
+                st.session_state["meal_protein_input"] = selected_meal_template.protein_g
                 st.session_state["meal_fat_input"] = selected_meal_template.fat_g
-                st.session_state["meal_carb_input"] = (
-                    selected_meal_template.carbohydrate_g
-                )
+                st.session_state["meal_carb_input"] = selected_meal_template.carbohydrate_g
                 st.session_state["meal_memo"] = selected_meal_template.memo
                 st.rerun()
         else:
-            st.caption(
-                "よく使う食事はまだありません(メモ付きで記録すると候補に出ます)。"
-            )
+            st.caption("よく使う食事はまだありません(メモ付きで記録すると候補に出ます)。")
 
     st.caption(
         "食べたものを文章で入力すると、AIがカロリー・PFCを推定してフォームに"
@@ -205,9 +197,7 @@ with meal_tab:
         protein_g = st.number_input(
             "タンパク質(g)", min_value=0.0, step=1.0, key="meal_protein_input"
         )
-        fat_g = st.number_input(
-            "脂質(g)", min_value=0.0, step=1.0, key="meal_fat_input"
-        )
+        fat_g = st.number_input("脂質(g)", min_value=0.0, step=1.0, key="meal_fat_input")
         carbohydrate_g = st.number_input(
             "炭水化物(g)", min_value=0.0, step=1.0, key="meal_carb_input"
         )
@@ -243,9 +233,7 @@ with meal_tab:
     st.divider()
     st.subheader("過去の記録")
     meal_service = get_meal_service()
-    meal_logs = sorted(all_meal_logs, key=lambda m: m.consumed_at, reverse=True)[
-        :_MAX_HISTORY_ROWS
-    ]
+    meal_logs = sorted(all_meal_logs, key=lambda m: m.consumed_at, reverse=True)[:_MAX_HISTORY_ROWS]
 
     if not meal_logs:
         st.info("まだ記録がありません。")
@@ -269,20 +257,15 @@ with meal_tab:
             "編集する記録を選択",
             options=meal_logs,
             format_func=lambda m: (
-                f"{format_datetime_jst(m.consumed_at)} "
-                f"{m.meal_type.value} {m.calories:.0f}kcal"
+                f"{format_datetime_jst(m.consumed_at)} {m.meal_type.value} {m.calories:.0f}kcal"
             ),
             key="meal_select",
         )
 
         if selected_meal is not None:
             with st.form(f"meal_edit_form_{selected_meal.meal_log_id}"):
-                edit_date = st.date_input(
-                    "日付", value=jst_date_of(selected_meal.consumed_at)
-                )
-                edit_time = st.time_input(
-                    "時刻", value=jst_time_of(selected_meal.consumed_at)
-                )
+                edit_date = st.date_input("日付", value=jst_date_of(selected_meal.consumed_at))
+                edit_time = st.time_input("時刻", value=jst_time_of(selected_meal.consumed_at))
                 edit_meal_type = st.selectbox(
                     "食事区分",
                     options=list(MealType),
@@ -337,9 +320,7 @@ with meal_tab:
 
             if delete_clicked:
                 if not delete_confirmed:
-                    st.warning(
-                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
-                    )
+                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
                 else:
                     meal_service.delete_meal_log(user_id, selected_meal.meal_log_id)
                     st.success("削除しました。")
@@ -362,9 +343,7 @@ def _new_workout_entry(category: str = "strength") -> dict[str, object]:
     }
 
 
-def _render_workout_entries(
-    entries: list[dict[str, object]], *, key_prefix: str
-) -> None:
+def _render_workout_entries(entries: list[dict[str, object]], *, key_prefix: str) -> None:
     """種目カードのリストをスマホでもタップしやすい縦積みUIとして描画する。
 
     `entries`(セッション状態のリスト)を直接書き換えるため、呼び出し側は
@@ -384,9 +363,7 @@ def _render_workout_entries(
                 placeholder="例: レッグプレス",
                 key=f"{key_prefix}_wo_name_{eid}",
             )
-            if del_col.button(
-                "🗑削除", key=f"{key_prefix}_wo_del_{eid}", use_container_width=True
-            ):
+            if del_col.button("🗑削除", key=f"{key_prefix}_wo_del_{eid}", use_container_width=True):
                 remove_entry_id = eid
 
             entry["category"] = st.radio(
@@ -413,9 +390,7 @@ def _render_workout_entries(
 
                 remove_set_index: int | None = None
                 for i, workout_set in enumerate(sets):
-                    label_col, reps_col, weight_col, set_del_col = st.columns(
-                        [1, 2, 2, 1]
-                    )
+                    label_col, reps_col, weight_col, set_del_col = st.columns([1, 2, 2, 1])
                     label_col.markdown(f"**{i + 1}セット目**")
                     workout_set["reps"] = reps_col.number_input(
                         "回数",
@@ -465,9 +440,7 @@ with workout_tab:
     exercise_templates = frequent_exercise_templates(all_workout_logs)
 
     workout_date = st.date_input("日付", value=date.today(), key="workout_date")
-    workout_time = st.time_input(
-        "時刻", value=datetime.now().time(), key="workout_time"
-    )
+    workout_time = st.time_input("時刻", value=datetime.now().time(), key="workout_time")
 
     quick_workout_col1, quick_workout_col2 = st.columns([1, 2])
     with quick_workout_col1:
@@ -488,9 +461,7 @@ with workout_tab:
             selected_exercise_templates = st.multiselect(
                 "よく使う種目を追加",
                 options=exercise_templates,
-                format_func=lambda t: (
-                    f"{t.exercise_name}({t.category.value}・{t.usage_count}回)"
-                ),
+                format_func=lambda t: f"{t.exercise_name}({t.category.value}・{t.usage_count}回)",
                 key="workout_template_select",
                 label_visibility="collapsed",
             )
@@ -504,9 +475,7 @@ with workout_tab:
                     new_entry = exercise_template_to_entry(t)
                     new_entry["_id"] = uuid4().hex
                     current_entries.append(new_entry)
-                st.session_state["workout_entries"] = current_entries or [
-                    _new_workout_entry()
-                ]
+                st.session_state["workout_entries"] = current_entries or [_new_workout_entry()]
                 st.rerun()
         else:
             st.caption("よく使う種目はまだありません。")
@@ -553,10 +522,7 @@ with workout_tab:
                 {
                     "日時": [format_datetime_jst(w.performed_at) for w in workout_logs],
                     "種目数": [len(w.exercises) for w in workout_logs],
-                    "種目": [
-                        "、".join(e.exercise_name for e in w.exercises)
-                        for w in workout_logs
-                    ],
+                    "種目": ["、".join(e.exercise_name for e in w.exercises) for w in workout_logs],
                 }
             ),
             hide_index=True,
@@ -573,9 +539,7 @@ with workout_tab:
             key="workout_select",
         )
         selected_workout = (
-            workout_logs[selected_workout_index]
-            if selected_workout_index is not None
-            else None
+            workout_logs[selected_workout_index] if selected_workout_index is not None else None
         )
 
         if selected_workout is not None:
@@ -594,9 +558,7 @@ with workout_tab:
                 edit_entries = rows_to_entries(workout_log_to_rows(selected_workout))
                 for e in edit_entries:
                     e["_id"] = uuid4().hex
-                st.session_state[edit_state_key] = edit_entries or [
-                    _new_workout_entry()
-                ]
+                st.session_state[edit_state_key] = edit_entries or [_new_workout_entry()]
 
             _render_workout_entries(
                 st.session_state[edit_state_key],
@@ -625,9 +587,7 @@ with workout_tab:
                 updated_workout = build_workout_log(
                     updated_rows,
                     user_id=user_id,
-                    performed_at=combine_jst_to_utc(
-                        edit_workout_date, edit_workout_time
-                    ),
+                    performed_at=combine_jst_to_utc(edit_workout_date, edit_workout_time),
                     workout_log_id=selected_workout.workout_log_id,
                 )
                 if not updated_workout.exercises:
@@ -638,17 +598,11 @@ with workout_tab:
                     st.success("更新しました。")
                     st.rerun()
 
-            if col2.button(
-                "削除する", key=f"workout_delete_{selected_workout.workout_log_id}"
-            ):
+            if col2.button("削除する", key=f"workout_delete_{selected_workout.workout_log_id}"):
                 if not workout_delete_confirmed:
-                    st.warning(
-                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
-                    )
+                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
                 else:
-                    workout_service.delete_workout_log(
-                        user_id, selected_workout.workout_log_id
-                    )
+                    workout_service.delete_workout_log(user_id, selected_workout.workout_log_id)
                     st.session_state.pop(edit_state_key, None)
                     st.success("削除しました。")
                     st.rerun()
@@ -698,10 +652,7 @@ with sleep_tab:
                     "就寝": [format_datetime_jst(s.bedtime) for s in sleep_logs],
                     "起床": [format_datetime_jst(s.wake_time) for s in sleep_logs],
                     "睡眠時間(分)": [s.duration_minutes for s in sleep_logs],
-                    "品質": [
-                        s.quality.value if s.quality is not None else "-"
-                        for s in sleep_logs
-                    ],
+                    "品質": [s.quality.value if s.quality is not None else "-" for s in sleep_logs],
                 }
             ),
             hide_index=True,
@@ -711,9 +662,7 @@ with sleep_tab:
         selected_sleep = st.selectbox(
             "編集する記録を選択",
             options=sleep_logs,
-            format_func=lambda s: (
-                f"{format_datetime_jst(s.bedtime)} 就寝 ({s.duration_minutes}分)"
-            ),
+            format_func=lambda s: f"{format_datetime_jst(s.bedtime)} 就寝 ({s.duration_minutes}分)",
             key="sleep_select",
         )
 
@@ -736,9 +685,7 @@ with sleep_tab:
                     key=f"sleep_delete_confirm_{selected_sleep.sleep_log_id}",
                 )
                 col1, col2 = st.columns(2)
-                update_sleep_clicked = col1.form_submit_button(
-                    "更新する", type="primary"
-                )
+                update_sleep_clicked = col1.form_submit_button("更新する", type="primary")
                 delete_sleep_clicked = col2.form_submit_button("削除する")
 
             if update_sleep_clicked:
@@ -760,9 +707,7 @@ with sleep_tab:
 
             if delete_sleep_clicked:
                 if not sleep_delete_confirmed:
-                    st.warning(
-                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
-                    )
+                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
                 else:
                     sleep_service.delete_sleep_log(user_id, selected_sleep.sleep_log_id)
                     st.success("削除しました。")
@@ -776,9 +721,7 @@ with weight_tab:
     st.subheader("新規記録")
     with st.form("weight_form"):
         weight_date = st.date_input("日付", value=date.today(), key="weight_date")
-        weight_time = st.time_input(
-            "時刻", value=datetime.now().time(), key="weight_time"
-        )
+        weight_time = st.time_input("時刻", value=datetime.now().time(), key="weight_time")
         weight_kg = st.number_input("体重(kg)", min_value=0.0, step=0.1)
         submitted_weight = st.form_submit_button("記録する", type="primary")
 
@@ -819,9 +762,7 @@ with weight_tab:
         selected_weight = st.selectbox(
             "編集する記録を選択",
             options=weight_logs,
-            format_func=lambda w: (
-                f"{format_datetime_jst(w.recorded_at)} {w.weight_kg}kg"
-            ),
+            format_func=lambda w: f"{format_datetime_jst(w.recorded_at)} {w.weight_kg}kg",
             key="weight_select",
         )
 
@@ -841,9 +782,7 @@ with weight_tab:
                     key=f"weight_delete_confirm_{selected_weight.weight_log_id}",
                 )
                 col1, col2 = st.columns(2)
-                update_weight_clicked = col1.form_submit_button(
-                    "更新する", type="primary"
-                )
+                update_weight_clicked = col1.form_submit_button("更新する", type="primary")
                 delete_weight_clicked = col2.form_submit_button("削除する")
 
             if update_weight_clicked:
@@ -859,13 +798,9 @@ with weight_tab:
 
             if delete_weight_clicked:
                 if not weight_delete_confirmed:
-                    st.warning(
-                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
-                    )
+                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
                 else:
-                    weight_service.delete_weight_log(
-                        user_id, selected_weight.weight_log_id
-                    )
+                    weight_service.delete_weight_log(user_id, selected_weight.weight_log_id)
                     st.success("削除しました。")
                     st.rerun()
 
@@ -877,15 +812,11 @@ with health_tab:
     st.subheader("新規記録")
     with st.form("health_form"):
         health_date = st.date_input("日付", value=date.today(), key="health_date")
-        health_time = st.time_input(
-            "時刻", value=datetime.now().time(), key="health_time"
-        )
+        health_time = st.time_input("時刻", value=datetime.now().time(), key="health_time")
         condition_score = st.slider(
             "体調スコア(1=不調 〜 5=良好)", min_value=1, max_value=5, value=3
         )
-        symptoms_text = st.text_input(
-            "症状(カンマ区切り、任意)", placeholder="例: 頭痛, 倦怠感"
-        )
+        symptoms_text = st.text_input("症状(カンマ区切り、任意)", placeholder="例: 頭痛, 倦怠感")
         health_memo = st.text_input("メモ(任意)", key="health_memo")
         submitted_health = st.form_submit_button("記録する", type="primary")
 
@@ -938,9 +869,7 @@ with health_tab:
             key="health_select",
         )
         selected_health = (
-            health_logs[selected_health_index]
-            if selected_health_index is not None
-            else None
+            health_logs[selected_health_index] if selected_health_index is not None else None
         )
 
         if selected_health is not None:
@@ -961,23 +890,17 @@ with health_tab:
                     "症状(カンマ区切り、任意)",
                     value=", ".join(selected_health.symptoms),
                 )
-                edit_health_memo = st.text_input(
-                    "メモ(任意)", value=selected_health.memo or ""
-                )
+                edit_health_memo = st.text_input("メモ(任意)", value=selected_health.memo or "")
                 health_delete_confirmed = st.checkbox(
                     "本当に削除しますか?(元に戻せません)",
                     key=f"health_delete_confirm_{selected_health.health_log_id}",
                 )
                 col1, col2 = st.columns(2)
-                update_health_clicked = col1.form_submit_button(
-                    "更新する", type="primary"
-                )
+                update_health_clicked = col1.form_submit_button("更新する", type="primary")
                 delete_health_clicked = col2.form_submit_button("削除する")
 
             if update_health_clicked:
-                edit_symptoms = [
-                    s.strip() for s in edit_symptoms_text.split(",") if s.strip()
-                ]
+                edit_symptoms = [s.strip() for s in edit_symptoms_text.split(",") if s.strip()]
                 updated_health = HealthLog(
                     health_log_id=selected_health.health_log_id,
                     user_id=user_id,
@@ -992,13 +915,9 @@ with health_tab:
 
             if delete_health_clicked:
                 if not health_delete_confirmed:
-                    st.warning(
-                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
-                    )
+                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
                 else:
-                    health_service.delete_health_log(
-                        user_id, selected_health.health_log_id
-                    )
+                    health_service.delete_health_log(user_id, selected_health.health_log_id)
                     st.success("削除しました。")
                     st.rerun()
 
@@ -1028,9 +947,7 @@ def _render_learning_category_fields(
     if category in (LearningCategory.EXAM_STUDY, LearningCategory.PORTFOLIO_DEV):
         is_exam = category == LearningCategory.EXAM_STUDY
         content_kwargs = {} if prefill is None else {"value": prefill.content or ""}
-        content_placeholder = (
-            "例: ○○問題集 過去問" if is_exam else "例: 個人ブログのSSR化"
-        )
+        content_placeholder = "例: ○○問題集 過去問" if is_exam else "例: 個人ブログのSSR化"
         content = (
             st.text_input(
                 "勉強内容" if is_exam else "PF開発内容",
@@ -1054,9 +971,7 @@ def _render_learning_category_fields(
             breakdown = split_comma_list(breakdown_text)
 
         prefill_hours, prefill_minutes = (
-            (0, 0)
-            if prefill is None
-            else split_duration_minutes(prefill.duration_minutes)
+            (0, 0) if prefill is None else split_duration_minutes(prefill.duration_minutes)
         )
         duration_hours_col, duration_minutes_col = st.columns(2)
         duration_hours_kwargs = {} if prefill is None else {"value": prefill_hours}
@@ -1076,13 +991,9 @@ def _render_learning_category_fields(
             key=key("learning_duration_minutes_input"),
             **duration_minutes_kwargs,
         )
-        duration_minutes = combine_duration_minutes(
-            duration_hours, duration_minutes_input
-        )
+        duration_minutes = combine_duration_minutes(duration_hours, duration_minutes_input)
 
-        keywords_kwargs = (
-            {} if prefill is None else {"value": join_slash_list(prefill.keywords)}
-        )
+        keywords_kwargs = {} if prefill is None else {"value": join_slash_list(prefill.keywords)}
         keywords_text = st.text_input(
             "技術的成長キーワード(スラッシュ区切り)",
             placeholder="例: Python / SQL",
@@ -1092,9 +1003,7 @@ def _render_learning_category_fields(
         keywords = split_slash_list(keywords_text)
 
     elif category == LearningCategory.RESEARCH:
-        keywords_kwargs = (
-            {} if prefill is None else {"value": join_slash_list(prefill.keywords)}
-        )
+        keywords_kwargs = {} if prefill is None else {"value": join_slash_list(prefill.keywords)}
         keywords_text = st.text_input(
             "技術的成長キーワード(スラッシュ区切り)",
             placeholder="例: Python / SQL",
@@ -1109,9 +1018,7 @@ def _render_learning_category_fields(
             if prefill is None or prefill.duration_minutes is None
             else prefill.duration_minutes / 60
         )
-        duration_hours_career_kwargs = (
-            {} if prefill is None else {"value": prefill_hours_career}
-        )
+        duration_hours_career_kwargs = {} if prefill is None else {"value": prefill_hours_career}
         duration_hours_career = st.number_input(
             "時間(h)",
             min_value=0.0,
@@ -1121,9 +1028,7 @@ def _render_learning_category_fields(
         )
         duration_minutes = combine_duration_minutes(duration_hours_career, None)
 
-        notes_kwargs = (
-            {} if prefill is None else {"value": join_lines_list(prefill.notes)}
-        )
+        notes_kwargs = {} if prefill is None else {"value": join_lines_list(prefill.notes)}
         notes_text = st.text_area(
             "箇条書きメモ(1行1項目)",
             placeholder="例: ・案A: 新規事業\n・案B: 既存機能強化",
@@ -1157,12 +1062,8 @@ with learning_tab:
         st.session_state["learning_category_input"] = last_learning_log.category
         st.session_state["learning_location_input"] = last_learning_log.location
         st.session_state["learning_content_input"] = last_learning_log.content or ""
-        st.session_state["learning_breakdown_text"] = join_comma_list(
-            last_learning_log.breakdown
-        )
-        prefill_hours, prefill_minutes = split_duration_minutes(
-            last_learning_log.duration_minutes
-        )
+        st.session_state["learning_breakdown_text"] = join_comma_list(last_learning_log.breakdown)
+        prefill_hours, prefill_minutes = split_duration_minutes(last_learning_log.duration_minutes)
         st.session_state["learning_duration_hours"] = prefill_hours
         st.session_state["learning_duration_minutes_input"] = prefill_minutes
         st.session_state["learning_duration_hours_career"] = (
@@ -1170,18 +1071,12 @@ with learning_tab:
             if last_learning_log.duration_minutes is not None
             else 0.0
         )
-        st.session_state["learning_keywords_text"] = join_slash_list(
-            last_learning_log.keywords
-        )
-        st.session_state["learning_notes_text"] = join_lines_list(
-            last_learning_log.notes
-        )
+        st.session_state["learning_keywords_text"] = join_slash_list(last_learning_log.keywords)
+        st.session_state["learning_notes_text"] = join_lines_list(last_learning_log.notes)
         st.rerun()
 
     learning_date = st.date_input("日付", value=date.today(), key="learning_date")
-    learning_time = st.time_input(
-        "時刻", value=datetime.now().time(), key="learning_time"
-    )
+    learning_time = st.time_input("時刻", value=datetime.now().time(), key="learning_time")
     learning_location = st.selectbox(
         "場所",
         options=[None, *LearningLocation],
@@ -1216,9 +1111,7 @@ with learning_tab:
                 for keyword in selected_keywords:
                     if keyword not in current_keywords:
                         current_keywords.append(keyword)
-                st.session_state["learning_keywords_text"] = join_slash_list(
-                    current_keywords
-                )
+                st.session_state["learning_keywords_text"] = join_slash_list(current_keywords)
                 st.rerun()
         else:
             st.caption("よく使うキーワードはまだありません。")
@@ -1275,25 +1168,20 @@ with learning_tab:
             pd.DataFrame(
                 {
                     "日時": [
-                        format_datetime_jst(learning.started_at)
-                        for learning in learning_logs
+                        format_datetime_jst(learning.started_at) for learning in learning_logs
                     ],
                     "カテゴリ": [
-                        _LEARNING_CATEGORY_LABELS[learning.category]
-                        for learning in learning_logs
+                        _LEARNING_CATEGORY_LABELS[learning.category] for learning in learning_logs
                     ],
                     "場所": [
-                        _LEARNING_LOCATION_LABELS[learning.location]
-                        for learning in learning_logs
+                        _LEARNING_LOCATION_LABELS[learning.location] for learning in learning_logs
                     ],
                     "内容": [
                         learning.content or (", ".join(learning.keywords) or "-")
                         for learning in learning_logs
                     ],
                     "時間(分)": [
-                        learning.duration_minutes
-                        if learning.duration_minutes is not None
-                        else "-"
+                        learning.duration_minutes if learning.duration_minutes is not None else "-"
                         for learning in learning_logs
                     ],
                 }
@@ -1312,9 +1200,7 @@ with learning_tab:
             key="learning_select",
         )
         selected_learning = (
-            learning_logs[selected_learning_index]
-            if selected_learning_index is not None
-            else None
+            learning_logs[selected_learning_index] if selected_learning_index is not None else None
         )
 
         if selected_learning is not None:
@@ -1345,9 +1231,7 @@ with learning_tab:
 
             edit_learning_fields = _render_learning_category_fields(
                 edit_learning_category,
-                key=(
-                    lambda base, _id=selected_learning.learning_log_id: f"{base}_{_id}"
-                ),
+                key=(lambda base, _id=selected_learning.learning_log_id: f"{base}_{_id}"),
                 prefill=selected_learning,
             )
 
@@ -1364,9 +1248,7 @@ with learning_tab:
                 updated_learning = LearningLog(
                     learning_log_id=selected_learning.learning_log_id,
                     user_id=user_id,
-                    started_at=combine_jst_to_utc(
-                        edit_learning_date, edit_learning_time
-                    ),
+                    started_at=combine_jst_to_utc(edit_learning_date, edit_learning_time),
                     category=edit_learning_category,
                     location=edit_learning_location,
                     content=edit_learning_fields["content"],
@@ -1384,12 +1266,8 @@ with learning_tab:
                 key=f"learning_delete_{selected_learning.learning_log_id}",
             ):
                 if not learning_delete_confirmed:
-                    st.warning(
-                        "削除するには「本当に削除しますか?」にチェックを入れてください。"
-                    )
+                    st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
                 else:
-                    learning_service.delete_learning_log(
-                        user_id, selected_learning.learning_log_id
-                    )
+                    learning_service.delete_learning_log(user_id, selected_learning.learning_log_id)
                     st.success("削除しました。")
                     st.rerun()

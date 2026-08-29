@@ -35,9 +35,7 @@ def compute_nutrition_features(
     total_calories = sum(m.calories for m in meal_logs)
     protein_kcal = sum(m.protein_g for m in meal_logs) * _PROTEIN_KCAL_PER_G
     fat_kcal = sum(m.fat_g for m in meal_logs) * _FAT_KCAL_PER_G
-    carbohydrate_kcal = (
-        sum(m.carbohydrate_g for m in meal_logs) * _CARBOHYDRATE_KCAL_PER_G
-    )
+    carbohydrate_kcal = sum(m.carbohydrate_g for m in meal_logs) * _CARBOHYDRATE_KCAL_PER_G
     pfc_total_kcal = protein_kcal + fat_kcal + carbohydrate_kcal
 
     if pfc_total_kcal == 0:

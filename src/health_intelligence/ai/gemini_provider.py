@@ -109,9 +109,7 @@ class GeminiProvider:
         prompt = _build_recipe_prompt(recipe_input)
         return self._call_with_retry(prompt, GeneratedRecipe)
 
-    def estimate_meal_nutrition(
-        self, meal_input: MealNutritionInput
-    ) -> EstimatedMealNutrition:
+    def estimate_meal_nutrition(self, meal_input: MealNutritionInput) -> EstimatedMealNutrition:
         prompt = _build_meal_nutrition_prompt(meal_input)
         return self._call_with_retry(prompt, EstimatedMealNutrition)
 
@@ -145,9 +143,7 @@ class GeminiProvider:
         assert last_error is not None
         raise last_error
 
-    def _call_once(
-        self, prompt: str, response_schema: type[_ResponseSchemaT]
-    ) -> _ResponseSchemaT:
+    def _call_once(self, prompt: str, response_schema: type[_ResponseSchemaT]) -> _ResponseSchemaT:
         try:
             response = self._client.models.generate_content(
                 model=self._model,
@@ -170,8 +166,7 @@ class GeminiProvider:
         parsed = response.parsed
         if not isinstance(parsed, response_schema):
             raise AIValidationError(
-                f"Geminiのレスポンスを{response_schema.__name__}として"
-                "解釈できませんでした"
+                f"Geminiのレスポンスを{response_schema.__name__}として解釈できませんでした"
             )
         return parsed
 

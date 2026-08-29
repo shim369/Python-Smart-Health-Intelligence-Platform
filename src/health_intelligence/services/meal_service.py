@@ -20,9 +20,7 @@ class MealService:
     architecture.md Section 10 AI Architecture)。
     """
 
-    def __init__(
-        self, uow_factory: Callable[[], UnitOfWork], ai_provider: AIProvider
-    ) -> None:
+    def __init__(self, uow_factory: Callable[[], UnitOfWork], ai_provider: AIProvider) -> None:
         self._uow_factory = uow_factory
         self._ai_provider = ai_provider
         self._nutrition_cache = MealNutritionCache()

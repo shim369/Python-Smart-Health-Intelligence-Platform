@@ -30,18 +30,14 @@ class SleepAnalyzer:
         else:
             duration_penalty = 0.0
 
-        insufficient_penalty = (
-            features.insufficient_sleep_days * _PENALTY_PER_INSUFFICIENT_DAY
-        )
+        insufficient_penalty = features.insufficient_sleep_days * _PENALTY_PER_INSUFFICIENT_DAY
         score = clamp_score(100.0 - duration_penalty - insufficient_penalty)
 
         findings = []
         if duration_penalty > 0:
             findings.append(f"平均睡眠時間が目安から外れています({avg:.0f}分)")
         if features.insufficient_sleep_days > 0:
-            findings.append(
-                f"睡眠不足の日が{features.insufficient_sleep_days}日あります"
-            )
+            findings.append(f"睡眠不足の日が{features.insufficient_sleep_days}日あります")
         if not findings:
             findings.append("睡眠は良好な状態です")
 

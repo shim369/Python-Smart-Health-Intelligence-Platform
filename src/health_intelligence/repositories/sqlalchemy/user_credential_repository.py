@@ -24,6 +24,4 @@ class SqlAlchemyUserCredentialRepository:
         if orm is not None:
             orm.password_hash = password_hash
         else:
-            self._session.add(
-                UserCredentialORM(user_id=user_id, password_hash=password_hash)
-            )
+            self._session.add(UserCredentialORM(user_id=user_id, password_hash=password_hash))

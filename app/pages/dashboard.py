@@ -68,9 +68,7 @@ st.subheader("体重推移")
 weight_service = get_weight_service()
 weight_logs = weight_service.list_weight_logs(user_id)
 
-recent_logs = [
-    w for w in weight_logs if w.recorded_at >= datetime.now(UTC) - timedelta(days=90)
-]
+recent_logs = [w for w in weight_logs if w.recorded_at >= datetime.now(UTC) - timedelta(days=90)]
 if recent_logs:
     recent_logs.sort(key=lambda w: w.recorded_at)
     df = pd.DataFrame(

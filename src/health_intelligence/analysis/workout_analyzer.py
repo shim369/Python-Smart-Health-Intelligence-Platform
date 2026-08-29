@@ -40,8 +40,7 @@ class WorkoutAnalyzer:
 
         if features.total_strength_volume_kg > 0:
             findings.append(
-                f"筋力トレーニングの総ボリューム: "
-                f"{features.total_strength_volume_kg:.0f}kg"
+                f"筋力トレーニングの総ボリューム: {features.total_strength_volume_kg:.0f}kg"
             )
 
         return AnalysisResult(score=score, findings=findings)

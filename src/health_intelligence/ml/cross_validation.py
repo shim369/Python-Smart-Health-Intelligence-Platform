@@ -7,9 +7,7 @@ requirements.md 9.3.1: ランダム分割ではなく、未来データがリー
 from __future__ import annotations
 
 
-def forward_chaining_splits(
-    n_samples: int, *, n_splits: int = 5
-) -> list[tuple[range, range]]:
+def forward_chaining_splits(n_samples: int, *, n_splits: int = 5) -> list[tuple[range, range]]:
     """`n_samples`件のサンプル(時系列順)をtrain/validationのindex
     範囲のペアに分割する。
 

@@ -97,9 +97,7 @@ def _render_import_tab(
         key=f"{key_prefix}_template_download",
     )
 
-    uploaded = st.file_uploader(
-        "CSVファイルを選択", type="csv", key=f"{key_prefix}_uploader"
-    )
+    uploaded = st.file_uploader("CSVファイルを選択", type="csv", key=f"{key_prefix}_uploader")
     if uploaded is None:
         return
 
@@ -132,10 +130,7 @@ def _render_import_tab(
     if result.logs:
         st.dataframe(
             pd.DataFrame(
-                {
-                    name: [fn(log) for log in result.logs]
-                    for name, fn in preview_columns.items()
-                }
+                {name: [fn(log) for log in result.logs] for name, fn in preview_columns.items()}
             ),
             hide_index=True,
             use_container_width=True,
@@ -315,8 +310,6 @@ with learning_tab:
         preview_columns={
             "日時": lambda learning: format_datetime_jst(learning.started_at),
             "カテゴリ": lambda learning: learning.category.value,
-            "内容": lambda learning: (
-                learning.content or "、".join(learning.keywords) or "-"
-            ),
+            "内容": lambda learning: learning.content or "、".join(learning.keywords) or "-",
         },
     )

@@ -42,9 +42,7 @@ def join_lines_list(items: list[str]) -> str:
     return "\n".join(items)
 
 
-def combine_duration_minutes(
-    hours: float | int | None, minutes: int | None
-) -> int | None:
+def combine_duration_minutes(hours: float | int | None, minutes: int | None) -> int | None:
     """時間(h)・分の2入力を、`duration_minutes`(分の単一値)へ結合する。
 
     合計が0の場合は未入力とみなしNoneを返す(他ドメインの

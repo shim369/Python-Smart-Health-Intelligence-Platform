@@ -65,9 +65,7 @@ def test_not_adopted_decision_falls_back() -> None:
 
 def test_adopted_but_no_model_loaded_falls_back() -> None:
     save_decision(
-        MLAdoptionDecision(
-            domain="weight", adopted=True, improvement_rate=0.15, reason="採用"
-        )
+        MLAdoptionDecision(domain="weight", adopted=True, improvement_rate=0.15, reason="採用")
     )
     service = WeightPredictorService()  # model_predict_fn未指定
 
@@ -78,9 +76,7 @@ def test_adopted_but_no_model_loaded_falls_back() -> None:
 
 def test_missing_data_falls_back_even_with_model() -> None:
     save_decision(
-        MLAdoptionDecision(
-            domain="weight", adopted=True, improvement_rate=0.15, reason="採用"
-        )
+        MLAdoptionDecision(domain="weight", adopted=True, improvement_rate=0.15, reason="採用")
     )
     service = WeightPredictorService(model_predict_fn=lambda x: [0.1])
 
@@ -92,9 +88,7 @@ def test_missing_data_falls_back_even_with_model() -> None:
 
 def test_inference_error_falls_back() -> None:
     save_decision(
-        MLAdoptionDecision(
-            domain="weight", adopted=True, improvement_rate=0.15, reason="採用"
-        )
+        MLAdoptionDecision(domain="weight", adopted=True, improvement_rate=0.15, reason="採用")
     )
 
     def broken_model(x: list[list[float]]) -> list[float]:
@@ -113,9 +107,7 @@ def test_no_workout_that_day_does_not_trigger_fallback() -> None:
     ではなく「運動していない日」として扱われ、Fallbackしないことを
     確認する(Day 8で見つけた不具合の回帰テスト)。"""
     save_decision(
-        MLAdoptionDecision(
-            domain="weight", adopted=True, improvement_rate=0.15, reason="採用"
-        )
+        MLAdoptionDecision(domain="weight", adopted=True, improvement_rate=0.15, reason="採用")
     )
     service = WeightPredictorService(model_predict_fn=lambda x: [0.12])
 

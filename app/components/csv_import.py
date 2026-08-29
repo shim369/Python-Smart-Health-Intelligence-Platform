@@ -78,9 +78,7 @@ def _parse_date(value: str, *, field: str) -> date_type:
         raise ValueError(f"{field}の形式が不正です(YYYY-MM-DD): {value!r}") from e
 
 
-def _parse_time(
-    value: str, *, field: str, default: time_type | None = None
-) -> time_type:
+def _parse_time(value: str, *, field: str, default: time_type | None = None) -> time_type:
     text = (value or "").strip()
     if not text:
         if default is not None:
@@ -107,9 +105,7 @@ def _parse_optional_int(value: str | None) -> int | None:
     return int(text) if text else None
 
 
-def parse_weight_rows(
-    rows: list[dict[str, str]], *, user_id: UUID
-) -> ImportResult[WeightLog]:
+def parse_weight_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportResult[WeightLog]:
     """体重ログCSVを解析する。
 
     列: date(YYYY-MM-DD, 必須), time(HH:MM, 任意・省略時00:00), weight_kg(必須)
@@ -120,9 +116,7 @@ def parse_weight_rows(
     for row_number, row in enumerate(rows, start=2):
         try:
             recorded_date = _parse_date(row.get("date", ""), field="date")
-            recorded_time = _parse_time(
-                row.get("time", ""), field="time", default=time_type(0, 0)
-            )
+            recorded_time = _parse_time(row.get("time", ""), field="time", default=time_type(0, 0))
             weight_kg = _parse_float(row.get("weight_kg", ""), field="weight_kg")
         except ValueError as e:
             errors.append(ImportRowError(row_number=row_number, message=str(e)))
@@ -140,9 +134,7 @@ def parse_weight_rows(
     return ImportResult(logs=logs, errors=errors)
 
 
-def parse_sleep_rows(
-    rows: list[dict[str, str]], *, user_id: UUID
-) -> ImportResult[SleepLog]:
+def parse_sleep_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportResult[SleepLog]:
     """睡眠ログCSVを解析する。
 
     列: bedtime_date, bedtime_time, wake_date, wake_time(いずれも必須),
@@ -153,12 +145,8 @@ def parse_sleep_rows(
 
     for row_number, row in enumerate(rows, start=2):
         try:
-            bedtime_date = _parse_date(
-                row.get("bedtime_date", ""), field="bedtime_date"
-            )
-            bedtime_time = _parse_time(
-                row.get("bedtime_time", ""), field="bedtime_time"
-            )
+            bedtime_date = _parse_date(row.get("bedtime_date", ""), field="bedtime_date")
+            bedtime_time = _parse_time(row.get("bedtime_time", ""), field="bedtime_time")
             wake_date = _parse_date(row.get("wake_date", ""), field="wake_date")
             wake_time_value = _parse_time(row.get("wake_time", ""), field="wake_time")
 
@@ -186,9 +174,7 @@ def parse_sleep_rows(
     return ImportResult(logs=logs, errors=errors)
 
 
-def parse_meal_rows(
-    rows: list[dict[str, str]], *, user_id: UUID
-) -> ImportResult[MealLog]:
+def parse_meal_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportResult[MealLog]:
     """食事ログCSVを解析する。
 
     列: date, time, meal_type(breakfast/lunch/dinner/snack), calories,
@@ -219,9 +205,7 @@ def parse_meal_rows(
             calories = _parse_float(row.get("calories", ""), field="calories")
             protein_g = _parse_float(row.get("protein_g", ""), field="protein_g")
             fat_g = _parse_float(row.get("fat_g", ""), field="fat_g")
-            carbohydrate_g = _parse_float(
-                row.get("carbohydrate_g", ""), field="carbohydrate_g"
-            )
+            carbohydrate_g = _parse_float(row.get("carbohydrate_g", ""), field="carbohydrate_g")
         except ValueError as e:
             errors.append(ImportRowError(row_number=row_number, message=str(e)))
             continue
@@ -245,9 +229,7 @@ def parse_meal_rows(
     return ImportResult(logs=logs, errors=errors)
 
 
-def parse_health_rows(
-    rows: list[dict[str, str]], *, user_id: UUID
-) -> ImportResult[HealthLog]:
+def parse_health_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportResult[HealthLog]:
     """体調ログCSVを解析する。
 
     列: date, time(必須), condition_score(任意: 1〜5),
@@ -263,9 +245,7 @@ def parse_health_rows(
             recorded_time = _parse_time(row.get("time", ""), field="time")
             condition_score = _parse_optional_int(row.get("condition_score"))
             if condition_score is not None and not (1 <= condition_score <= 5):
-                raise ValueError(
-                    f"condition_scoreは1〜5である必要があります: {condition_score}"
-                )
+                raise ValueError(f"condition_scoreは1〜5である必要があります: {condition_score}")
         except ValueError as e:
             errors.append(ImportRowError(row_number=row_number, message=str(e)))
             continue
@@ -288,9 +268,7 @@ def parse_health_rows(
     return ImportResult(logs=logs, errors=errors)
 
 
-def parse_workout_rows(
-    rows: list[dict[str, str]], *, user_id: UUID
-) -> ImportResult[WorkoutLog]:
+def parse_workout_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportResult[WorkoutLog]:
     """運動ログCSVを解析する。
 
     列: date, time(セッションを識別する組。必須), exercise_name,
@@ -317,9 +295,7 @@ def parse_workout_rows(
                 raise ValueError("exercise_nameが空です")
             if category_value not in {c.value for c in ExerciseCategory}:
                 valid = ", ".join(c.value for c in ExerciseCategory)
-                raise ValueError(
-                    f"categoryが不正です({valid}のいずれか): {category_value!r}"
-                )
+                raise ValueError(f"categoryが不正です({valid}のいずれか): {category_value!r}")
         except ValueError as e:
             errors.append(ImportRowError(row_number=row_number, message=str(e)))
             continue
@@ -365,9 +341,7 @@ def parse_workout_rows(
     return ImportResult(logs=logs, errors=errors)
 
 
-def parse_learning_rows(
-    rows: list[dict[str, str]], *, user_id: UUID
-) -> ImportResult[LearningLog]:
+def parse_learning_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportResult[LearningLog]:
     """学習ログCSVを解析する。
 
     列: date(必須), time(任意・省略時00:00), category(exam_study/
@@ -386,9 +360,7 @@ def parse_learning_rows(
     for row_number, row in enumerate(rows, start=2):
         try:
             started_date = _parse_date(row.get("date", ""), field="date")
-            started_time = _parse_time(
-                row.get("time", ""), field="time", default=time_type(0, 0)
-            )
+            started_time = _parse_time(row.get("time", ""), field="time", default=time_type(0, 0))
 
             category_text = (row.get("category") or "").strip()
             if not category_text:
@@ -397,9 +369,7 @@ def parse_learning_rows(
                 category = LearningCategory(category_text)
             except ValueError as e:
                 valid = ", ".join(c.value for c in LearningCategory)
-                raise ValueError(
-                    f"categoryが不正です({valid}のいずれか): {category_text!r}"
-                ) from e
+                raise ValueError(f"categoryが不正です({valid}のいずれか): {category_text!r}") from e
 
             location_text = (row.get("location") or "").strip()
             if location_text:
@@ -419,12 +389,8 @@ def parse_learning_rows(
             continue
 
         content = (row.get("content") or "").strip() or None
-        breakdown = [
-            s.strip() for s in (row.get("breakdown") or "").split(";") if s.strip()
-        ]
-        keywords = [
-            s.strip() for s in (row.get("keywords") or "").split(";") if s.strip()
-        ]
+        breakdown = [s.strip() for s in (row.get("breakdown") or "").split(";") if s.strip()]
+        keywords = [s.strip() for s in (row.get("keywords") or "").split(";") if s.strip()]
         notes = [s.strip() for s in (row.get("notes") or "").split(";") if s.strip()]
 
         logs.append(

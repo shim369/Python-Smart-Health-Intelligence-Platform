@@ -36,9 +36,7 @@ class SqlAlchemyRecipeIngredientRepository:
         self._session = session
 
     def list_by_recipe(self, recipe_id: UUID) -> list[RecipeIngredient]:
-        stmt = select(RecipeIngredientORM).where(
-            RecipeIngredientORM.recipe_id == recipe_id
-        )
+        stmt = select(RecipeIngredientORM).where(RecipeIngredientORM.recipe_id == recipe_id)
         return [_to_domain(orm) for orm in self._session.scalars(stmt)]
 
     def add(self, recipe_ingredient: RecipeIngredient) -> None:

@@ -39,9 +39,7 @@ from health_intelligence.domain.models import (  # noqa: E402
 _USER_ID = uuid4()
 
 
-def _meal(
-    *, consumed_at: datetime, memo: str | None, calories: float = 100.0
-) -> MealLog:
+def _meal(*, consumed_at: datetime, memo: str | None, calories: float = 100.0) -> MealLog:
     return MealLog(
         meal_log_id=uuid4(),
         user_id=_USER_ID,
@@ -144,15 +142,9 @@ def test_frequent_meal_templates_ranks_by_usage_and_ignores_empty_memo() -> None
 
 def test_frequent_meal_templates_uses_latest_nutrition_values() -> None:
     logs = [
-        _meal(
-            consumed_at=datetime(2026, 6, 1, tzinfo=UTC), memo="鶏胸肉", calories=200
-        ),
-        _meal(
-            consumed_at=datetime(2026, 6, 3, tzinfo=UTC), memo="鶏胸肉", calories=250
-        ),
-        _meal(
-            consumed_at=datetime(2026, 6, 2, tzinfo=UTC), memo="鶏胸肉", calories=999
-        ),
+        _meal(consumed_at=datetime(2026, 6, 1, tzinfo=UTC), memo="鶏胸肉", calories=200),
+        _meal(consumed_at=datetime(2026, 6, 3, tzinfo=UTC), memo="鶏胸肉", calories=250),
+        _meal(consumed_at=datetime(2026, 6, 2, tzinfo=UTC), memo="鶏胸肉", calories=999),
     ]
 
     templates = frequent_meal_templates(logs)
@@ -162,8 +154,7 @@ def test_frequent_meal_templates_uses_latest_nutrition_values() -> None:
 
 def test_frequent_meal_templates_respects_limit() -> None:
     logs = [
-        _meal(consumed_at=datetime(2026, 6, i, tzinfo=UTC), memo=f"meal{i}")
-        for i in range(1, 8)
+        _meal(consumed_at=datetime(2026, 6, i, tzinfo=UTC), memo=f"meal{i}") for i in range(1, 8)
     ]
 
     templates = frequent_meal_templates(logs, limit=3)

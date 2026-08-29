@@ -25,7 +25,5 @@ class MealNutritionCache:
     def get(self, meal_input: MealNutritionInput) -> EstimatedMealNutrition | None:
         return self._store.get(_cache_key(meal_input))
 
-    def set(
-        self, meal_input: MealNutritionInput, nutrition: EstimatedMealNutrition
-    ) -> None:
+    def set(self, meal_input: MealNutritionInput, nutrition: EstimatedMealNutrition) -> None:
         self._store[_cache_key(meal_input)] = nutrition

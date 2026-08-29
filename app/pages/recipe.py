@@ -47,12 +47,8 @@ if st.button("レシピを生成"):
                 st.error(f"レシピの生成に失敗しました: {e}")
             else:
                 st.success("レシピを生成しました。")
-                recipe_ingredients = recipe_service.get_recipe_ingredients(
-                    recipe.recipe_id
-                )
-                ingredient_names_map = recipe_service.get_ingredient_names(
-                    recipe_ingredients
-                )
+                recipe_ingredients = recipe_service.get_recipe_ingredients(recipe.recipe_id)
+                ingredient_names_map = recipe_service.get_ingredient_names(recipe_ingredients)
                 render_recipe_card(recipe, recipe_ingredients, ingredient_names_map)
 
 st.divider()

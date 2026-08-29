@@ -28,9 +28,7 @@ def upgrade() -> None:
     op.create_table(
         "learning_logs",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column(
-            "user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False
-        ),
+        sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("category", sa.String(), nullable=False),
         sa.Column("location", sa.String(), nullable=True),

@@ -45,9 +45,7 @@ class SessionTokenStore:
     def issue(self, user_id: UUID) -> str:
         """新しいトークンを発行する。"""
         token = secrets.token_urlsafe(32)
-        self._entries[token] = _Entry(
-            user_id=user_id, expires_at=time.time() + self._ttl_seconds
-        )
+        self._entries[token] = _Entry(user_id=user_id, expires_at=time.time() + self._ttl_seconds)
         return token
 
     def resolve(self, token: str) -> UUID | None:

@@ -34,9 +34,7 @@ def _to_orm(learning_log: LearningLog) -> LearningLogORM:
         user_id=learning_log.user_id,
         started_at=learning_log.started_at,
         category=learning_log.category.value,
-        location=(
-            learning_log.location.value if learning_log.location is not None else None
-        ),
+        location=(learning_log.location.value if learning_log.location is not None else None),
         content=learning_log.content,
         breakdown=list(learning_log.breakdown),
         duration_minutes=learning_log.duration_minutes,
@@ -75,9 +73,7 @@ class SqlAlchemyLearningLogRepository:
             raise RecordNotFoundError(str(learning_log.learning_log_id))
         orm.started_at = learning_log.started_at
         orm.category = learning_log.category.value
-        orm.location = (
-            learning_log.location.value if learning_log.location is not None else None
-        )
+        orm.location = learning_log.location.value if learning_log.location is not None else None
         orm.content = learning_log.content
         orm.breakdown = list(learning_log.breakdown)
         orm.duration_minutes = learning_log.duration_minutes

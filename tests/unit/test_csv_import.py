@@ -212,9 +212,7 @@ def test_parse_workout_rows_groups_same_session_into_one_log() -> None:
     assert len(result.logs) == 2
     first_session = result.logs[0]
     assert len(first_session.exercises) == 2
-    leg_press = next(
-        e for e in first_session.exercises if e.exercise_name == "レッグプレス"
-    )
+    leg_press = next(e for e in first_session.exercises if e.exercise_name == "レッグプレス")
     assert len(leg_press.sets) == 2
 
 

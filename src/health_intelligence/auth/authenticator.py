@@ -53,9 +53,7 @@ class Authenticator:
             )
             try:
                 uow.users.add(user)
-                uow.user_credentials.set_password_hash(
-                    user.user_id, hash_password(password)
-                )
+                uow.user_credentials.set_password_hash(user.user_id, hash_password(password))
                 uow.commit()
             except DuplicateKeyError as e:
                 raise EmailAlreadyRegisteredError(email) from e

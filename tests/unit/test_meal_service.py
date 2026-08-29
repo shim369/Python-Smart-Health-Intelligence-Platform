@@ -16,9 +16,7 @@ def _make_service(make_fake_uow_factory, ai_provider: FakeAIProvider) -> MealSer
 
 
 def test_estimate_nutrition_returns_ai_provider_result(make_fake_uow_factory) -> None:
-    fixed = EstimatedMealNutrition(
-        calories=350.0, protein_g=18.0, fat_g=10.0, carbohydrate_g=40.0
-    )
+    fixed = EstimatedMealNutrition(calories=350.0, protein_g=18.0, fat_g=10.0, carbohydrate_g=40.0)
     ai_provider = FakeAIProvider(fixed_meal_nutrition=fixed)
     service = _make_service(make_fake_uow_factory, ai_provider)
 
