@@ -17,6 +17,10 @@ from types import TracebackType
 from typing import Protocol, Self
 
 from health_intelligence.repositories.protocols import (
+    DailyJournalRepository,
+    DailyPlanItemRepository,
+    DailyTaskLogRepository,
+    GoalRepository,
     HealthLogRepository,
     IngredientRepository,
     LearningLogRepository,
@@ -24,6 +28,7 @@ from health_intelligence.repositories.protocols import (
     RecipeIngredientRepository,
     RecipeRepository,
     SleepLogRepository,
+    TaskRepository,
     UserCredentialRepository,
     UserRepository,
     WeightLogRepository,
@@ -58,6 +63,11 @@ class UnitOfWork(Protocol):
     ingredients: IngredientRepository
     recipes: RecipeRepository
     recipe_ingredients: RecipeIngredientRepository
+    goals: GoalRepository
+    tasks: TaskRepository
+    daily_plan_items: DailyPlanItemRepository
+    daily_task_logs: DailyTaskLogRepository
+    daily_journals: DailyJournalRepository
 
     def __enter__(self) -> Self: ...
 

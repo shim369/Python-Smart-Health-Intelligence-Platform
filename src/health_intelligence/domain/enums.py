@@ -16,6 +16,7 @@ class MealType(StrEnum):
     LUNCH = "lunch"
     DINNER = "dinner"
     SNACK = "snack"
+    PRE_WORKOUT = "pre_workout"
 
 
 class ExerciseCategory(StrEnum):
@@ -65,3 +66,39 @@ class LearningLocation(StrEnum):
     GYM = "gym"
     COWORKING_SPACE = "coworking_space"
     CAFE = "cafe"
+
+
+class GoalCategory(StrEnum):
+    """Goal/Taskのカテゴリ(daily-journal-design.md 3.2節)。
+
+    `TaskLogType`の既定値は各カテゴリで異なる(task.py参照)が、
+    Task単位で個別に上書きできる。
+    """
+
+    STUDY = "study"
+    PF_DEV = "pf_dev"
+    WORK = "work"
+    DIET = "diet"
+    EXERCISE = "exercise"
+    SLEEP = "sleep"
+    CAREER = "career"
+    LIFE = "life"
+
+
+class GoalStatus(StrEnum):
+    """Goalの進行状況。"""
+
+    IN_PROGRESS = "in_progress"
+    ACHIEVED = "achieved"
+    SUSPENDED = "suspended"
+
+
+class TaskLogType(StrEnum):
+    """Task.log_typeによる実績記録方式の区分(daily-journal-design.md 3.3節)。
+
+    COUNT_AND_DURATIONは`DailyTaskLog`(数量・時間・メモ)で実績を記録する。
+    PLAN_ONLYは選ぶだけで、実績は既存のMealLog/WorkoutLog/SleepLogが担う。
+    """
+
+    COUNT_AND_DURATION = "count_and_duration"
+    PLAN_ONLY = "plan_only"

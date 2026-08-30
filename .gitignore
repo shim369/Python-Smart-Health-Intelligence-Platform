@@ -42,3 +42,5 @@ Thumbs.db
 .streamlit/secrets.toml
 
 kiroku
+
+docs/daily-journal-design.md

@@ -56,9 +56,20 @@ if not auth_state.is_authenticated:
     pg = st.navigation([login_page])
 else:
     dashboard_page = st.Page("pages/dashboard.py", title="ダッシュボード", default=True)
-    log_entry_page = st.Page("pages/log_entry.py", title="ログ入力")
+    today_page = st.Page("pages/today.py", title="今日")
+    log_entry_page = st.Page("pages/log_entry.py", title="学習ログ")
+    goals_page = st.Page("pages/goals.py", title="長期目標")
     csv_import_page = st.Page("pages/csv_import.py", title="CSVインポート")
     recipe_page = st.Page("pages/recipe.py", title="レシピ")
-    pg = st.navigation([dashboard_page, log_entry_page, csv_import_page, recipe_page])
+    pg = st.navigation(
+        [
+            dashboard_page,
+            today_page,
+            log_entry_page,
+            goals_page,
+            csv_import_page,
+            recipe_page,
+        ]
+    )
 
 pg.run()

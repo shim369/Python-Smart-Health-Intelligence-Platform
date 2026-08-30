@@ -22,7 +22,18 @@ class HealthLog:
     user_id: UUID
     recorded_at: datetime
     condition_score: int | None = None
-    """自己申告の体調スコア。1(不調)〜5(良好)を想定。"""
+    """自己申告の体調スコア(総合)。1(不調)〜5(良好)を想定。
+    5軸拡張後も既存互換性のため残し、置き換えない(daily-journal-design.md 7章)。"""
+    morning_condition: int | None = None
+    """朝の体調。1〜5。"""
+    evening_condition: int | None = None
+    """夜の体調。1〜5。"""
+    mental_score: int | None = None
+    """メンタル。1〜5。"""
+    fatigue_score: int | None = None
+    """疲労。1〜5。"""
+    stress_score: int | None = None
+    """ストレス。1〜5。"""
     symptoms: list[str] = field(default_factory=list)
     """自由記述の症状タグ(例: "頭痛", "倦怠感")。"""
     memo: str | None = None

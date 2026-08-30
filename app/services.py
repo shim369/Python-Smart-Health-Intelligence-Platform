@@ -13,12 +13,15 @@ from health_intelligence.auth import Authenticator, SessionTokenStore
 from health_intelligence.config import get_ai_provider
 from health_intelligence.repositories.sqlalchemy import build_uow_factory
 from health_intelligence.services import (
+    DailyJournalService,
+    GoalService,
     HealthService,
     LearningService,
     MealService,
     RecipeService,
     RecommendationService,
     SleepService,
+    TaskService,
     UserService,
     WeightService,
     WorkoutService,
@@ -94,3 +97,18 @@ def get_recommendation_service() -> RecommendationService:
 @st.cache_resource
 def get_recipe_service() -> RecipeService:
     return RecipeService(_uow_factory(), get_ai_provider())
+
+
+@st.cache_resource
+def get_goal_service() -> GoalService:
+    return GoalService(_uow_factory())
+
+
+@st.cache_resource
+def get_task_service() -> TaskService:
+    return TaskService(_uow_factory())
+
+
+@st.cache_resource
+def get_daily_journal_service() -> DailyJournalService:
+    return DailyJournalService(_uow_factory())

@@ -18,6 +18,11 @@ def _to_domain(orm: HealthLogORM) -> HealthLog:
         user_id=orm.user_id,
         recorded_at=orm.recorded_at,
         condition_score=orm.condition_score,
+        morning_condition=orm.morning_condition,
+        evening_condition=orm.evening_condition,
+        mental_score=orm.mental_score,
+        fatigue_score=orm.fatigue_score,
+        stress_score=orm.stress_score,
         symptoms=list(orm.symptoms),
         memo=orm.memo,
     )
@@ -29,6 +34,11 @@ def _to_orm(health_log: HealthLog) -> HealthLogORM:
         user_id=health_log.user_id,
         recorded_at=health_log.recorded_at,
         condition_score=health_log.condition_score,
+        morning_condition=health_log.morning_condition,
+        evening_condition=health_log.evening_condition,
+        mental_score=health_log.mental_score,
+        fatigue_score=health_log.fatigue_score,
+        stress_score=health_log.stress_score,
         symptoms=list(health_log.symptoms),
         memo=health_log.memo,
     )
@@ -64,6 +74,11 @@ class SqlAlchemyHealthLogRepository:
             raise RecordNotFoundError(str(health_log.health_log_id))
         orm.recorded_at = health_log.recorded_at
         orm.condition_score = health_log.condition_score
+        orm.morning_condition = health_log.morning_condition
+        orm.evening_condition = health_log.evening_condition
+        orm.mental_score = health_log.mental_score
+        orm.fatigue_score = health_log.fatigue_score
+        orm.stress_score = health_log.stress_score
         orm.symptoms = list(health_log.symptoms)
         orm.memo = health_log.memo
 

@@ -9,9 +9,9 @@ Domain Modelへの変換は`repositories/sqlalchemy/`内のmapper関数で行う
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime, time
 
-from sqlalchemy import DateTime, ForeignKey, Text
+from sqlalchemy import DateTime, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -45,6 +45,11 @@ class HealthLogORM(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     condition_score: Mapped[int | None]
+    morning_condition: Mapped[int | None]
+    evening_condition: Mapped[int | None]
+    mental_score: Mapped[int | None]
+    fatigue_score: Mapped[int | None]
+    stress_score: Mapped[int | None]
     symptoms: Mapped[list[str]] = mapped_column(ARRAY(Text), default=list)
     memo: Mapped[str | None] = mapped_column(Text)
 
@@ -191,3 +196,94 @@ class RecipeIngredientORM(Base):
 
     recipe: Mapped[RecipeORM] = relationship(back_populates="ingredients")
     ingredient: Mapped[IngredientORM] = relationship()
+
+
+class GoalORM(Base):
+    """長期目標。daily-journal-design.md 3章参照。"""
+
+    __tablename__ = "goals"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    title: Mapped[str]
+    category: Mapped[str]
+    deadline: Mapped[date | None]
+    status: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class TaskORM(Base):
+    """Goal配下、または単発の関連タスク。daily-journal-design.md 3章参照。"""
+
+    __tablename__ = "tasks"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    goal_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("goals.id", ondelete="SET NULL"), index=True
+    )
+    category: Mapped[str]
+    title: Mapped[str]
+    log_type: Mapped[str]
+    unit: Mapped[str | None]
+    is_archived: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class DailyPlanItemORM(Base):
+    """「今日」ページP(計画)で選んだTask。daily-journal-design.md 3.4節参照。"""
+
+    __tablename__ = "daily_plan_items"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "journal_date", "task_id", name="uq_daily_plan_items_user_date_task"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    journal_date: Mapped[date] = mapped_column(index=True)
+    task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tasks.id"), index=True)
+
+
+class DailyTaskLogORM(Base):
+    """「今日」ページD(実績)、log_type=COUNT_AND_DURATIONのTaskの実績。
+    daily-journal-design.md 3.4節参照。"""
+
+    __tablename__ = "daily_task_logs"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "journal_date", "task_id", name="uq_daily_task_logs_user_date_task"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    journal_date: Mapped[date] = mapped_column(index=True)
+    task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tasks.id"), index=True)
+    quantity: Mapped[float | None]
+    duration_minutes: Mapped[int | None]
+    memo: Mapped[str | None] = mapped_column(Text)
+
+
+class DailyJournalORM(Base):
+    """「今日」ページのP/C/A項目と家計の入口。daily-journal-design.md 8章参照。"""
+
+    __tablename__ = "daily_journals"
+    __table_args__ = (
+        UniqueConstraint("user_id", "journal_date", name="uq_daily_journals_user_date"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    journal_date: Mapped[date]
+    diet_policy_note: Mapped[str | None] = mapped_column(Text)
+    wake_target_time: Mapped[time | None]
+    sleep_target_time: Mapped[time | None]
+    shopping_memo: Mapped[str | None] = mapped_column(Text)
+    food_expense_yen: Mapped[int | None]
+    work_hours: Mapped[float | None]
+    reflection_memo: Mapped[str | None] = mapped_column(Text)
+    improvement_point: Mapped[str | None] = mapped_column(Text)
+    cooking_shopping_note: Mapped[str | None] = mapped_column(Text)
+    study_prep_note: Mapped[str | None] = mapped_column(Text)

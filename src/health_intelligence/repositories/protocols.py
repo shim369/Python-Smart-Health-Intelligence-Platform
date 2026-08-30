@@ -18,10 +18,15 @@ Repositoryはビジネスルールを持たず、CRUD/Queryのみを責務とす
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Protocol
 from uuid import UUID
 
 from health_intelligence.domain.models import (
+    DailyJournal,
+    DailyPlanItem,
+    DailyTaskLog,
+    Goal,
     HealthLog,
     Ingredient,
     LearningLog,
@@ -29,6 +34,7 @@ from health_intelligence.domain.models import (
     Recipe,
     RecipeIngredient,
     SleepLog,
+    Task,
     User,
     WeightLog,
     WorkoutLog,
@@ -175,3 +181,80 @@ class RecipeIngredientRepository(Protocol):
     def list_by_recipe(self, recipe_id: UUID) -> list[RecipeIngredient]: ...
 
     def add(self, recipe_ingredient: RecipeIngredient) -> None: ...
+
+
+class GoalRepository(Protocol):
+    """Goalの永続化を担うRepository。"""
+
+    def get_by_id(self, user_id: UUID, goal_id: UUID) -> Goal | None: ...
+
+    def list_by_user(self, user_id: UUID) -> list[Goal]: ...
+
+    def add(self, goal: Goal) -> None: ...
+
+    def update(self, goal: Goal) -> None: ...
+
+    def delete(self, user_id: UUID, goal_id: UUID) -> None: ...
+
+
+class TaskRepository(Protocol):
+    """Taskの永続化を担うRepository。"""
+
+    def get_by_id(self, user_id: UUID, task_id: UUID) -> Task | None: ...
+
+    def list_by_user(
+        self, user_id: UUID, *, goal_id: UUID | None = None, include_archived: bool = True
+    ) -> list[Task]:
+        """goal_idを指定した場合はそのGoal配下のTaskのみに絞り込む。
+
+        `goal_id=None`かつ`include_archived=True`の場合は全Task(未分類含む)、
+        Goal管理画面の「未分類タスク」セクションでは`goal_id`未指定のまま
+        呼び出し側でTask.goal_idがNoneのものを絞り込む用途を想定する。
+        """
+        ...
+
+    def add(self, task: Task) -> None: ...
+
+    def update(self, task: Task) -> None: ...
+
+    def delete(self, user_id: UUID, task_id: UUID) -> None: ...
+
+
+class DailyPlanItemRepository(Protocol):
+    """DailyPlanItemの永続化を担うRepository。"""
+
+    def list_by_date(self, user_id: UUID, journal_date: date) -> list[DailyPlanItem]: ...
+
+    def replace_for_date(self, user_id: UUID, journal_date: date, task_ids: list[UUID]) -> None:
+        """指定日のPをtask_idsの内容へまるごと置き換える(削除+追加)。"""
+        ...
+
+
+class DailyTaskLogRepository(Protocol):
+    """DailyTaskLogの永続化を担うRepository。"""
+
+    def get_by_task_and_date(
+        self, user_id: UUID, task_id: UUID, journal_date: date
+    ) -> DailyTaskLog | None: ...
+
+    def list_by_date(self, user_id: UUID, journal_date: date) -> list[DailyTaskLog]: ...
+
+    def list_by_task(self, user_id: UUID, task_id: UUID) -> list[DailyTaskLog]:
+        """Goalの進捗集計(累計問題数・累計時間等)のため、同一Taskの全日分を返す。"""
+        ...
+
+    def add(self, daily_task_log: DailyTaskLog) -> None: ...
+
+    def update(self, daily_task_log: DailyTaskLog) -> None: ...
+
+    def delete(self, user_id: UUID, daily_task_log_id: UUID) -> None: ...
+
+
+class DailyJournalRepository(Protocol):
+    """DailyJournalの永続化を担うRepository。"""
+
+    def get_by_date(self, user_id: UUID, journal_date: date) -> DailyJournal | None: ...
+
+    def add(self, daily_journal: DailyJournal) -> None: ...
+
+    def update(self, daily_journal: DailyJournal) -> None: ...

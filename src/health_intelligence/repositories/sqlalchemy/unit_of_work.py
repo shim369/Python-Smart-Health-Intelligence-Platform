@@ -13,6 +13,18 @@ from typing import Self
 
 from sqlalchemy.orm import Session, sessionmaker
 
+from health_intelligence.repositories.sqlalchemy.daily_journal_repository import (
+    SqlAlchemyDailyJournalRepository,
+)
+from health_intelligence.repositories.sqlalchemy.daily_plan_item_repository import (
+    SqlAlchemyDailyPlanItemRepository,
+)
+from health_intelligence.repositories.sqlalchemy.daily_task_log_repository import (
+    SqlAlchemyDailyTaskLogRepository,
+)
+from health_intelligence.repositories.sqlalchemy.goal_repository import (
+    SqlAlchemyGoalRepository,
+)
 from health_intelligence.repositories.sqlalchemy.health_log_repository import (
     SqlAlchemyHealthLogRepository,
 )
@@ -33,6 +45,9 @@ from health_intelligence.repositories.sqlalchemy.recipe_repository import (
 )
 from health_intelligence.repositories.sqlalchemy.sleep_log_repository import (
     SqlAlchemySleepLogRepository,
+)
+from health_intelligence.repositories.sqlalchemy.task_repository import (
+    SqlAlchemyTaskRepository,
 )
 from health_intelligence.repositories.sqlalchemy.user_credential_repository import (
     SqlAlchemyUserCredentialRepository,
@@ -71,6 +86,11 @@ class SqlAlchemyUnitOfWork:
         self.ingredients = SqlAlchemyIngredientRepository(self._session)
         self.recipes = SqlAlchemyRecipeRepository(self._session)
         self.recipe_ingredients = SqlAlchemyRecipeIngredientRepository(self._session)
+        self.goals = SqlAlchemyGoalRepository(self._session)
+        self.tasks = SqlAlchemyTaskRepository(self._session)
+        self.daily_plan_items = SqlAlchemyDailyPlanItemRepository(self._session)
+        self.daily_task_logs = SqlAlchemyDailyTaskLogRepository(self._session)
+        self.daily_journals = SqlAlchemyDailyJournalRepository(self._session)
 
         return self
 
