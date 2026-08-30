@@ -10,22 +10,9 @@ from health_intelligence.domain.models import DailyTaskLog, Goal, Task
 from health_intelligence.services.goal_service import GoalService
 
 
-def _make_service(make_fake_uow_factory, *, tasks=None, daily_task_logs=None, goals=None):
-    from tests.conftest import (
-        FakeDailyTaskLogRepository,
-        FakeGoalRepository,
-        FakeTaskRepository,
-    )
-
-    uow_factory = make_fake_uow_factory(
-        goals=FakeGoalRepository(goals or []),
-        tasks=FakeTaskRepository(tasks or []),
-        daily_task_logs=FakeDailyTaskLogRepository(daily_task_logs or []),
-    )
-    return GoalService(uow_factory)
-
-
-def test_compute_task_progress_sums_quantity_and_duration(make_fake_uow_factory) -> None:
+def test_compute_task_progress_sums_quantity_and_duration(
+    make_fake_uow_factory, fake_goal_repo, fake_task_repo, fake_daily_task_log_repo
+) -> None:
     user_id = uuid4()
     goal_id = uuid4()
     task_id = uuid4()
@@ -39,7 +26,8 @@ def test_compute_task_progress_sums_quantity_and_duration(make_fake_uow_factory)
         unit="問",
         created_at=datetime.now(UTC),
     )
-    logs = [
+    fake_task_repo.add(task)
+    fake_daily_task_log_repo.add(
         DailyTaskLog(
             daily_task_log_id=uuid4(),
             user_id=user_id,
@@ -47,7 +35,9 @@ def test_compute_task_progress_sums_quantity_and_duration(make_fake_uow_factory)
             task_id=task_id,
             quantity=150,
             duration_minutes=60,
-        ),
+        )
+    )
+    fake_daily_task_log_repo.add(
         DailyTaskLog(
             daily_task_log_id=uuid4(),
             user_id=user_id,
@@ -55,9 +45,12 @@ def test_compute_task_progress_sums_quantity_and_duration(make_fake_uow_factory)
             task_id=task_id,
             quantity=300,
             duration_minutes=90,
-        ),
-    ]
-    service = _make_service(make_fake_uow_factory, tasks=[task], daily_task_logs=logs)
+        )
+    )
+    uow_factory = make_fake_uow_factory(
+        goals=fake_goal_repo, tasks=fake_task_repo, daily_task_logs=fake_daily_task_log_repo
+    )
+    service = GoalService(uow_factory)
 
     progresses = service.compute_task_progress(user_id, goal_id)
 
@@ -68,7 +61,9 @@ def test_compute_task_progress_sums_quantity_and_duration(make_fake_uow_factory)
     assert progresses[0].log_count == 2
 
 
-def test_compute_task_progress_excludes_plan_only_tasks(make_fake_uow_factory) -> None:
+def test_compute_task_progress_excludes_plan_only_tasks(
+    make_fake_uow_factory, fake_goal_repo, fake_task_repo, fake_daily_task_log_repo
+) -> None:
     user_id = uuid4()
     goal_id = uuid4()
     plan_only_task = Task(
@@ -80,16 +75,18 @@ def test_compute_task_progress_excludes_plan_only_tasks(make_fake_uow_factory) -
         log_type=TaskLogType.PLAN_ONLY,
         created_at=datetime.now(UTC),
     )
-    service = _make_service(make_fake_uow_factory, tasks=[plan_only_task])
+    fake_task_repo.add(plan_only_task)
+    uow_factory = make_fake_uow_factory(
+        goals=fake_goal_repo, tasks=fake_task_repo, daily_task_logs=fake_daily_task_log_repo
+    )
+    service = GoalService(uow_factory)
 
     progresses = service.compute_task_progress(user_id, goal_id)
 
     assert progresses == []
 
 
-def test_change_status_updates_goal_status(make_fake_uow_factory) -> None:
-    from tests.conftest import FakeGoalRepository
-
+def test_change_status_updates_goal_status(make_fake_uow_factory, fake_goal_repo) -> None:
     user_id = uuid4()
     goal = Goal(
         goal_id=uuid4(),
@@ -99,7 +96,7 @@ def test_change_status_updates_goal_status(make_fake_uow_factory) -> None:
         status=GoalStatus.IN_PROGRESS,
         created_at=datetime.now(UTC),
     )
-    fake_goal_repo = FakeGoalRepository([goal])
+    fake_goal_repo.add(goal)
     uow_factory = make_fake_uow_factory(goals=fake_goal_repo)
     service = GoalService(uow_factory)
 
