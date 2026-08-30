@@ -36,6 +36,7 @@ from components.csv_import import (  # noqa: E402
 )
 from components.formatting import format_datetime_jst  # noqa: E402
 from components.workout_form import format_exercise_line  # noqa: E402
+from i18n import t  # noqa: E402
 from services import (  # noqa: E402
     get_health_service,
     get_learning_service,
@@ -48,11 +49,13 @@ from services import (  # noqa: E402
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title(":material/upload_file: CSVインポート")
+st.title(":material/upload_file: " + t("CSVインポート"))
 st.caption(
-    "スプレッドシートやメモに記録していた過去のログをCSVで書き出して、"
-    "このアプリへまとめて取り込めます。各タブのテンプレートに沿って"
-    "CSVを準備してください。"
+    t(
+        "スプレッドシートやメモに記録していた過去のログをCSVで書き出して、"
+        "このアプリへまとめて取り込めます。各タブのテンプレートに沿って"
+        "CSVを準備してください。"
+    )
 )
 
 
@@ -91,7 +94,7 @@ def _render_import_tab(
     """
     st.caption(caption)
     st.download_button(
-        "テンプレートCSVをダウンロード",
+        t("テンプレートCSVをダウンロード"),
         data=_template_bytes(header, example_row),
         file_name=f"{key_prefix}_template.csv",
         mime="text/csv",
@@ -102,7 +105,7 @@ def _render_import_tab(
     uploader_version = st.session_state.get(uploader_version_key, 0)
 
     uploaded = st.file_uploader(
-        "CSVファイルを選択", type="csv", key=f"{key_prefix}_uploader_{uploader_version}"
+        t("CSVファイルを選択"), type="csv", key=f"{key_prefix}_uploader_{uploader_version}"
     )
     if uploaded is None:
         return
@@ -110,23 +113,29 @@ def _render_import_tab(
     try:
         rows = _read_csv_rows(uploaded)
     except UnicodeDecodeError:
-        st.error("文字コードを読み取れませんでした。UTF-8で保存し直してください。")
+        st.error(t("文字コードを読み取れませんでした。UTF-8で保存し直してください。"))
         return
 
     if not rows:
-        st.warning("データ行がありません。")
+        st.warning(t("データ行がありません。"))
         return
 
     result: ImportResult = parse_fn(rows, user_id=user_id)
 
-    st.write(f"有効な行: {len(result.logs)}件 / エラー: {len(result.errors)}件")
+    st.write(
+        t(
+            "有効な行: {valid}件 / エラー: {error}件",
+            valid=len(result.logs),
+            error=len(result.errors),
+        )
+    )
 
     if result.errors:
         st.dataframe(
             pd.DataFrame(
                 {
-                    "行番号": [e.row_number for e in result.errors],
-                    "エラー内容": [e.message for e in result.errors],
+                    t("行番号"): [e.row_number for e in result.errors],
+                    t("エラー内容"): [e.message for e in result.errors],
                 }
             ),
             hide_index=True,
@@ -143,14 +152,14 @@ def _render_import_tab(
         )
 
         if st.button(
-            f"有効な{len(result.logs)}件をインポートする",
+            t("有効な{count}件をインポートする", count=len(result.logs)),
             key=f"{key_prefix}_import_button",
             type="primary",
         ):
             for log in result.logs:
                 record_fn(log)
             st.session_state[uploader_version_key] = uploader_version + 1
-            st.success(f"{len(result.logs)}件のログをインポートしました。")
+            st.success(t("{count}件のログをインポートしました。", count=len(result.logs)))
             st.rerun()
 
 
@@ -161,12 +170,12 @@ def _render_import_tab(
     weight_tab,
     health_tab,
     learning_tab,
-) = st.tabs(["食事", "運動", "睡眠", "体重", "体調", "学習"])
+) = st.tabs([t("食事"), t("運動"), t("睡眠"), t("体重"), t("体調"), t("学習")])
 
 
 with meal_tab:
     _render_import_tab(
-        label="食事",
+        label=t("食事"),
         key_prefix="meal",
         header=[
             "date",
@@ -186,24 +195,24 @@ with meal_tab:
             "20",
             "15",
             "55",
-            "納豆ご飯",
+            t("納豆ご飯"),
         ],
-        caption=(
+        caption=t(
             "meal_typeは breakfast / lunch / dinner / snack のいずれか。"
             "AIによる推定は行わず、CSVの数値をそのまま取り込みます。"
         ),
         parse_fn=parse_meal_rows,
         record_fn=lambda log: get_meal_service().record_meal_log(log),
         preview_columns={
-            "日時": lambda m: format_datetime_jst(m.consumed_at),
-            "区分": lambda m: m.meal_type.value,
+            t("日時"): lambda m: format_datetime_jst(m.consumed_at),
+            t("区分"): lambda m: m.meal_type.value,
             "kcal": lambda m: m.calories,
         },
     )
 
 with workout_tab:
     _render_import_tab(
-        label="運動",
+        label=t("運動"),
         key_prefix="workout",
         header=[
             "date",
@@ -214,8 +223,8 @@ with workout_tab:
             "reps",
             "weight_kg",
         ],
-        example_row=["2026-06-01", "19:00", "レッグプレス", "strength", "", "10", "75"],
-        caption=(
+        example_row=["2026-06-01", "19:00", t("レッグプレス"), "strength", "", "10", "75"],
+        caption=t(
             "同じdate・timeの行は1回の運動セッションとしてまとめられます。"
             "categoryは cardio(duration_minutesを使用) / strength"
             "(reps・weight_kgを使用)。同じexercise_nameを複数行に分ければ"
@@ -224,65 +233,65 @@ with workout_tab:
         parse_fn=parse_workout_rows,
         record_fn=lambda log: get_workout_service().record_workout_log(log),
         preview_columns={
-            "日時": lambda w: format_datetime_jst(w.performed_at),
-            "種目数": lambda w: len(w.exercises),
-            "種目": lambda w: " / ".join(format_exercise_line(e) for e in w.exercises),
+            t("日時"): lambda w: format_datetime_jst(w.performed_at),
+            t("種目数"): lambda w: len(w.exercises),
+            t("種目"): lambda w: " / ".join(format_exercise_line(e) for e in w.exercises),
         },
     )
 
 with sleep_tab:
     _render_import_tab(
-        label="睡眠",
+        label=t("睡眠"),
         key_prefix="sleep",
         header=["bedtime_date", "bedtime_time", "wake_date", "wake_time", "quality"],
         example_row=["2026-06-01", "23:30", "2026-06-02", "07:00", "good"],
-        caption="qualityは任意。poor / fair / good / excellent のいずれか。",
+        caption=t("qualityは任意。poor / fair / good / excellent のいずれか。"),
         parse_fn=parse_sleep_rows,
         record_fn=lambda log: get_sleep_service().record_sleep_log(log),
         preview_columns={
-            "就寝": lambda s: format_datetime_jst(s.bedtime),
-            "起床": lambda s: format_datetime_jst(s.wake_time),
-            "睡眠時間(分)": lambda s: s.duration_minutes,
+            t("就寝"): lambda s: format_datetime_jst(s.bedtime),
+            t("起床"): lambda s: format_datetime_jst(s.wake_time),
+            t("睡眠時間(分)"): lambda s: s.duration_minutes,
         },
     )
 
 with weight_tab:
     _render_import_tab(
-        label="体重",
+        label=t("体重"),
         key_prefix="weight",
         header=["date", "time", "weight_kg"],
         example_row=["2026-06-01", "07:00", "65.5"],
-        caption="timeは任意(省略時は00:00として記録されます)。",
+        caption=t("timeは任意(省略時は00:00として記録されます)。"),
         parse_fn=parse_weight_rows,
         record_fn=lambda log: get_weight_service().record_weight_log(log),
         preview_columns={
-            "日時": lambda w: format_datetime_jst(w.recorded_at),
-            "体重(kg)": lambda w: w.weight_kg,
+            t("日時"): lambda w: format_datetime_jst(w.recorded_at),
+            t("体重(kg)"): lambda w: w.weight_kg,
         },
     )
 
 with health_tab:
     _render_import_tab(
-        label="体調",
+        label=t("体調"),
         key_prefix="health",
         header=["date", "time", "condition_score", "symptoms", "memo"],
-        example_row=["2026-06-01", "08:00", "3", "頭痛;倦怠感", ""],
-        caption=(
+        example_row=["2026-06-01", "08:00", "3", t("頭痛;倦怠感"), ""],
+        caption=t(
             "condition_scoreは任意(1〜5)。symptomsは任意で、"
             "複数ある場合はセミコロン(;)区切りで記入してください。"
         ),
         parse_fn=parse_health_rows,
         record_fn=lambda log: get_health_service().record_health_log(log),
         preview_columns={
-            "日時": lambda h: format_datetime_jst(h.recorded_at),
-            "スコア": lambda h: h.condition_score,
-            "症状": lambda h: "、".join(h.symptoms),
+            t("日時"): lambda h: format_datetime_jst(h.recorded_at),
+            t("スコア"): lambda h: h.condition_score,
+            t("症状"): lambda h: "、".join(h.symptoms),
         },
     )
 
 with learning_tab:
     _render_import_tab(
-        label="学習",
+        label=t("学習"),
         key_prefix="learning",
         header=[
             "date",
@@ -300,13 +309,13 @@ with learning_tab:
             "20:00",
             "exam_study",
             "home",
-            "Chapter1 過去問",
+            t("Chapter1 過去問"),
             "Chapter1;Chapter2",
             "60",
             "Python;SQL",
             "",
         ],
-        caption=(
+        caption=t(
             "categoryは exam_study(試験勉強) / portfolio_dev(PF開発) / "
             "research(調べ物) / career_strategy(キャリア・プロダクト戦略設計)"
             "のいずれか。locationは任意で home/gym/coworking_space/cafeの"
@@ -316,8 +325,8 @@ with learning_tab:
         parse_fn=parse_learning_rows,
         record_fn=lambda log: get_learning_service().record_learning_log(log),
         preview_columns={
-            "日時": lambda learning: format_datetime_jst(learning.started_at),
-            "カテゴリ": lambda learning: learning.category.value,
-            "内容": lambda learning: learning.content or "、".join(learning.keywords) or "-",
+            t("日時"): lambda learning: format_datetime_jst(learning.started_at),
+            t("カテゴリ"): lambda learning: learning.category.value,
+            t("内容"): lambda learning: learning.content or "、".join(learning.keywords) or "-",
         },
     )

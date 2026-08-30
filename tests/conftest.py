@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 from typing import TypeVar
@@ -14,6 +15,7 @@ from uuid import UUID, uuid4
 import pytest
 from dotenv import load_dotenv
 
+from health_intelligence.domain.enums import Locale
 from health_intelligence.domain.models import (
     DailyJournal,
     DailyPlanItem,
@@ -53,6 +55,13 @@ class FakeUserRepository:
     def add(self, user: User) -> None:
         self._by_email[user.email] = user
         self._by_id[user.user_id] = user
+
+    def update_locale(self, user_id: UUID, locale: Locale) -> None:
+        user = self._by_id.get(user_id)
+        if user is not None:
+            updated = replace(user, locale=locale)
+            self._by_id[user_id] = updated
+            self._by_email[updated.email] = updated
 
 
 class FakeUserCredentialRepository:

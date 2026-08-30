@@ -6,9 +6,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from i18n import t
+
 DONE = "済"
 PARTIAL = "一部"
 NOT_DONE = "未"
+"""日本語の原文定数(テスト・内部ロジック用)。実際に表示する値は
+`compute_pdca_status`内で`t()`により翻訳してから`PdcaStatus`へ詰める。"""
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -46,4 +50,4 @@ def compute_pdca_status(
     check = DONE if has_reflection else NOT_DONE
     act = DONE if has_improvement else NOT_DONE
 
-    return PdcaStatus(plan=plan, do=do, check=check, act=act)
+    return PdcaStatus(plan=t(plan), do=t(do), check=t(check), act=t(act))

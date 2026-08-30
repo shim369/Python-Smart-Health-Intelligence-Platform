@@ -27,6 +27,7 @@ class UserORM(Base):
     email: Mapped[str] = mapped_column(unique=True)
     display_name: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    locale: Mapped[str] = mapped_column(default="ja")
 
 
 class UserCredentialORM(Base):

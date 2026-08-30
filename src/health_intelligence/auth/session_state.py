@@ -31,6 +31,7 @@ from collections.abc import MutableMapping
 from uuid import UUID
 
 from health_intelligence.auth.session_keys import SessionKey
+from health_intelligence.domain.enums import Locale
 
 
 class AuthSessionState:
@@ -57,6 +58,7 @@ class AuthSessionState:
         """
         self._state.setdefault(SessionKey.AUTHENTICATED, False)
         self._state.setdefault(SessionKey.USER_ID, None)
+        self._state.setdefault(SessionKey.LOCALE, Locale.JA)
 
     @property
     def is_authenticated(self) -> bool:
@@ -67,10 +69,28 @@ class AuthSessionState:
         value = self._state.get(SessionKey.USER_ID)
         return value if isinstance(value, UUID) else None
 
-    def login(self, user_id: UUID) -> None:
-        """認証成功時にSession Stateへユーザーを紐付ける。"""
+    @property
+    def locale(self) -> Locale:
+        """現在の表示言語。`app.i18n.t()`がここを参照して翻訳を切り替える。"""
+        value = self._state.get(SessionKey.LOCALE)
+        return value if isinstance(value, Locale) else Locale.JA
+
+    def login(self, user_id: UUID, locale: Locale = Locale.JA) -> None:
+        """認証成功時にSession Stateへユーザーを紐付ける。
+
+        `locale`はUser.localeをそのまま渡す想定(DBに保存された
+        言語設定を、DB往復せずに毎リクエスト参照できるようにする)。
+        """
         self._state[SessionKey.AUTHENTICATED] = True
         self._state[SessionKey.USER_ID] = user_id
+        self._state[SessionKey.LOCALE] = locale
+
+    def set_locale(self, locale: Locale) -> None:
+        """言語切り替えUIから呼ばれる、Session State側のみの即時反映。
+
+        DBへの永続化(UserService.update_locale)は呼び出し側の責務とする。
+        """
+        self._state[SessionKey.LOCALE] = locale
 
     def logout(self) -> None:
         """ログアウト時にユーザー固有のSession Stateをリセットする。
@@ -82,6 +102,7 @@ class AuthSessionState:
         """
         self._state[SessionKey.AUTHENTICATED] = False
         self._state[SessionKey.USER_ID] = None
+        self._state[SessionKey.LOCALE] = Locale.JA
 
     def require_user_id(self) -> UUID:
         """認証済みであることを前提にuser_idを取得する。

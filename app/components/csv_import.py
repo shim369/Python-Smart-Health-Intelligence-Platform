@@ -24,6 +24,7 @@ from uuid import UUID, uuid4
 
 from components.formatting import combine_jst_to_utc
 from components.workout_form import build_workout_log
+from i18n import t
 
 from health_intelligence.domain.enums import (
     ExerciseCategory,
@@ -71,11 +72,13 @@ class ImportResult[T]:
 def _parse_date(value: str, *, field: str) -> date_type:
     text = (value or "").strip()
     if not text:
-        raise ValueError(f"{field}が空です")
+        raise ValueError(t("{field}が空です", field=field))
     try:
         return date_type.fromisoformat(text)
     except ValueError as e:
-        raise ValueError(f"{field}の形式が不正です(YYYY-MM-DD): {value!r}") from e
+        raise ValueError(
+            t("{field}の形式が不正です(YYYY-MM-DD): {value!r}", field=field, value=value)
+        ) from e
 
 
 def _parse_time(value: str, *, field: str, default: time_type | None = None) -> time_type:
@@ -83,21 +86,25 @@ def _parse_time(value: str, *, field: str, default: time_type | None = None) -> 
     if not text:
         if default is not None:
             return default
-        raise ValueError(f"{field}が空です")
+        raise ValueError(t("{field}が空です", field=field))
     try:
         return time_type.fromisoformat(text)
     except ValueError as e:
-        raise ValueError(f"{field}の形式が不正です(HH:MM): {value!r}") from e
+        raise ValueError(
+            t("{field}の形式が不正です(HH:MM): {value!r}", field=field, value=value)
+        ) from e
 
 
 def _parse_float(value: str, *, field: str) -> float:
     text = (value or "").strip()
     if not text:
-        raise ValueError(f"{field}が空です")
+        raise ValueError(t("{field}が空です", field=field))
     try:
         return float(text)
     except ValueError as e:
-        raise ValueError(f"{field}が数値ではありません: {value!r}") from e
+        raise ValueError(
+            t("{field}が数値ではありません: {value!r}", field=field, value=value)
+        ) from e
 
 
 def _parse_optional_int(value: str | None) -> int | None:
@@ -156,7 +163,7 @@ def parse_sleep_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportResu
             bedtime = combine_jst_to_utc(bedtime_date, bedtime_time)
             wake_time = combine_jst_to_utc(wake_date, wake_time_value)
             if wake_time <= bedtime:
-                raise ValueError("wake_timeはbedtimeより後である必要があります")
+                raise ValueError(t("wake_timeはbedtimeより後である必要があります"))
         except ValueError as e:
             errors.append(ImportRowError(row_number=row_number, message=str(e)))
             continue
@@ -193,13 +200,17 @@ def parse_meal_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportResul
 
             meal_type_text = (row.get("meal_type") or "").strip()
             if not meal_type_text:
-                raise ValueError("meal_typeが空です")
+                raise ValueError(t("meal_typeが空です"))
             try:
                 meal_type = MealType(meal_type_text)
             except ValueError as e:
                 valid = ", ".join(m.value for m in MealType)
                 raise ValueError(
-                    f"meal_typeが不正です({valid}のいずれか): {meal_type_text!r}"
+                    t(
+                        "meal_typeが不正です({valid}のいずれか): {value!r}",
+                        valid=valid,
+                        value=meal_type_text,
+                    )
                 ) from e
 
             calories = _parse_float(row.get("calories", ""), field="calories")
@@ -245,7 +256,12 @@ def parse_health_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportRes
             recorded_time = _parse_time(row.get("time", ""), field="time")
             condition_score = _parse_optional_int(row.get("condition_score"))
             if condition_score is not None and not (1 <= condition_score <= 5):
-                raise ValueError(f"condition_scoreは1〜5である必要があります: {condition_score}")
+                raise ValueError(
+                    t(
+                        "condition_scoreは1〜5である必要があります: {value}",
+                        value=condition_score,
+                    )
+                )
         except ValueError as e:
             errors.append(ImportRowError(row_number=row_number, message=str(e)))
             continue
@@ -292,10 +308,16 @@ def parse_workout_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportRe
             name = (row.get("exercise_name") or "").strip()
             category_value = (row.get("category") or "").strip()
             if not name:
-                raise ValueError("exercise_nameが空です")
+                raise ValueError(t("exercise_nameが空です"))
             if category_value not in {c.value for c in ExerciseCategory}:
                 valid = ", ".join(c.value for c in ExerciseCategory)
-                raise ValueError(f"categoryが不正です({valid}のいずれか): {category_value!r}")
+                raise ValueError(
+                    t(
+                        "categoryが不正です({valid}のいずれか): {value!r}",
+                        valid=valid,
+                        value=category_value,
+                    )
+                )
         except ValueError as e:
             errors.append(ImportRowError(row_number=row_number, message=str(e)))
             continue
@@ -332,7 +354,7 @@ def parse_workout_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportRe
             errors.append(
                 ImportRowError(
                     row_number=row_numbers[key][0],
-                    message="有効な種目がありません",
+                    message=t("有効な種目がありません"),
                 )
             )
             continue
@@ -364,12 +386,18 @@ def parse_learning_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportR
 
             category_text = (row.get("category") or "").strip()
             if not category_text:
-                raise ValueError("categoryが空です")
+                raise ValueError(t("categoryが空です"))
             try:
                 category = LearningCategory(category_text)
             except ValueError as e:
                 valid = ", ".join(c.value for c in LearningCategory)
-                raise ValueError(f"categoryが不正です({valid}のいずれか): {category_text!r}") from e
+                raise ValueError(
+                    t(
+                        "categoryが不正です({valid}のいずれか): {value!r}",
+                        valid=valid,
+                        value=category_text,
+                    )
+                ) from e
 
             location_text = (row.get("location") or "").strip()
             if location_text:
@@ -378,7 +406,11 @@ def parse_learning_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportR
                 except ValueError as e:
                     valid = ", ".join(loc.value for loc in LearningLocation)
                     raise ValueError(
-                        f"locationが不正です({valid}のいずれか): {location_text!r}"
+                        t(
+                            "locationが不正です({valid}のいずれか): {value!r}",
+                            valid=valid,
+                            value=location_text,
+                        )
                     ) from e
             else:
                 location = None

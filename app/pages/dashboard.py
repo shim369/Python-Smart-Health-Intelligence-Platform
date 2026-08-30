@@ -22,6 +22,7 @@ from components.dashboard_charts import (  # noqa: E402
     last_n_days,
 )
 from components.formatting import jst_date_of  # noqa: E402
+from i18n import t  # noqa: E402
 from services import (  # noqa: E402
     get_daily_journal_service,
     get_health_service,
@@ -43,7 +44,7 @@ from health_intelligence.domain.enums import (  # noqa: E402
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title(":material/dashboard: ダッシュボード")
+st.title(":material/dashboard: " + t("ダッシュボード"))
 
 _DAYS = last_n_days(datetime.now(UTC).date(), 7)
 _DATE_LABELS = [d.strftime("%m/%d") for d in _DAYS]
@@ -70,7 +71,7 @@ def _line_chart(series: dict[str, list[float | None]], *, y_title: str) -> None:
         "y": alt.Y(f"{y_title}:Q"),
     }
     if len(series) > 1:
-        encode_kwargs["color"] = alt.Color("指標:N", sort=list(series))
+        encode_kwargs["color"] = alt.Color("指標:N", title=t("指標"), sort=list(series))
     chart = alt.Chart(df).mark_line(point=True).encode(**encode_kwargs)
     st.altair_chart(chart, width="stretch")
 
@@ -78,12 +79,12 @@ def _line_chart(series: dict[str, list[float | None]], *, y_title: str) -> None:
 # ============================================================
 # 睡眠・体調
 # ============================================================
-st.subheader("睡眠・体調")
+st.subheader(t("睡眠・体調"))
 
 sleep_logs = get_sleep_service().list_sleep_logs(user_id)
 sleep_col, condition_col = st.columns(2)
 with sleep_col:
-    st.caption("睡眠時間(h)")
+    st.caption(t("睡眠時間(h)"))
     _bar_chart(
         group_sum_by_date(
             sleep_logs,
@@ -91,53 +92,53 @@ with sleep_col:
             lambda s: s.duration_minutes / 60,
             _DAYS,
         ),
-        y_title="睡眠時間(h)",
+        y_title=t("睡眠時間(h)"),
     )
 
 health_logs = get_health_service().list_health_logs(user_id)
 with condition_col:
-    st.caption("体調スコア(1〜5)")
+    st.caption(t("体調スコア(1〜5)"))
     _line_chart(
         {
-            "総合": group_average_by_date(
+            t("総合"): group_average_by_date(
                 health_logs,
                 lambda h: jst_date_of(h.recorded_at),
                 lambda h: h.condition_score,
                 _DAYS,
             ),
-            "朝": group_average_by_date(
+            t("朝"): group_average_by_date(
                 health_logs,
                 lambda h: jst_date_of(h.recorded_at),
                 lambda h: h.morning_condition,
                 _DAYS,
             ),
-            "夜": group_average_by_date(
+            t("夜"): group_average_by_date(
                 health_logs,
                 lambda h: jst_date_of(h.recorded_at),
                 lambda h: h.evening_condition,
                 _DAYS,
             ),
-            "メンタル": group_average_by_date(
+            t("メンタル"): group_average_by_date(
                 health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.mental_score, _DAYS
             ),
-            "疲労": group_average_by_date(
+            t("疲労"): group_average_by_date(
                 health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.fatigue_score, _DAYS
             ),
-            "ストレス": group_average_by_date(
+            t("ストレス"): group_average_by_date(
                 health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.stress_score, _DAYS
             ),
         },
-        y_title="スコア",
+        y_title=t("スコア"),
     )
 
-st.caption("体重(kg)")
+st.caption(t("体重(kg)"))
 weight_logs = get_weight_service().list_weight_logs(user_id)
 weight_values = group_average_by_date(
     weight_logs, lambda w: jst_date_of(w.recorded_at), lambda w: w.weight_kg, _DAYS
 )
 weight_df = pd.DataFrame({"日付": _DATE_LABELS, "体重(kg)": weight_values}).dropna()
 if weight_df.empty:
-    st.caption("直近7日間の体重記録がありません。")
+    st.caption(t("直近7日間の体重記録がありません。"))
 else:
     # y軸は50〜75kgを5kg刻みで固定表示する(体重の目標レンジに合わせた見やすさのため)。
     weight_chart = (
@@ -147,6 +148,7 @@ else:
             x=alt.X("日付:N", sort=None, title=None),
             y=alt.Y(
                 "体重(kg):Q",
+                title=t("体重(kg)"),
                 scale=alt.Scale(domain=[50, 75]),
                 axis=alt.Axis(values=list(range(50, 76, 5))),
             ),
@@ -159,25 +161,25 @@ st.divider()
 # ============================================================
 # 食事
 # ============================================================
-st.subheader("食事")
+st.subheader(t("食事"))
 
 meal_logs = get_meal_service().list_meal_logs(user_id)
 cal_col, pfc_col = st.columns(2)
 with cal_col:
-    st.caption("カロリー(kcal)")
+    st.caption(t("カロリー(kcal)"))
     _bar_chart(
         group_sum_by_date(
             meal_logs, lambda m: jst_date_of(m.consumed_at), lambda m: m.calories, _DAYS
         ),
-        y_title="カロリー(kcal)",
+        y_title=t("カロリー(kcal)"),
     )
 with pfc_col:
-    st.caption("PFC(g)")
+    st.caption(t("PFC(g)"))
     pfc_frames = []
     for label, getter in (
-        ("タンパク質", lambda m: m.protein_g),
-        ("脂質", lambda m: m.fat_g),
-        ("炭水化物", lambda m: m.carbohydrate_g),
+        (t("タンパク質"), lambda m: m.protein_g),
+        (t("脂質"), lambda m: m.fat_g),
+        (t("炭水化物"), lambda m: m.carbohydrate_g),
     ):
         values = group_sum_by_date(meal_logs, lambda m: jst_date_of(m.consumed_at), getter, _DAYS)
         pfc_frames.append(pd.DataFrame({"日付": _DATE_LABELS, "g": values, "栄養素": label}))
@@ -188,7 +190,11 @@ with pfc_col:
         .encode(
             x=alt.X("日付:N", sort=None, title=None),
             y=alt.Y("g:Q", stack="zero"),
-            color=alt.Color("栄養素:N", sort=["タンパク質", "脂質", "炭水化物"]),
+            color=alt.Color(
+                "栄養素:N",
+                title=t("栄養素"),
+                sort=[t("タンパク質"), t("脂質"), t("炭水化物")],
+            ),
         )
     )
     st.altair_chart(pfc_chart, width="stretch")
@@ -221,8 +227,8 @@ def _task_minutes_by_category(categories: set[GoalCategory]) -> list[float]:
 
 study_col, pfdev_col = st.columns(2)
 with study_col:
-    st.subheader("学習")
-    st.caption("学習時間(分) — 学習ログ + タスク実績")
+    st.subheader(t("学習"))
+    st.caption(t("学習時間(分) — 学習ログ + タスク実績"))
     learning_minutes = group_sum_by_date(
         [
             log
@@ -236,12 +242,12 @@ with study_col:
     task_minutes = _task_minutes_by_category({GoalCategory.STUDY})
     _bar_chart(
         [a + b for a, b in zip(learning_minutes, task_minutes, strict=True)],
-        y_title="学習時間(分)",
+        y_title=t("学習時間(分)"),
     )
 
 with pfdev_col:
-    st.subheader("PF開発・仕事")
-    st.caption("作業時間(分) — 学習ログ + タスク実績")
+    st.subheader(t("PF開発・仕事"))
+    st.caption(t("作業時間(分) — 学習ログ + タスク実績"))
     pfdev_learning_minutes = group_sum_by_date(
         [
             log
@@ -257,7 +263,7 @@ with pfdev_col:
     )
     _bar_chart(
         [a + b for a, b in zip(pfdev_learning_minutes, pfdev_task_minutes, strict=True)],
-        y_title="作業時間(分)",
+        y_title=t("作業時間(分)"),
     )
 
 st.divider()
@@ -265,18 +271,18 @@ st.divider()
 # ============================================================
 # 運動
 # ============================================================
-st.subheader("運動")
+st.subheader(t("運動"))
 
 workout_logs = get_workout_service().list_workout_logs(user_id)
 session_col, cardio_col = st.columns(2)
 with session_col:
-    st.caption("運動セッション数")
+    st.caption(t("運動セッション数"))
     _bar_chart(
         group_sum_by_date(workout_logs, lambda w: jst_date_of(w.performed_at), lambda w: 1, _DAYS),
-        y_title="セッション数",
+        y_title=t("セッション数"),
     )
 with cardio_col:
-    st.caption("有酸素運動時間(分)")
+    st.caption(t("有酸素運動時間(分)"))
     cardio_pairs = [
         (jst_date_of(w.performed_at), exercise.duration_minutes or 0)
         for w in workout_logs
@@ -285,7 +291,7 @@ with cardio_col:
     ]
     _bar_chart(
         group_sum_by_date(cardio_pairs, lambda p: p[0], lambda p: p[1], _DAYS),
-        y_title="有酸素運動時間(分)",
+        y_title=t("有酸素運動時間(分)"),
     )
 
 st.divider()
@@ -293,10 +299,10 @@ st.divider()
 # ============================================================
 # 家計
 # ============================================================
-st.subheader("家計")
-st.caption("食費合計(円)")
+st.subheader(t("家計"))
+st.caption(t("食費合計(円)"))
 
 daily_journal_service = get_daily_journal_service()
 journals = [daily_journal_service.get_journal(user_id, d) for d in _DAYS]
 expense_values = [j.food_expense_yen or 0 if j is not None else 0 for j in journals]
-_bar_chart(expense_values, y_title="食費合計(円)")
+_bar_chart(expense_values, y_title=t("食費合計(円)"))

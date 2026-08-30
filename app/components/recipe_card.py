@@ -6,6 +6,7 @@ from uuid import UUID
 
 import streamlit as st
 from components.formatting import format_datetime_jst
+from i18n import t
 
 from health_intelligence.domain.models import Recipe, RecipeIngredient
 
@@ -28,10 +29,10 @@ def render_recipe_card(
                 f"C: {recipe.carbohydrate_g:.0f}g)"
             )
 
-        st.markdown("**材料**")
+        st.markdown(f"**{t('材料')}**")
         for ingredient in ingredients:
-            name = ingredient_names.get(ingredient.ingredient_id, "(不明)")
+            name = ingredient_names.get(ingredient.ingredient_id, t("(不明)"))
             st.markdown(f"- {name}: {ingredient.amount:g}{ingredient.unit}")
 
-        st.markdown("**作り方**")
+        st.markdown(f"**{t('作り方')}**")
         st.write(recipe.instructions)

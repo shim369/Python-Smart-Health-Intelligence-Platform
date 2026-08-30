@@ -22,6 +22,7 @@ from datetime import date
 from typing import Protocol
 from uuid import UUID
 
+from health_intelligence.domain.enums import Locale
 from health_intelligence.domain.models import (
     DailyJournal,
     DailyPlanItem,
@@ -49,6 +50,8 @@ class UserRepository(Protocol):
     def get_by_email(self, email: str) -> User | None: ...
 
     def add(self, user: User) -> None: ...
+
+    def update_locale(self, user_id: UUID, locale: Locale) -> None: ...
 
 
 class UserCredentialRepository(Protocol):

@@ -23,6 +23,8 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID, uuid4
 
+from i18n import t
+
 from health_intelligence.domain.enums import ExerciseCategory
 from health_intelligence.domain.models import WorkoutExercise, WorkoutLog, WorkoutSet
 
@@ -248,7 +250,7 @@ def format_exercise_line(exercise: WorkoutExercise) -> str:
     """
     if exercise.category == ExerciseCategory.CARDIO:
         duration = exercise.duration_minutes
-        value = f"{duration}分" if duration is not None else "-"
+        value = t("{n}分", n=duration) if duration is not None else "-"
         return f"{exercise.exercise_name}：{value}"
 
     if not exercise.sets:
@@ -265,5 +267,7 @@ def format_exercise_line(exercise: WorkoutExercise) -> str:
     parts = []
     for reps, weight, count in groups:
         weight_text = f"({_format_weight(weight)}kg)" if weight is not None else ""
-        parts.append(f"{reps}回{weight_text} × {count}")
+        parts.append(
+            t("{reps}回{weight_text} × {count}", reps=reps, weight_text=weight_text, count=count)
+        )
     return f"{exercise.exercise_name}：{', '.join(parts)}"

@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
+from health_intelligence.domain.enums import Locale
+
 
 @dataclass(frozen=True, kw_only=True, slots=True)
 class User:
@@ -19,3 +21,5 @@ class User:
     email: str
     display_name: str
     created_at: datetime
+    locale: Locale = Locale.JA
+    """UIの表示言語。app/i18n.pyのt()が参照する。"""

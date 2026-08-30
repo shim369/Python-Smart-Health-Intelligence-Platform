@@ -15,3 +15,4 @@ class SessionKey(StrEnum):
 
     AUTHENTICATED = "authenticated"
     USER_ID = "user_id"
+    LOCALE = "locale"

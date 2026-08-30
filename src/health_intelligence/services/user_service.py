@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from uuid import UUID
 
+from health_intelligence.domain.enums import Locale
 from health_intelligence.domain.models import User
 from health_intelligence.repositories.unit_of_work import UnitOfWork
 
@@ -36,4 +37,9 @@ class UserService:
         """
         with self._uow_factory() as uow:
             uow.users.add(user)
+            uow.commit()
+
+    def update_locale(self, user_id: UUID, locale: Locale) -> None:
+        with self._uow_factory() as uow:
+            uow.users.update_locale(user_id, locale)
             uow.commit()

@@ -9,9 +9,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from health_intelligence.database.schema import UserORM
+from health_intelligence.domain.enums import Locale
 from health_intelligence.domain.models import User
 from health_intelligence.logging_config import get_logger
-from health_intelligence.repositories.errors import DuplicateKeyError
+from health_intelligence.repositories.errors import DuplicateKeyError, RecordNotFoundError
 
 logger = get_logger(__name__)
 
@@ -22,6 +23,7 @@ def _to_domain(orm: UserORM) -> User:
         email=orm.email,
         display_name=orm.display_name,
         created_at=orm.created_at,
+        locale=Locale(orm.locale),
     )
 
 
@@ -31,6 +33,7 @@ def _to_orm(user: User) -> UserORM:
         email=user.email,
         display_name=user.display_name,
         created_at=user.created_at,
+        locale=user.locale.value,
     )
 
 
@@ -67,3 +70,9 @@ class SqlAlchemyUserRepository:
         except IntegrityError as e:
             logger.warning("duplicate user registration attempt: email=%s", user.email)
             raise DuplicateKeyError(f"email already exists: {user.email}") from e
+
+    def update_locale(self, user_id: UUID, locale: Locale) -> None:
+        orm = self._session.get(UserORM, user_id)
+        if orm is None:
+            raise RecordNotFoundError(str(user_id))
+        orm.locale = locale.value

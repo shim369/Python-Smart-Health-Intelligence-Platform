@@ -9,6 +9,13 @@ from __future__ import annotations
 from enum import StrEnum
 
 
+class Locale(StrEnum):
+    """UIの表示言語。Userごとに永続化する(domain/models/user.py参照)。"""
+
+    JA = "ja"
+    EN = "en"
+
+
 class MealType(StrEnum):
     """MealLogの食事区分。"""
 
