@@ -2,8 +2,10 @@
 
 1日分のP(計画)/D(実績)/C(振り返り)/A(改善)を1画面にまとめて記録する
 (daily-journal-design.md 5章)。旧「ログ入力」ページにあった食事・運動・
-睡眠・体重・体調の5タブはこのページへ統合した(学習ログは当面
-`log_entry.py`側に併存させる。design.md冒頭の設計方針転換点を参照)。
+睡眠・体重・体調・学習の各タブはこのページへ統合した。学習ログ
+(既存LearningLog)は新設計のGoal/Task方式とデータモデルとしては
+当面併存させるが、UI上は他ドメインと同様にD:実績の
+「学習・PF開発・仕事」タブ内にまとめて表示する。
 
 日付・時刻の入力は日本時間(JST)で行い、保存時にUTCへ変換する
 (components/formatting.py参照)。DB上は一貫してUTCで保持する。
@@ -12,6 +14,7 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -37,11 +40,23 @@ from components.goal_task_labels import (  # noqa: E402
     GOAL_CATEGORY_LABELS,
     format_duration_option,
 )
+from components.learning_form import (  # noqa: E402
+    combine_duration_minutes,
+    join_comma_list,
+    join_lines_list,
+    join_slash_list,
+    split_comma_list,
+    split_duration_minutes,
+    split_lines_list,
+    split_slash_list,
+)
 from components.pdca_status import compute_pdca_status  # noqa: E402
 from components.quick_entry import (  # noqa: E402
     exercise_template_to_entry,
     frequent_exercise_templates,
+    frequent_learning_keywords,
     frequent_meal_templates,
+    most_recent_learning_log,
     most_recent_meal,
 )
 from components.shopping_memo import append_recipe_ingredients  # noqa: E402
@@ -55,6 +70,7 @@ from components.workout_form import (  # noqa: E402
 from services import (  # noqa: E402
     get_daily_journal_service,
     get_health_service,
+    get_learning_service,
     get_meal_service,
     get_recipe_service,
     get_sleep_service,
@@ -64,10 +80,17 @@ from services import (  # noqa: E402
 )
 
 from health_intelligence.ai.errors import AIProviderError  # noqa: E402
-from health_intelligence.domain.enums import GoalCategory, MealType, TaskLogType  # noqa: E402
+from health_intelligence.domain.enums import (  # noqa: E402
+    GoalCategory,
+    LearningCategory,
+    LearningLocation,
+    MealType,
+    TaskLogType,
+)
 from health_intelligence.domain.models import (  # noqa: E402
     DailyTaskLog,
     HealthLog,
+    LearningLog,
     MealLog,
     SleepLog,
     Task,
@@ -88,6 +111,22 @@ sleep_service = get_sleep_service()
 weight_service = get_weight_service()
 health_service = get_health_service()
 recipe_service = get_recipe_service()
+learning_service = get_learning_service()
+
+_LEARNING_CATEGORY_LABELS: dict[LearningCategory, str] = {
+    LearningCategory.EXAM_STUDY: "試験勉強",
+    LearningCategory.PORTFOLIO_DEV: "PF開発",
+    LearningCategory.RESEARCH: "調べ物",
+    LearningCategory.CAREER_STRATEGY: "キャリア・プロダクト戦略設計",
+}
+
+_LEARNING_LOCATION_LABELS: dict[LearningLocation | None, str] = {
+    None: "未選択",
+    LearningLocation.HOME: "自宅",
+    LearningLocation.GYM: "ジム",
+    LearningLocation.COWORKING_SPACE: "コワーキングスペース",
+    LearningLocation.CAFE: "カフェ",
+}
 
 
 # ============================================================
@@ -530,6 +569,316 @@ def _health_edit_dialog(log: HealthLog) -> None:
 
 
 # ============================================================
+# 学習(自由記述ログ): 入力欄・編集ダイアログ
+# ============================================================
+def _render_learning_category_fields(
+    category: LearningCategory,
+    *,
+    key: Callable[[str], str],
+    prefill: LearningLog | None,
+) -> dict[str, object]:
+    """カテゴリに応じた学習ログの入力欄を描画し、構築済みの値を返す。
+
+    新規記録・編集フォームの両方から呼び出す。`key`はウィジェットキーを
+    (新規記録ではそのまま、編集ではレコードIDを付与して)組み立てる
+    関数、`prefill`はNoneなら新規記録(値はセッション状態頼み)、
+    指定すればその記録の値をデフォルト値として表示する。
+    """
+    content: str | None = None
+    breakdown: list[str] = []
+    duration_minutes: int | None = None
+    keywords: list[str] = []
+    notes: list[str] = []
+
+    if category in (LearningCategory.EXAM_STUDY, LearningCategory.PORTFOLIO_DEV):
+        is_exam = category == LearningCategory.EXAM_STUDY
+        content_kwargs = {} if prefill is None else {"value": prefill.content or ""}
+        content_placeholder = "例: ○○問題集 過去問" if is_exam else "例: 個人ブログのSSR化"
+        content = (
+            st.text_input(
+                "勉強内容" if is_exam else "PF開発内容",
+                placeholder=content_placeholder,
+                key=key("learning_content_input"),
+                **content_kwargs,
+            )
+            or None
+        )
+
+        if is_exam:
+            breakdown_kwargs = (
+                {} if prefill is None else {"value": join_comma_list(prefill.breakdown)}
+            )
+            breakdown_text = st.text_input(
+                "内訳(カンマ区切り)",
+                placeholder="例: Chapter3, Chapter5",
+                key=key("learning_breakdown_text"),
+                **breakdown_kwargs,
+            )
+            breakdown = split_comma_list(breakdown_text)
+
+        prefill_hours, prefill_minutes = (
+            (0, 0) if prefill is None else split_duration_minutes(prefill.duration_minutes)
+        )
+        duration_hours_col, duration_minutes_col = st.columns(2)
+        duration_hours_kwargs = {} if prefill is None else {"value": prefill_hours}
+        duration_hours = duration_hours_col.number_input(
+            "時間",
+            min_value=0,
+            step=1,
+            key=key("learning_duration_hours"),
+            **duration_hours_kwargs,
+        )
+        duration_minutes_kwargs = {} if prefill is None else {"value": prefill_minutes}
+        duration_minutes_input = duration_minutes_col.number_input(
+            "分",
+            min_value=0,
+            max_value=59,
+            step=5,
+            key=key("learning_duration_minutes_input"),
+            **duration_minutes_kwargs,
+        )
+        duration_minutes = combine_duration_minutes(duration_hours, duration_minutes_input)
+
+        keywords_kwargs = {} if prefill is None else {"value": join_slash_list(prefill.keywords)}
+        keywords_text = st.text_input(
+            "技術的成長キーワード(スラッシュ区切り)",
+            placeholder="例: Python / SQL",
+            key=key("learning_keywords_text"),
+            **keywords_kwargs,
+        )
+        keywords = split_slash_list(keywords_text)
+
+    elif category == LearningCategory.RESEARCH:
+        keywords_kwargs = {} if prefill is None else {"value": join_slash_list(prefill.keywords)}
+        keywords_text = st.text_input(
+            "技術的成長キーワード(スラッシュ区切り)",
+            placeholder="例: Python / SQL",
+            key=key("learning_keywords_text"),
+            **keywords_kwargs,
+        )
+        keywords = split_slash_list(keywords_text)
+
+    elif category == LearningCategory.CAREER_STRATEGY:
+        prefill_hours_career = (
+            0.0
+            if prefill is None or prefill.duration_minutes is None
+            else prefill.duration_minutes / 60
+        )
+        duration_hours_career_kwargs = {} if prefill is None else {"value": prefill_hours_career}
+        duration_hours_career = st.number_input(
+            "時間(h)",
+            min_value=0.0,
+            step=0.5,
+            key=key("learning_duration_hours_career"),
+            **duration_hours_career_kwargs,
+        )
+        duration_minutes = combine_duration_minutes(duration_hours_career, None)
+
+        notes_kwargs = {} if prefill is None else {"value": join_lines_list(prefill.notes)}
+        notes_text = st.text_area(
+            "箇条書きメモ(1行1項目)",
+            placeholder="例: ・案A: 新規事業\n・案B: 既存機能強化",
+            key=key("learning_notes_text"),
+            **notes_kwargs,
+        )
+        notes = split_lines_list(notes_text)
+
+    return {
+        "content": content,
+        "breakdown": breakdown,
+        "duration_minutes": duration_minutes,
+        "keywords": keywords,
+        "notes": notes,
+    }
+
+
+@st.dialog("学習記録を編集", width="large")
+def _learning_edit_dialog(log: LearningLog) -> None:
+    edit_learning_date = st.date_input(
+        "日付",
+        value=jst_date_of(log.started_at),
+        key=f"today_learning_edit_date_{log.learning_log_id}",
+    )
+    edit_learning_time = st.time_input(
+        "時刻",
+        value=jst_time_of(log.started_at),
+        key=f"today_learning_edit_time_{log.learning_log_id}",
+    )
+    edit_learning_location = st.selectbox(
+        "場所",
+        options=[None, *LearningLocation],
+        index=[None, *LearningLocation].index(log.location),
+        format_func=lambda location: _LEARNING_LOCATION_LABELS[location],
+        key=f"today_learning_edit_location_{log.learning_log_id}",
+    )
+    edit_learning_category = st.selectbox(
+        "カテゴリ",
+        options=list(LearningCategory),
+        index=list(LearningCategory).index(log.category),
+        format_func=lambda category: _LEARNING_CATEGORY_LABELS[category],
+        key=f"today_learning_edit_category_{log.learning_log_id}",
+    )
+
+    edit_learning_fields = _render_learning_category_fields(
+        edit_learning_category,
+        key=(lambda base, _id=log.learning_log_id: f"today_{base}_{_id}"),
+        prefill=log,
+    )
+
+    delete_confirmed = st.checkbox(
+        "本当に削除しますか?(元に戻せません)",
+        key=f"today_learning_delete_confirm_{log.learning_log_id}",
+    )
+    col1, col2 = st.columns(2)
+    if col1.button(
+        "更新する",
+        key=f"today_learning_update_{log.learning_log_id}",
+        type="primary",
+        width="stretch",
+    ):
+        updated_learning = LearningLog(
+            learning_log_id=log.learning_log_id,
+            user_id=user_id,
+            started_at=combine_jst_to_utc(edit_learning_date, edit_learning_time),
+            category=edit_learning_category,
+            location=edit_learning_location,
+            content=edit_learning_fields["content"],
+            breakdown=edit_learning_fields["breakdown"],
+            duration_minutes=edit_learning_fields["duration_minutes"],
+            keywords=edit_learning_fields["keywords"],
+            notes=edit_learning_fields["notes"],
+        )
+        learning_service.update_learning_log(updated_learning)
+        st.success("更新しました。")
+        st.rerun()
+    if col2.button("削除する", key=f"today_learning_delete_{log.learning_log_id}", width="stretch"):
+        if not delete_confirmed:
+            st.warning("削除するには「本当に削除しますか?」にチェックを入れてください。")
+        else:
+            learning_service.delete_learning_log(user_id, log.learning_log_id)
+            st.success("削除しました。")
+            st.rerun()
+
+
+@st.fragment
+def _render_learning_new_record_section(
+    all_learning_logs: list[LearningLog], journal_date_value: date
+) -> None:
+    """新規記録フォームをフラグメント化し、内容・キーワード等の入力による
+    再実行をこのフラグメント内に留める(運動タブと同じ理由で動的な
+    キーワード追加等に対応するためst.formが使えず、フラグメント化しないと
+    1文字入力するたびにページ全体のDB再読み込みが走り体感が重くなる)。
+    """
+    last_learning_log = most_recent_learning_log(all_learning_logs)
+
+    if st.button(
+        "前回と同じ内容を入力",
+        key="today_learning_repeat_button",
+        disabled=last_learning_log is None,
+        width="stretch",
+    ):
+        assert last_learning_log is not None
+        st.session_state["today_learning_category_input"] = last_learning_log.category
+        st.session_state["today_learning_location_input"] = last_learning_log.location
+        st.session_state["today_learning_content_input"] = last_learning_log.content or ""
+        st.session_state["today_learning_breakdown_text"] = join_comma_list(
+            last_learning_log.breakdown
+        )
+        prefill_hours, prefill_minutes = split_duration_minutes(last_learning_log.duration_minutes)
+        st.session_state["today_learning_duration_hours"] = prefill_hours
+        st.session_state["today_learning_duration_minutes_input"] = prefill_minutes
+        st.session_state["today_learning_duration_hours_career"] = (
+            last_learning_log.duration_minutes / 60
+            if last_learning_log.duration_minutes is not None
+            else 0.0
+        )
+        st.session_state["today_learning_keywords_text"] = join_slash_list(
+            last_learning_log.keywords
+        )
+        st.session_state["today_learning_notes_text"] = join_lines_list(last_learning_log.notes)
+        st.rerun(scope="fragment")
+
+    learning_date = st.date_input("日付", value=journal_date_value, key="today_learning_date")
+    learning_time = st.time_input("時刻", value=datetime.now().time(), key="today_learning_time")
+    learning_location = st.selectbox(
+        "場所",
+        options=[None, *LearningLocation],
+        format_func=lambda location: _LEARNING_LOCATION_LABELS[location],
+        key="today_learning_location_input",
+    )
+    learning_category = st.selectbox(
+        "カテゴリ",
+        options=list(LearningCategory),
+        format_func=lambda category: _LEARNING_CATEGORY_LABELS[category],
+        key="today_learning_category_input",
+    )
+
+    if learning_category != LearningCategory.CAREER_STRATEGY:
+        keyword_templates = frequent_learning_keywords(all_learning_logs)
+        if keyword_templates:
+            keyword_usage_counts = {t.keyword: t.usage_count for t in keyword_templates}
+            selected_keywords = st.multiselect(
+                "よく使うキーワードを追加",
+                options=list(keyword_usage_counts),
+                format_func=lambda k: f"{k}({keyword_usage_counts[k]}回)",
+                key="today_learning_keyword_template_select",
+                label_visibility="collapsed",
+            )
+            if st.button(
+                "選択したキーワードを追加する",
+                key="today_learning_keyword_template_apply_button",
+            ):
+                current_keywords = split_slash_list(
+                    st.session_state.get("today_learning_keywords_text", "")
+                )
+                for keyword in selected_keywords:
+                    if keyword not in current_keywords:
+                        current_keywords.append(keyword)
+                st.session_state["today_learning_keywords_text"] = join_slash_list(current_keywords)
+                st.rerun(scope="fragment")
+        else:
+            st.caption("よく使うキーワードはまだありません。")
+
+    learning_fields = _render_learning_category_fields(
+        learning_category, key=lambda base: f"today_{base}", prefill=None
+    )
+
+    if st.button(
+        "学習記録を保存する",
+        key="today_learning_submit_button",
+        type="primary",
+        width="stretch",
+    ):
+        learning_log = LearningLog(
+            learning_log_id=uuid4(),
+            user_id=user_id,
+            started_at=combine_jst_to_utc(learning_date, learning_time),
+            category=learning_category,
+            location=learning_location,
+            content=learning_fields["content"],
+            breakdown=learning_fields["breakdown"],
+            duration_minutes=learning_fields["duration_minutes"],
+            keywords=learning_fields["keywords"],
+            notes=learning_fields["notes"],
+        )
+        learning_service.record_learning_log(learning_log)
+        for key_name in (
+            "today_learning_category_input",
+            "today_learning_location_input",
+            "today_learning_content_input",
+            "today_learning_breakdown_text",
+            "today_learning_duration_hours",
+            "today_learning_duration_minutes_input",
+            "today_learning_duration_hours_career",
+            "today_learning_keywords_text",
+            "today_learning_notes_text",
+        ):
+            st.session_state.pop(key_name, None)
+        st.success("学習記録を保存しました。")
+        st.rerun()
+
+
+# ============================================================
 # ページ本体
 # ============================================================
 st.title("📅 今日")
@@ -557,12 +906,16 @@ all_workout_logs = workout_service.list_workout_logs(user_id)
 all_sleep_logs = sleep_service.list_sleep_logs(user_id)
 all_weight_logs = weight_service.list_weight_logs(user_id)
 all_health_logs = health_service.list_health_logs(user_id)
+all_learning_logs = learning_service.list_learning_logs(user_id)
 
 meal_logs_today = [m for m in all_meal_logs if jst_date_of(m.consumed_at) == journal_date]
 workout_logs_today = [w for w in all_workout_logs if jst_date_of(w.performed_at) == journal_date]
 sleep_logs_today = [s for s in all_sleep_logs if jst_date_of(s.bedtime) == journal_date]
 weight_logs_today = [w for w in all_weight_logs if jst_date_of(w.recorded_at) == journal_date]
 health_logs_today = [h for h in all_health_logs if jst_date_of(h.recorded_at) == journal_date]
+learning_logs_today = [
+    log for log in all_learning_logs if jst_date_of(log.started_at) == journal_date
+]
 
 pdca_status = compute_pdca_status(
     has_plan=bool(plan_items),
@@ -572,12 +925,9 @@ pdca_status = compute_pdca_status(
         "sleep": len(sleep_logs_today),
         "weight": len(weight_logs_today),
         "health": len(health_logs_today),
-        "task_logs": len(task_logs_today),
+        "task_logs": len(task_logs_today) + len(learning_logs_today),
         "household": (
-            1
-            if journal is not None
-            and (journal.shopping_memo or journal.food_expense_yen or journal.work_hours)
-            else 0
+            1 if journal is not None and (journal.shopping_memo or journal.food_expense_yen) else 0
         ),
     },
     has_reflection=bool(journal is not None and journal.reflection_memo),
@@ -1029,6 +1379,53 @@ with task_log_tab:
             st.rerun()
         st.divider()
 
+    st.markdown("**学習ログ(自由記述: 試験勉強・PF開発・調べ物・キャリア戦略)**")
+    _render_learning_new_record_section(all_learning_logs, journal_date)
+
+    if not learning_logs_today:
+        st.info("まだ記録がありません。")
+    else:
+        learning_table_event = st.dataframe(
+            pd.DataFrame(
+                {
+                    "日時": [format_datetime_jst(log.started_at) for log in learning_logs_today],
+                    "カテゴリ": [
+                        _LEARNING_CATEGORY_LABELS[log.category] for log in learning_logs_today
+                    ],
+                    "場所": [
+                        _LEARNING_LOCATION_LABELS[log.location] for log in learning_logs_today
+                    ],
+                    "内容": [
+                        log.content or (", ".join(log.keywords) or "-")
+                        for log in learning_logs_today
+                    ],
+                    "時間(分)": [
+                        log.duration_minutes if log.duration_minutes is not None else "-"
+                        for log in learning_logs_today
+                    ],
+                }
+            ),
+            hide_index=True,
+            width="stretch",
+            on_select="rerun",
+            selection_mode="single-row",
+            key="today_learning_table",
+        )
+        learning_selected_rows = learning_table_event.selection.rows
+        selected_learning = (
+            learning_logs_today[learning_selected_rows[0]] if learning_selected_rows else None
+        )
+        if (
+            st.button(
+                "編集する",
+                key="today_learning_edit_open_button",
+                disabled=selected_learning is None,
+            )
+            and selected_learning is not None
+        ):
+            _learning_edit_dialog(selected_learning)
+
+
 with workout_tab:
     _render_workout_new_record_section(all_workout_logs, journal_date)
 
@@ -1111,13 +1508,6 @@ with household_tab:
         value=household_draft.food_expense_yen or 0,
         key=f"today_food_expense_{date_suffix}",
     )
-    work_hours = st.number_input(
-        "総勤務時間(h)",
-        min_value=0.0,
-        step=0.5,
-        value=household_draft.work_hours or 0.0,
-        key=f"today_work_hours_{date_suffix}",
-    )
     if st.button("家計を保存する", type="primary", key=f"today_household_save_{date_suffix}"):
         latest = daily_journal_service.get_or_create_draft(user_id, journal_date)
         daily_journal_service.save_journal(
@@ -1125,7 +1515,6 @@ with household_tab:
                 latest,
                 shopping_memo=shopping_memo or None,
                 food_expense_yen=int(food_expense_yen) or None,
-                work_hours=work_hours or None,
             )
         )
         st.success("保存しました。")

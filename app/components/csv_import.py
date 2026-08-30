@@ -7,7 +7,7 @@ CSVとして書き出して取り込むための変換処理。`csv.DictReader`�
 のパターン)。
 
 日付・時刻は日本時間(JST)で入力する想定とし、`combine_jst_to_utc`で
-保存用のUTCへ変換する(log_entry.pyの手入力フォームと同じ変換規則)。
+保存用のUTCへ変換する(today.pyの手入力フォームと同じ変換規則)。
 
 行の検証エラーは例外を送出せず`ImportResult.errors`に集約する。
 1件の不正な行が原因でファイル全体のインポートが失敗しないようにする
@@ -278,7 +278,7 @@ def parse_workout_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportRe
     同じ(date, time)の行を1回の運動セッション(WorkoutLog)にまとめ、
     セッション内では`build_workout_log`と同じ規則
     (同じexercise_name・categoryの行を1種目・複数セットにまとめる)
-    で種目へ変換する(log_entry.pyのdata_editorと同じ変換規則)。
+    で種目へ変換する(today.pyのdata_editorと同じ変換規則)。
     """
     sessions: dict[tuple[str, str], list[dict[str, str]]] = {}
     order: list[tuple[str, str]] = []

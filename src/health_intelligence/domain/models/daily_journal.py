@@ -30,8 +30,6 @@ class DailyJournal:
     """[D] 買い物メモ。レシピの材料をワンタップで追記できる(design.md 6章)。"""
     food_expense_yen: int | None = None
     """[D] その日の食費合計(円)。"""
-    work_hours: float | None = None
-    """[D] その日の総勤務時間(時間)。Task単位の時間集計とは別の数値。"""
     reflection_memo: str | None = None
     """[C] 振り返り。"""
     improvement_point: str | None = None

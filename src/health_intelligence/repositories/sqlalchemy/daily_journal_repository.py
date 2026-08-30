@@ -23,7 +23,6 @@ def _to_domain(orm: DailyJournalORM) -> DailyJournal:
         sleep_target_time=orm.sleep_target_time,
         shopping_memo=orm.shopping_memo,
         food_expense_yen=orm.food_expense_yen,
-        work_hours=orm.work_hours,
         reflection_memo=orm.reflection_memo,
         improvement_point=orm.improvement_point,
         cooking_shopping_note=orm.cooking_shopping_note,
@@ -41,7 +40,6 @@ def _to_orm(daily_journal: DailyJournal) -> DailyJournalORM:
         sleep_target_time=daily_journal.sleep_target_time,
         shopping_memo=daily_journal.shopping_memo,
         food_expense_yen=daily_journal.food_expense_yen,
-        work_hours=daily_journal.work_hours,
         reflection_memo=daily_journal.reflection_memo,
         improvement_point=daily_journal.improvement_point,
         cooking_shopping_note=daily_journal.cooking_shopping_note,
@@ -79,7 +77,6 @@ class SqlAlchemyDailyJournalRepository:
         orm.sleep_target_time = daily_journal.sleep_target_time
         orm.shopping_memo = daily_journal.shopping_memo
         orm.food_expense_yen = daily_journal.food_expense_yen
-        orm.work_hours = daily_journal.work_hours
         orm.reflection_memo = daily_journal.reflection_memo
         orm.improvement_point = daily_journal.improvement_point
         orm.cooking_shopping_note = daily_journal.cooking_shopping_note

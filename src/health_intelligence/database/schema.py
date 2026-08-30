@@ -282,7 +282,6 @@ class DailyJournalORM(Base):
     sleep_target_time: Mapped[time | None]
     shopping_memo: Mapped[str | None] = mapped_column(Text)
     food_expense_yen: Mapped[int | None]
-    work_hours: Mapped[float | None]
     reflection_memo: Mapped[str | None] = mapped_column(Text)
     improvement_point: Mapped[str | None] = mapped_column(Text)
     cooking_shopping_note: Mapped[str | None] = mapped_column(Text)
