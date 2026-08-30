@@ -20,7 +20,7 @@ from health_intelligence.ai.errors import AIProviderError  # noqa: E402
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title("AIレシピ")
+st.title(":material/restaurant_menu: AIレシピ")
 
 recipe_service = get_recipe_service()
 

@@ -48,7 +48,7 @@ from services import (  # noqa: E402
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title("📥 CSVインポート")
+st.title(":material/upload_file: CSVインポート")
 st.caption(
     "スプレッドシートやメモに記録していた過去のログをCSVで書き出して、"
     "このアプリへまとめて取り込めます。各タブのテンプレートに沿って"

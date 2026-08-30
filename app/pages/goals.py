@@ -32,7 +32,7 @@ from health_intelligence.domain.models import Goal, Task  # noqa: E402
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title("🎯 長期目標")
+st.title(":material/track_changes: 長期目標")
 
 goal_service = get_goal_service()
 task_service = get_task_service()

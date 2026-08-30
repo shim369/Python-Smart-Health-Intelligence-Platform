@@ -43,7 +43,7 @@ from health_intelligence.domain.enums import (  # noqa: E402
 auth_state = require_login()
 user_id = auth_state.require_user_id()
 
-st.title("ダッシュボード")
+st.title(":material/dashboard: ダッシュボード")
 
 _DAYS = last_n_days(datetime.now(UTC).date(), 7)
 _DATE_LABELS = [d.strftime("%m/%d") for d in _DAYS]

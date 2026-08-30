@@ -29,7 +29,7 @@ def _login_and_persist(user_id) -> None:  # noqa: ANN001
     st.query_params["session_token"] = token
 
 
-st.title("Smart Health Intelligence Platform")
+st.title(":material/login: Smart Health Intelligence Platform")
 
 login_tab, register_tab = st.tabs(["ログイン", "新規登録"])
 

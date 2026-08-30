@@ -50,16 +50,20 @@ if not auth_state.is_authenticated:
         if user_id is not None:
             auth_state.login(user_id)
 
-login_page = st.Page("pages/login.py", title="ログイン")
+login_page = st.Page("pages/login.py", title="ログイン", icon=":material/login:")
 
 if not auth_state.is_authenticated:
     pg = st.navigation([login_page])
 else:
-    dashboard_page = st.Page("pages/dashboard.py", title="ダッシュボード", default=True)
-    today_page = st.Page("pages/today.py", title="今日")
-    goals_page = st.Page("pages/goals.py", title="長期目標")
-    csv_import_page = st.Page("pages/csv_import.py", title="CSVインポート")
-    recipe_page = st.Page("pages/recipe.py", title="レシピ")
+    dashboard_page = st.Page(
+        "pages/dashboard.py", title="ダッシュボード", icon=":material/dashboard:", default=True
+    )
+    today_page = st.Page("pages/today.py", title="今日", icon=":material/today:")
+    goals_page = st.Page("pages/goals.py", title="長期目標", icon=":material/track_changes:")
+    csv_import_page = st.Page(
+        "pages/csv_import.py", title="CSVインポート", icon=":material/upload_file:"
+    )
+    recipe_page = st.Page("pages/recipe.py", title="レシピ", icon=":material/restaurant_menu:")
     pg = st.navigation(
         [
             dashboard_page,

@@ -881,7 +881,7 @@ def _render_learning_new_record_section(
 # ============================================================
 # ページ本体
 # ============================================================
-st.title("📅 今日")
+st.title(":material/today: 今日")
 
 if "today_journal_date" not in st.session_state:
     st.session_state["today_journal_date"] = date.today()
