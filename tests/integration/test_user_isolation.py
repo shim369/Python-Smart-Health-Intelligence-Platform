@@ -150,7 +150,17 @@ def test_user_cannot_see_other_users_daily_plan_items(uow_factory) -> None:
 
     with uow_factory() as uow:
         user_a_id, user_b_id = _create_two_users(uow)
-        task_id = uuid4()
+        uow.commit()
+
+    # TaskORM/DailyPlanItemORMには明示的なORM relationshipが無く、
+    # SQLAlchemyのflushはmapper間の依存関係(insert順序)を保証しない。
+    # 同一トランザクションでTaskとその外部キー参照先を両方addすると、
+    # 挿入順が入れ替わりForeignKeyViolationになりうるため、Task作成は
+    # 別トランザクションでcommitしてから参照する(実際のアプリでも
+    # Task作成とDailyPlanItem作成は別のService呼び出しであり、この方が
+    # 実運用の順序にも近い)。
+    task_id = uuid4()
+    with uow_factory() as uow:
         uow.tasks.add(
             Task(
                 task_id=task_id,
@@ -161,6 +171,9 @@ def test_user_cannot_see_other_users_daily_plan_items(uow_factory) -> None:
                 created_at=datetime.now(UTC),
             )
         )
+        uow.commit()
+
+    with uow_factory() as uow:
         uow.daily_plan_items.replace_for_date(user_a_id, journal_date, [task_id])
         uow.commit()
 
@@ -177,7 +190,12 @@ def test_user_cannot_see_other_users_daily_task_logs(uow_factory) -> None:
 
     with uow_factory() as uow:
         user_a_id, user_b_id = _create_two_users(uow)
-        task_id = uuid4()
+        uow.commit()
+
+    # test_user_cannot_see_other_users_daily_plan_itemsと同じ理由で、
+    # Task作成は別トランザクションでcommitしてから参照する。
+    task_id = uuid4()
+    with uow_factory() as uow:
         uow.tasks.add(
             Task(
                 task_id=task_id,
@@ -189,6 +207,9 @@ def test_user_cannot_see_other_users_daily_task_logs(uow_factory) -> None:
                 created_at=datetime.now(UTC),
             )
         )
+        uow.commit()
+
+    with uow_factory() as uow:
         uow.daily_task_logs.add(
             DailyTaskLog(
                 daily_task_log_id=uuid4(),
