@@ -10,7 +10,7 @@ from uuid import UUID
 @dataclass(frozen=True, kw_only=True, slots=True)
 class DailyJournal:
     """「今日」ページのP/C/A項目と家計の入口を持つDomain Model
-    (daily-journal-design.md 8章)。
+    (requirements.md 4.5節)。
 
     学習・PF開発・仕事はGoal/Task方式(Task/DailyPlanItem/DailyTaskLog)に
     切り出しているため、ここではそれ以外のP/C/A項目のみを持つ。

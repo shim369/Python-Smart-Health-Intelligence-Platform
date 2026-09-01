@@ -10,7 +10,7 @@ from uuid import UUID
 @dataclass(frozen=True, kw_only=True, slots=True)
 class DailyTaskLog:
     """「今日」ページD(実績)で記録した、log_type=COUNT_AND_DURATIONの
-    Taskの実績を表すDomain Model(daily-journal-design.md 3.4節)。
+    Taskの実績を表すDomain Model(requirements.md 4.4節)。
 
     1ユーザー・1日・1Taskにつき1レコード。GoalService.compute_task_progress
     が同一Taskの複数日分を集計し、長期目標の進捗を算出する。

@@ -14,7 +14,7 @@ from health_intelligence.repositories.unit_of_work import UnitOfWork
 @dataclass(frozen=True, kw_only=True, slots=True)
 class TaskProgress:
     """`compute_task_progress`が返す、Task単位の累計実績
-    (daily-journal-design.md 4章「累計450問」等の進捗表示に対応)。
+    (requirements.md 4.4節「累計450問」等の進捗表示に対応)。
     """
 
     task: Task

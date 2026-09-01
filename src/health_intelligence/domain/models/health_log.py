@@ -23,7 +23,7 @@ class HealthLog:
     recorded_at: datetime
     condition_score: int | None = None
     """自己申告の体調スコア(総合)。1(不調)〜5(良好)を想定。
-    5軸拡張後も既存互換性のため残し、置き換えない(daily-journal-design.md 7章)。"""
+    5軸拡張後も既存互換性のため残し、置き換えない(requirements.md 4.2節)。"""
     morning_condition: int | None = None
     """朝の体調。1〜5。"""
     evening_condition: int | None = None

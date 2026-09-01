@@ -200,7 +200,7 @@ class RecipeIngredientORM(Base):
 
 
 class GoalORM(Base):
-    """長期目標。daily-journal-design.md 3章参照。"""
+    """長期目標。requirements.md 4.4節参照。"""
 
     __tablename__ = "goals"
 
@@ -214,7 +214,7 @@ class GoalORM(Base):
 
 
 class TaskORM(Base):
-    """Goal配下、または単発の関連タスク。daily-journal-design.md 3章参照。"""
+    """Goal配下、または単発の関連タスク。requirements.md 4.4節参照。"""
 
     __tablename__ = "tasks"
 
@@ -232,7 +232,7 @@ class TaskORM(Base):
 
 
 class DailyPlanItemORM(Base):
-    """「今日」ページP(計画)で選んだTask。daily-journal-design.md 3.4節参照。"""
+    """「今日」ページP(計画)で選んだTask。requirements.md 4.4節参照。"""
 
     __tablename__ = "daily_plan_items"
     __table_args__ = (
@@ -249,7 +249,7 @@ class DailyPlanItemORM(Base):
 
 class DailyTaskLogORM(Base):
     """「今日」ページD(実績)、log_type=COUNT_AND_DURATIONのTaskの実績。
-    daily-journal-design.md 3.4節参照。"""
+    requirements.md 4.4節参照。"""
 
     __tablename__ = "daily_task_logs"
     __table_args__ = (
@@ -268,7 +268,7 @@ class DailyTaskLogORM(Base):
 
 
 class DailyJournalORM(Base):
-    """「今日」ページのP/C/A項目と家計の入口。daily-journal-design.md 8章参照。"""
+    """「今日」ページのP/C/A項目と家計の入口。requirements.md 4.5節参照。"""
 
     __tablename__ = "daily_journals"
     __table_args__ = (

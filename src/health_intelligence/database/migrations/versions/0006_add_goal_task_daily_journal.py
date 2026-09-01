@@ -1,6 +1,6 @@
 """add goal/task/daily_plan_item/daily_task_log/daily_journal tables
 
-daily-journal-design.md 3章・8章: 学習・PF開発・仕事・食事方針・運動目標・
+requirements.md 4.4節・4.5節: 学習・PF開発・仕事・食事方針・運動目標・
 睡眠目標・キャリア・生活全般をGoal(長期目標)/Task(関連タスク)の選択式で
 記録するための新規ドメインと、P/C/A + 家計の入口を持つDailyJournalを
 追加する。

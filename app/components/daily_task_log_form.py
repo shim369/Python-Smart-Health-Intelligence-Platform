@@ -1,5 +1,5 @@
 """「今日」ページD(学習・PF開発・仕事の実績)関連の、Streamlit非依存の
-純粋関数。daily-journal-design.md 3.3節・5章。
+純粋関数。requirements.md 4.4節。
 """
 
 from __future__ import annotations

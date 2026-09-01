@@ -1,5 +1,5 @@
 """「今日」ページのPDCA進捗インジケーター(例: 「P:済 D:一部 C:未 A:未」)を
-判定する、Streamlit非依存の純粋関数。daily-journal-design.md 5章。
+判定する、Streamlit非依存の純粋関数。requirements.md 4.4節・4.5節。
 """
 
 from __future__ import annotations

@@ -1,5 +1,5 @@
 """買い物メモ×レシピ連動関連の、Streamlit非依存の純粋関数。
-daily-journal-design.md 6章。
+requirements.md 4.5節(買い物メモとレシピ機能の連動)。
 
 新しいテーブルは不要。既存のRecipe/RecipeIngredientから材料名を取得し、
 買い物メモのテキストへ追記するだけの軽量な機能とする。

@@ -11,7 +11,7 @@ from health_intelligence.domain.enums import GoalCategory, GoalStatus
 
 @dataclass(frozen=True, kw_only=True, slots=True)
 class Goal:
-    """長期目標を表すDomain Model(daily-journal-design.md 3章)。
+    """長期目標を表すDomain Model(requirements.md 4.4節)。
 
     配下のTaskを「今日」ページのP(計画)で選択したり、D(実績)の
     DailyTaskLogを集計して進捗を可視化する起点になる。

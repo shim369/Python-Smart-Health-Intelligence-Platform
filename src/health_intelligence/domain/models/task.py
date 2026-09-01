@@ -12,7 +12,7 @@ from health_intelligence.domain.enums import GoalCategory, TaskLogType
 @dataclass(frozen=True, kw_only=True, slots=True)
 class Task:
     """Goal配下、または単発の関連タスクを表すDomain Model
-    (daily-journal-design.md 3章)。
+    (requirements.md 4.4節)。
 
     `goal_id`はNullable(空 = 長期目標に属さない単発タスク。
     「今日」ページでの経路Bの即席追加を想定。design.md 3.5節参照)。

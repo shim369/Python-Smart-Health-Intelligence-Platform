@@ -1,5 +1,5 @@
 """「今日」ページP(計画)関連の、Streamlit非依存の純粋関数。
-daily-journal-design.md 5.1節(前日Pの自動コピー・引き継ぎ)。
+requirements.md 4.4節(前日Pの自動コピー・引き継ぎ)。
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """DailyJournalService。
 
 「今日」ページのP(計画)/D(実績のうちTaskベースの部分)/DailyJournal
-(P/C/A + 家計)をまとめて扱うService。daily-journal-design.md 5章・8章。
+(P/C/A + 家計)をまとめて扱うService。requirements.md 4.4節・4.5節。
 """
 
 from __future__ import annotations

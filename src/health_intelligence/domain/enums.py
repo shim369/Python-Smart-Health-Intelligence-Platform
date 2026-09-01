@@ -76,7 +76,7 @@ class LearningLocation(StrEnum):
 
 
 class GoalCategory(StrEnum):
-    """Goal/Taskのカテゴリ(daily-journal-design.md 3.2節)。
+    """Goal/Taskのカテゴリ(requirements.md 4.4節)。
 
     `TaskLogType`の既定値は各カテゴリで異なる(task.py参照)が、
     Task単位で個別に上書きできる。
@@ -101,7 +101,7 @@ class GoalStatus(StrEnum):
 
 
 class TaskLogType(StrEnum):
-    """Task.log_typeによる実績記録方式の区分(daily-journal-design.md 3.3節)。
+    """Task.log_typeによる実績記録方式の区分(requirements.md 4.4節)。
 
     COUNT_AND_DURATIONは`DailyTaskLog`(数量・時間・メモ)で実績を記録する。
     PLAN_ONLYは選ぶだけで、実績は既存のMealLog/WorkoutLog/SleepLogが担う。

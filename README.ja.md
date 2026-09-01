@@ -1,6 +1,8 @@
 # Python Smart Health Intelligence Platform
 
-健康データ(食事・運動・睡眠・体重・体調)と学習ログ(試験勉強・PF開発・調べ物・キャリア戦略設計)を記録し、Feature Engineering・ルールベース分析・AIレシピ生成・機械学習による予測を組み合わせて健康管理を支援するWebアプリケーション。
+[English](README.md) | **日本語**
+
+健康データ(食事・運動・睡眠・体重・体調)、学習・PF開発・仕事の記録(長期目標/タスク単位)、家計の入口を1日単位のPDCA(P/D/C/A)形式で記録し、Feature Engineering・ルールベース分析・AIレシピ生成・機械学習による予測を組み合わせて健康管理を支援するWebアプリケーション。
 
 詳細な設計は以下を参照。
 
@@ -10,14 +12,16 @@
 
 ## 主な機能
 
-- 食事・運動(セッション/種目/セット構造)・睡眠・体重・体調の記録
-- 学習ログ(試験勉強・PF開発・調べ物・キャリア/プロダクト戦略設計、カテゴリごとに入力項目が切り替わる)
-- 記録から算出するHealth Score(独自指標、医療診断目的ではない)
-- Rule-basedによる改善提案(Recommendation Engine)
-- Gemini APIによるAIレシピ生成(食材入力 → レシピ提案、生成結果はキャッシュ)
+- 「今日」ページ: 1日分の記録をP(計画)→D(実績)→C(振り返り)→A(改善)のPDCA形式で1画面完結。睡眠・体調(5軸)・食事・運動(セッション/種目/セット構造)・学習/PF開発/仕事・家計(買い物メモ/食費)をここで記録する
+- 長期目標(Goal)・タスク(Task)管理: 長期目標ごとにタスクを紐づけ、「今日」ページのPで日々選択、進捗を集計。学習/PF開発/仕事は数量・時間・メモを記録し、食事方針/運動目標/睡眠目標は選ぶだけで実績は既存ドメイン(MealLog/WorkoutLog/SleepLog)に記録される
+- 学習ログ(試験勉強・PF開発・調べ物・キャリア/プロダクト戦略設計、カテゴリごとに入力項目が切り替わる)。「今日」ページのD(実績)タブで記録
+- Dashboardページで過去7日間の睡眠・体調・食事・学習/作業時間・運動・食費をグラフ表示
+- Gemini APIによるAIレシピ生成(食材入力 → レシピ提案、生成結果はキャッシュ)。生成したレシピの材料は「今日」ページの買い物メモへワンタップで追記可能
 - 食べたものの自由記述からAIがカロリー・PFCを推定(食事記録の入力補助)
 - 「前回と同じ内容」「よく使うテンプレート/キーワード」によるクイック入力、CSVファイルからのログ一括インポート
+- 日本語/英語の表示切り替え(i18n、ユーザーごとにDB永続化)
 - Email/PasswordによるマルチユーザーWebアプリ(ユーザーごとにデータを分離)
+- Health Score(独自指標、医療診断目的ではない)とRule-basedによる改善提案(Recommendation Engine)をバックエンドに実装済み(現在のUIには非表示。[既知の制限事項](#既知の制限事項)参照)
 - LightGBMによる体重変化予測のML Pipeline(Rule-based Baseline比較、採用基準を満たした場合のみ有効化。未達時はRule-basedにFallback)
 
 ## 技術スタック
@@ -125,18 +129,19 @@ uv run python -m health_intelligence.ml.run_weight_pipeline
 
 開発を圧縮スケジュールで進めた都合上、以下は意図的に簡易な実装のままにしてある。
 
+- **Health Score / Recommendation Engine**: `RecommendationService`としてバックエンドには実装済みだが、Dashboardを週間グラフ中心の構成へ変更した際にUI表示を外しており、現在どのページからも呼び出されていない
 - **Recipe Cache**: プロセスメモリ上の実装。アプリ再起動やStreamlit Community Cloudのスリープ復帰で消える([ai/recipe_cache.py](src/health_intelligence/ai/recipe_cache.py))
 - **セッショントークン**: ブラウザ更新後もログイン状態を復元するため、トークンをURLクエリパラメータに載せている。ブラウザ履歴等に残るリスクがあるため、より厳密にするならhttponly Cookieへの置き換えを検討([auth/session_token_store.py](src/health_intelligence/auth/session_token_store.py))
-- **HealthLogのフィールド構成**: 汎用的な体調記録の受け皿として暫定的に`condition_score`/`symptoms`/`memo`のみ。実運用しながら見直す前提
+- **HealthLogのフィールド構成**: 汎用的な体調記録の受け皿として、総合スコア(`condition_score`)・体調5軸(朝/夜/メンタル/疲労/ストレス)・`symptoms`・`memo`を持つ。実運用しながら見直しを重ねてきた経緯があり、今後もフィールド構成が変わる前提
 - **ML Pipeline**: 実データが60日分・欠損率30%未満に達するまでは、Rule-basedのみで動作する(意図した挙動)。対象領域は現状Weightのみ(Nutrition/Sleep/Workoutへの横展開は未着手)
 - **運動記録フォーム**: 同じ種目名・カテゴリの入力行をまとめて1種目・複数セットとして保存する設計のため、同じ種目を1日に複数回(例: 午前と夕方で2回)行った場合を区別できない
 
 ## プロジェクト構成
 
 ```text
-├── app/                    Streamlit UI(ページ・コンポーネント・DI)
+├── app/                    Streamlit UI(ページ・コンポーネント・DI・i18n)
 ├── src/health_intelligence/
-│   ├── domain/              Domain Model(dataclass)
+│   ├── domain/              Domain Model(dataclass。Goal/Task/DailyJournal含む)
 │   ├── repositories/        Repository Interface + SQLAlchemy実装
 │   ├── services/            Service Layer(ユースケース)
 │   ├── ai/                  AI Provider(Gemini/Fake)・Retry方針

@@ -1,6 +1,6 @@
 """add health_log five-axis condition fields
 
-daily-journal-design.md 7章: HealthLogの体調を単一のcondition_score
+requirements.md 4.2節: HealthLogの体調を単一のcondition_score
 から5軸(朝/夜の体調・メンタル・疲労・ストレス)へ拡張する。既存の
 condition_score(総合スコア)は互換性のため残し、置き換えない。
 

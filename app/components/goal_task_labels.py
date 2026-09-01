@@ -1,7 +1,7 @@
 """長期目標管理画面(app/pages/goals.py)で使う、Streamlit非依存の
 純粋関数・ラベル定義。
 
-daily-journal-design.md 3.2節のカテゴリ・4章の進捗表示に対応する。
+requirements.md 4.4節のカテゴリ・進捗表示に対応する。
 """
 
 from __future__ import annotations

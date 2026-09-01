@@ -166,11 +166,16 @@ services/
 ├── sleep_service.py
 ├── weight_service.py
 ├── learning_service.py
+├── goal_service.py
+├── task_service.py
+├── daily_journal_service.py    # DailyPlanItem / DailyTaskLogの操作も含む
 ├── recommendation_service.py
 └── recipe_service.py
 ```
 
 責務：Domain Modelの操作、Repositoryの呼び出し、複数Repositoryを跨ぐ処理、Transaction境界の調整、Recommendation処理、AI Providerの呼び出し、Feature / Analysisの実行。
+
+`GoalService`/`TaskService`/`DailyJournalService`はGoal/Task/DailyPlanItem/DailyTaskLog/DailyJournal(Daily Journal機能。requirements.md 4.4節・4.5節参照)を扱う。このデータはHealth Score/MLの入力にはしないため、Feature Engineering/Analysis層とは接続しない。
 
 Serviceは具体的なPostgreSQL実装へ直接依存しない。
 
@@ -183,9 +188,12 @@ Serviceは具体的なPostgreSQL実装へ直接依存しない。
 ```text
 User / HealthLog / MealLog / WorkoutLog / SleepLog
 WeightLog / LearningLog / Ingredient / Recipe / RecipeIngredient
+Goal / Task / DailyPlanItem / DailyTaskLog / DailyJournal
 ```
 
 データベース固有の仕様やStreamlit固有の処理を持たせない。
+
+`Locale`(UI表示言語、`domain/enums.py`)は`User.locale`として永続化するEnumで、i18n(6.6節)が参照する。
 
 ### 6.4 Pydanticとdataclassの使い分け
 
@@ -209,6 +217,7 @@ flowchart LR
 ```text
 repositories/
 ├── user_repository.py
+├── user_credential_repository.py
 ├── health_log_repository.py
 ├── meal_log_repository.py
 ├── workout_log_repository.py
@@ -216,12 +225,32 @@ repositories/
 ├── weight_log_repository.py
 ├── learning_log_repository.py
 ├── ingredient_repository.py
-└── recipe_repository.py
+├── recipe_repository.py
+├── recipe_ingredient_repository.py
+├── goal_repository.py
+├── task_repository.py
+├── daily_plan_item_repository.py
+├── daily_task_log_repository.py
+└── daily_journal_repository.py
 ```
 
 責務：CRUD、Query、Persistence、Database Exceptionの適切な変換、Unit of Workが提供するSessionの利用。
 
 Repositoryはビジネスルールを持たない。「条件付きでMealLogを取得する」はRepositoryの責務、「Proteinが不足しているので改善提案を生成する」はService / Analysis / Recommendationの責務。
+
+### 6.6 i18n (多言語対応)
+
+対象：`app/i18n.py`
+
+翻訳キーには日本語原文をそのまま使う(意味付きキーは導入しない)。`t(text, **kwargs)`が現在の表示言語に応じて`TRANSLATIONS`辞書を引き、無ければ原文をそのままフォールバック返却する。表示言語(`Locale`)は`User.locale`にDB永続化し、ログイン時にSession State(`AuthSessionState`)へコピーする。切り替えUIは`app/auth_guard.py`のサイドバーに置く。
+
+```mermaid
+flowchart LR
+    DB[(User.locale)] --> Login[Login]
+    Login --> Session[AuthSessionState.locale]
+    Session --> T["t(text)"]
+    T --> UI[Streamlit UI]
+```
 
 ---
 
@@ -256,7 +285,7 @@ Database接続情報は環境変数またはStreamlit Secretsから取得する(
 
 ### 8.1 基本方針
 
-ユーザー所有データ(`HealthLog` / `MealLog` / `WorkoutLog` / `SleepLog` / `WeightLog` / `LearningLog` / `Recipe`)には原則として`user_id`を必須とする。
+ユーザー所有データ(`HealthLog` / `MealLog` / `WorkoutLog` / `SleepLog` / `WeightLog` / `LearningLog` / `Recipe` / `Goal` / `Task` / `DailyPlanItem` / `DailyTaskLog` / `DailyJournal`)には原則として`user_id`を必須とする。
 
 ```mermaid
 flowchart TD
@@ -268,6 +297,11 @@ flowchart TD
     User --> WeightLog
     User --> LearningLog
     User --> Recipe
+    User --> Goal
+    User --> Task
+    User --> DailyPlanItem
+    User --> DailyTaskLog
+    User --> DailyJournal
 ```
 
 ### 8.2 共通データ
@@ -286,7 +320,7 @@ flowchart TD
 
 ## 9. Session State Architecture
 
-主な状態：`authenticated` / `user_id`(必要に応じてUI状態等を保持)。Session Stateを永続データ保存場所として利用しない。
+主な状態：`authenticated` / `user_id` / `locale`(表示言語。ログイン時に`User.locale`から復元。6.6節参照。必要に応じてUI状態等を保持)。Session Stateを永続データ保存場所として利用しない。
 
 ```mermaid
 flowchart LR
@@ -369,6 +403,8 @@ flowchart LR
 ```
 
 Rule-based Recommendationは初期Recommendation Engineとして実装し、同時にML評価時のBaseline、MLが利用できない場合のFallbackとしても利用する。
+
+> `RecommendationService`は実装済みでDIコンテナ(`app/services.py`)にも登録されているが、現在のStreamlit UIのどのページからも呼び出されていない(週間グラフ中心のDashboardへ再設計した際にUI表示を外した)。UIへ再統合する場合は別途設計する。
 
 ### 11.2 ML Architecture
 
@@ -603,7 +639,12 @@ Python-Smart-Health-Intelligence-Platform/
 │       │   │   ├── learning_log.py
 │       │   │   ├── ingredient.py
 │       │   │   ├── recipe.py
-│       │   │   └── recipe_ingredient.py
+│       │   │   ├── recipe_ingredient.py
+│       │   │   ├── goal.py
+│       │   │   ├── task.py
+│       │   │   ├── daily_plan_item.py
+│       │   │   ├── daily_task_log.py
+│       │   │   └── daily_journal.py
 │       │   └── enums.py
 │       ├── services/
 │       │   ├── __init__.py
@@ -614,14 +655,18 @@ Python-Smart-Health-Intelligence-Platform/
 │       │   ├── sleep_service.py
 │       │   ├── weight_service.py
 │       │   ├── learning_service.py
+│       │   ├── goal_service.py
+│       │   ├── task_service.py
+│       │   ├── daily_journal_service.py
 │       │   ├── recommendation_service.py
 │       │   └── recipe_service.py
 │       ├── repositories/
 │       │   ├── __init__.py
 │       │   ├── protocols.py          # Repository Interface(Protocol)
 │       │   ├── unit_of_work.py       # Unit of Work Interface(Protocol)
-│       │   └── sqlalchemy/           # 具体的な実装(Phase 2で追加)
+│       │   └── sqlalchemy/           # 具体的な実装
 │       │       ├── user_repository.py
+│       │       ├── user_credential_repository.py
 │       │       ├── health_log_repository.py
 │       │       ├── meal_log_repository.py
 │       │       ├── workout_log_repository.py
@@ -630,6 +675,13 @@ Python-Smart-Health-Intelligence-Platform/
 │       │       ├── learning_log_repository.py
 │       │       ├── ingredient_repository.py
 │       │       ├── recipe_repository.py
+│       │       ├── recipe_ingredient_repository.py
+│       │       ├── goal_repository.py
+│       │       ├── task_repository.py
+│       │       ├── daily_plan_item_repository.py
+│       │       ├── daily_task_log_repository.py
+│       │       ├── daily_journal_repository.py
+│       │       ├── factory.py
 │       │       └── unit_of_work.py
 │       ├── database/
 │       │   ├── connection.py
@@ -645,8 +697,11 @@ Python-Smart-Health-Intelligence-Platform/
 │       └── config.py
 │
 ├── app/
-│   ├── streamlit_app.py
-│   ├── pages/
+│   ├── streamlit_app.py       # st.navigation()によるルーター
+│   ├── auth_guard.py          # 認証ガード・言語切り替えUI
+│   ├── i18n.py                # 6.6節
+│   ├── services.py            # DIコンテナ(Service/Repository/UoWの組み立て)
+│   ├── pages/                 # login / dashboard / today / goals / csv_import / recipe
 │   └── components/
 │
 ├── tests/
@@ -658,7 +713,8 @@ Python-Smart-Health-Intelligence-Platform/
 │
 ├── .env.example
 ├── .gitignore
-├── README.md
+├── README.md              # English(メイン)
+├── README.ja.md           # 日本語版
 ├── pyproject.toml
 ├── uv.lock
 └── LICENSE
