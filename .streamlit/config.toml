@@ -1,0 +1,21 @@
+# モダン・ミニマルなヘルスケア系配色(エメラルド×スカイブルー)のカスタムテーマ。
+# 背景のグラデーション自体はCSS(streamlit_app.py)で重ねるため、ここでは
+# Streamlitのネイティブテーマ変数(角丸・枠線・アクセントカラー等)のみを設定する。
+
+[theme]
+base = "light"
+primaryColor = "#10b981"
+backgroundColor = "#f5faf9"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#0f172a"
+linkColor = "#0ea5e9"
+font = "sans-serif"
+headingFont = "sans-serif"
+baseRadius = "large"
+borderColor = "#dce8e4"
+showWidgetBorder = true
+showSidebarBorder = false
+
+[theme.sidebar]
+backgroundColor = "#fbfdfd"
+secondaryBackgroundColor = "#ffffff"

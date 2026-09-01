@@ -202,7 +202,7 @@ def _render_workout_entries(entries: list[dict[str, object]], *, key_prefix: str
 
     for entry in entries:
         eid = entry["_id"]
-        with st.container(border=True):
+        with st.container(border=True, key=f"workout-entry-{eid}"):
             name_col, del_col = st.columns([4, 1])
             entry["exercise_name"] = name_col.text_input(
                 t("種目名"),

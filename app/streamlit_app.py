@@ -30,12 +30,121 @@ configure_logging()
 # ブラウザのタブ情報
 st.set_page_config(page_title="Smart Health Intelligence Platform")
 
-# 全ページのタイトルサイズ（h1）を一括で28pxに調整するCSSだけを適用
+# 全ページ共通の見た目調整。h1サイズの調整に加え、.streamlit/config.tomlの
+# ヘルスケア系配色(エメラルド×スカイブルー)に合わせて、背景グラデーションと
+# カード・ボタン・タブのモダン/ミニマルな装飾を適用する。
+# data-testid依存のセレクタはStreamlitのバージョンアップで変わりうるため、
+# 見た目が崩れても機能には影響しない範囲(装飾のみ)に留めている。
 st.markdown(
     """
     <style>
     h1 {
         font-size: clamp(18px, 4vw, 28px) !important;
+    }
+
+    /* 見出し(h1〜h3、アイコン込み)は黒文字だと地味なので、テーマのアクセント
+       カラーで塗る。h1はページの顔なのでグラデーション、h2/h3は可読性を
+       優先して単色の濃いティールにする。 */
+    h1 {
+        background: linear-gradient(135deg, #0d9488, #0284c7);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    h2, h3 {
+        color: #0f766e !important;
+    }
+
+    :root {
+        --shi-accent-1: #10b981;
+        --shi-accent-2: #0ea5e9;
+        --shi-card-bg: rgba(255, 255, 255, 0.70);
+        --shi-card-border: rgba(15, 23, 42, 0.07);
+        --shi-shadow: 0 8px 30px rgba(15, 23, 42, 0.07);
+    }
+
+    [data-testid="stApp"] {
+        background:
+            radial-gradient(1200px 600px at 8% -10%, rgba(16, 185, 129, 0.16), transparent 60%),
+            radial-gradient(1000px 700px at 100% 0%, rgba(14, 165, 233, 0.16), transparent 55%),
+            linear-gradient(180deg, #f7fbfa 0%, #eef7f5 45%, #eaf4fb 100%);
+        background-attachment: fixed;
+    }
+
+    [data-testid="stHeader"] {
+        background: transparent;
+    }
+
+    [data-testid="stSidebar"] {
+        background: rgba(255, 255, 255, 0.6) !important;
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+    }
+
+    [data-testid="stSidebarNavLink"] {
+        border-radius: 999px !important;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    [data-testid="stSidebarNavLink"][aria-current="page"] {
+        background: linear-gradient(135deg, var(--shi-accent-1), var(--shi-accent-2)) !important;
+        box-shadow: var(--shi-shadow);
+    }
+    [data-testid="stSidebarNavLink"][aria-current="page"] * {
+        color: #fff !important;
+    }
+
+    [data-testid="stForm"],
+    [data-testid="stExpander"],
+    [class*="st-key-workout-entry-"],
+    [class*="st-key-recipe-card-"],
+    [class*="st-key-dashboard-chart-"] {
+        background: var(--shi-card-bg) !important;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-radius: 20px !important;
+        box-shadow: var(--shi-shadow);
+    }
+
+    [data-testid="stBaseButton-primary"],
+    [data-testid="stBaseButton-primaryFormSubmit"] {
+        background: linear-gradient(135deg, var(--shi-accent-1), var(--shi-accent-2)) !important;
+        border: none !important;
+        color: #fff !important;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    [data-testid="stBaseButton-primary"]:hover,
+    [data-testid="stBaseButton-primaryFormSubmit"]:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        color: #fff !important;
+    }
+
+    [data-testid="stTab"] {
+        padding: 6px 16px !important;
+        border-radius: 999px !important;
+        margin: 0 2px 4px !important;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+    [data-testid="stTab"]:hover {
+        background: rgba(15, 23, 42, 0.05);
+    }
+    [data-testid="stTab"][aria-selected="true"] {
+        background: linear-gradient(135deg, var(--shi-accent-1), var(--shi-accent-2)) !important;
+    }
+    [data-testid="stTab"][aria-selected="true"]:hover {
+        background: linear-gradient(135deg, var(--shi-accent-1), var(--shi-accent-2)) !important;
+    }
+    [data-testid="stTab"][aria-selected="true"] p {
+        color: #fff !important;
+    }
+    [data-testid="stTab"] .react-aria-SelectionIndicator {
+        display: none;
+    }
+
+    [data-testid="stDialog"] [role="dialog"] {
+        border-radius: 24px !important;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
     }
     </style>
 """,
