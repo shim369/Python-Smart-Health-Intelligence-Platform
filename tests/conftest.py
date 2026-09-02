@@ -64,19 +64,6 @@ class FakeUserRepository:
             self._by_email[updated.email] = updated
 
 
-class FakeUserCredentialRepository:
-    """`UserCredentialRepository` Protocolを満たすインメモリ実装。"""
-
-    def __init__(self) -> None:
-        self._hashes: dict[UUID, str] = {}
-
-    def get_password_hash(self, user_id: UUID) -> str | None:
-        return self._hashes.get(user_id)
-
-    def set_password_hash(self, user_id: UUID, password_hash: str) -> None:
-        self._hashes[user_id] = password_hash
-
-
 class FakeListRepository[T]:
     """`list_by_user`のみを提供する汎用Fake Repository。
 
@@ -251,11 +238,6 @@ class FakeUnitOfWork:
 @pytest.fixture
 def fake_user_repo() -> FakeUserRepository:
     return FakeUserRepository()
-
-
-@pytest.fixture
-def fake_credential_repo() -> FakeUserCredentialRepository:
-    return FakeUserCredentialRepository()
 
 
 @pytest.fixture

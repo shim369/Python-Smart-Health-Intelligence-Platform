@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import streamlit as st
 
-from health_intelligence.auth import Authenticator, SessionTokenStore
 from health_intelligence.config import get_ai_provider
 from health_intelligence.repositories.sqlalchemy import build_uow_factory
 from health_intelligence.services import (
@@ -31,22 +30,6 @@ from health_intelligence.services import (
 @st.cache_resource
 def _uow_factory():
     return build_uow_factory()
-
-
-@st.cache_resource
-def get_authenticator() -> Authenticator:
-    return Authenticator(_uow_factory())
-
-
-@st.cache_resource
-def get_session_token_store() -> SessionTokenStore:
-    """プロセス内で全ユーザー共有のSessionTokenStore。
-
-    `st.cache_resource`はStreamlitプロセス全体で1つのインスタンスを
-    共有する(ユーザーごとにキャッシュされるわけではない)ため、
-    トークンストアの用途に合致する。
-    """
-    return SessionTokenStore()
 
 
 @st.cache_resource

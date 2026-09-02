@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import streamlit as st
 from i18n import LOCALE_LABELS, t
-from services import get_session_token_store, get_user_service
+from services import get_user_service
 
 from health_intelligence.auth import AuthSessionState
 
@@ -45,11 +45,7 @@ def require_login() -> AuthSessionState:
             st.rerun()
 
         if st.button(t("ログアウト")):
-            token = st.query_params.get("session_token")
-            if token:
-                get_session_token_store().revoke(token)
-            st.query_params.clear()
             auth_state.logout()
-            st.rerun()
+            st.logout()
 
     return auth_state

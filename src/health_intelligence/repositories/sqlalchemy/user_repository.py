@@ -60,8 +60,8 @@ class SqlAlchemyUserRepository:
         commitではないため、トランザクション境界(UnitOfWork)には
         影響しない。
 
-        `Authenticator.register()`は事前に`get_by_email`で重複を
-        チェックしているが、同時に2件の登録リクエストが来た場合の
+        `UserService.get_or_create_user()`は事前に`get_by_email`で重複を
+        チェックしているが、同時に2件のログインリクエストが来た場合の
         競合状態(TOCTOU)を防ぐため、DB制約違反もここで検知する。
         """
         try:

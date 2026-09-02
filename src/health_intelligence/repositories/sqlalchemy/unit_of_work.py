@@ -49,9 +49,6 @@ from health_intelligence.repositories.sqlalchemy.sleep_log_repository import (
 from health_intelligence.repositories.sqlalchemy.task_repository import (
     SqlAlchemyTaskRepository,
 )
-from health_intelligence.repositories.sqlalchemy.user_credential_repository import (
-    SqlAlchemyUserCredentialRepository,
-)
 from health_intelligence.repositories.sqlalchemy.user_repository import (
     SqlAlchemyUserRepository,
 )
@@ -76,7 +73,6 @@ class SqlAlchemyUnitOfWork:
         self._committed = False
 
         self.users = SqlAlchemyUserRepository(self._session)
-        self.user_credentials = SqlAlchemyUserCredentialRepository(self._session)
         self.health_logs = SqlAlchemyHealthLogRepository(self._session)
         self.learning_logs = SqlAlchemyLearningLogRepository(self._session)
         self.meal_logs = SqlAlchemyMealLogRepository(self._session)

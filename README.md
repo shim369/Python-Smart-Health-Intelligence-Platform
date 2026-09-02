@@ -20,7 +20,7 @@ See below for the detailed design (documents are in Japanese).
 - AI estimates calories/PFC from a free-text description of what you ate (assists meal logging).
 - Quick entry via "same as last time" / frequently-used templates & keywords, plus bulk log import from CSV files.
 - **i18n**: switch the UI between Japanese and English (persisted per user in the DB).
-- Multi-user web app with email/password auth (data isolated per user).
+- Multi-user web app with Google OAuth (OIDC, via `st.login()`) login (data isolated per user).
 - **Health Score** (a proprietary metric, not intended for medical diagnosis) and rule-based improvement suggestions (Recommendation Engine) are implemented on the backend (currently hidden from the UI — see [Known limitations](#known-limitations)).
 - ML pipeline for weight-change prediction using LightGBM (compared against a rule-based baseline; only enabled once it meets the adoption criteria, otherwise falls back to rule-based).
 
@@ -57,6 +57,31 @@ Edit `.env` and set the following.
 | `GEMINI_API_KEY` | Gemini API key |
 | `AI_PROVIDER` | `gemini` (default) or `fake`. With `fake`, you can verify behavior without an API key, using [`FakeAIProvider`](src/health_intelligence/ai/fake_provider.py) |
 | `LOG_LEVEL` | `DEBUG`/`INFO`/`WARNING`/`ERROR`. Defaults to `INFO` if unset |
+
+### 2.5. Configure Google OAuth
+
+Login uses Google OAuth (OIDC) via `st.login()`. Create an OAuth client in
+Google Cloud Console and configure it in `.streamlit/secrets.toml` (note:
+this uses Streamlit's Secrets mechanism, not `.env`). See
+[docs/auth-migration-design.md](docs/auth-migration-design.md) (Japanese)
+for the full setup steps.
+
+```bash
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+```
+
+```toml
+# .streamlit/secrets.toml
+[auth]
+redirect_uri = "http://localhost:8501/oauth2callback"
+cookie_secret = "a random string"
+client_id = "xxxxx.apps.googleusercontent.com"
+client_secret = "xxxxx"
+server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
+
+# Optional. If unset, anyone can log in.
+allowed_emails = "your-email@gmail.com,friend@gmail.com"
+```
 
 ### 3. Prepare the database
 
@@ -124,8 +149,9 @@ Evaluation results are logged to `mlruns/` (MLflow), and the adoption decision i
 
 1. Create a PostgreSQL project on [Neon](https://neon.tech/) and get the connection string.
 2. Run `uv run alembic upgrade head` locally against the production database to apply the schema.
-3. Deploy the app on [Streamlit Community Cloud](https://streamlit.io/cloud) and set the same keys as `.env.example` under the app's Secrets settings (these are read as environment variables via `st.secrets`).
-4. After deployment, visit the app's URL and verify it works by signing up.
+3. Deploy the app on [Streamlit Community Cloud](https://streamlit.io/cloud) and, under the app's Secrets settings, set the `.env.example` keys (DB connection, etc.) plus the `[auth]` section from [section 2.5](#25-configure-google-oauth) (with `redirect_uri` replaced by the production URL, `https://<app-name>.streamlit.app/oauth2callback`).
+4. In Google Cloud Console, add the production `redirect_uri` to the authorized redirect URIs.
+5. After deployment, visit the app's URL and verify it works by logging in with Google.
 
 ## Known limitations
 
@@ -133,7 +159,6 @@ Because development proceeded on a compressed schedule, the following are intent
 
 - **Health Score / Recommendation Engine**: implemented on the backend as `RecommendationService`, but its UI display was removed when the Dashboard was redesigned around weekly charts, and it is currently not called from any page.
 - **Recipe Cache**: an in-process-memory implementation. It is lost on app restart or when Streamlit Community Cloud wakes from sleep ([ai/recipe_cache.py](src/health_intelligence/ai/recipe_cache.py)).
-- **Session token**: to restore login state after a browser refresh, the token is carried in a URL query parameter. Since this risks leaking into browser history etc., consider switching to an httponly cookie for stricter handling ([auth/session_token_store.py](src/health_intelligence/auth/session_token_store.py)).
 - **HealthLog field set**: as a catch-all for general condition tracking, it holds an overall score (`condition_score`), the 5-axis condition (morning/evening/mental/fatigue/stress), `symptoms`, and `memo`. This field set has already been revised once based on real-world use, and is expected to keep evolving.
 - **ML pipeline**: runs rule-based only until real data reaches 60 days with under 30% missing-value rate (intended behavior). Currently scoped to Weight only (extending to Nutrition/Sleep/Workout has not started).
 - **Workout log form**: rows with the same exercise name/category are grouped and saved as one exercise with multiple sets, so performing the same exercise more than once in a day (e.g., morning and evening) cannot be distinguished.

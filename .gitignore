@@ -44,3 +44,5 @@ Thumbs.db
 kiroku
 
 data
+
+docs/auth-migration-design.md

@@ -5,9 +5,11 @@
 ナビゲーションに含めることで、実質的な認証ガードとしても機能させる
 (architecture.md Section 9.1 Session Lifecycle)。
 
-ブラウザ更新で`st.session_state`が失われた場合に備え、URLの
-`session_token`クエリパラメータからログイン状態を復元する
-(auth/session_token_store.py参照)。
+認証はStreamlit標準の`st.login()`が発行する認証Cookieに一本化する
+(docs/auth-migration-design.md)。ブラウザ更新で`st.session_state`
+(`AuthSessionState`)が失われても、Cookie自体は残るため`st.user.is_logged_in`
+はTrueのままとなる。その場合はここで許可リストチェック→User取得/作成を
+やり直し、`AuthSessionState`へ再度ログイン状態を反映する。
 
 各ページ内の`auth_guard.require_login()`は、直接URLアクセス等に
 対する防御として残す(多層防御)。
@@ -17,11 +19,10 @@ from __future__ import annotations
 
 import streamlit as st
 from i18n import t
-from services import get_session_token_store, get_user_service
+from services import get_user_service
 
-from health_intelligence.auth import AuthSessionState
+from health_intelligence.auth import AuthSessionState, is_email_allowed, parse_allowed_emails
 from health_intelligence.config import load_environment
-from health_intelligence.domain.enums import Locale
 from health_intelligence.logging_config import configure_logging
 
 load_environment()
@@ -154,13 +155,17 @@ st.markdown(
 auth_state = AuthSessionState(st.session_state)
 auth_state.initialize()
 
-if not auth_state.is_authenticated:
-    token = st.query_params.get("session_token")
-    if token:
-        user_id = get_session_token_store().resolve(token)
-        if user_id is not None:
-            user = get_user_service().get_user(user_id)
-            auth_state.login(user_id, user.locale if user is not None else Locale.JA)
+if st.user.get("is_logged_in", False) and not auth_state.is_authenticated:
+    allowed_emails = parse_allowed_emails(st.secrets.get("auth", {}).get("allowed_emails", ""))
+    if not is_email_allowed(st.user.email, allowed_emails):
+        st.error(t("このアプリは招待制です。"))
+        st.button(t("ログアウト"), on_click=st.logout)
+        st.stop()
+
+    user = get_user_service().get_or_create_user(
+        email=st.user.email, display_name=st.user.name or st.user.email
+    )
+    auth_state.login(user.user_id, user.locale)
 
 login_page = st.Page("pages/login.py", title=t("ログイン"), icon=":material/login:")
 

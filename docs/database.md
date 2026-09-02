@@ -6,7 +6,6 @@
 
 ```mermaid
 erDiagram
-    USERS ||--|| USER_CREDENTIALS : has
     USERS ||--o{ HEALTH_LOGS : records
     USERS ||--o{ MEAL_LOGS : records
     USERS ||--o{ WORKOUT_LOGS : records
@@ -33,10 +32,6 @@ erDiagram
         string display_name
         string locale
         datetime created_at
-    }
-    USER_CREDENTIALS {
-        uuid user_id PK, FK
-        string password_hash
     }
     HEALTH_LOGS {
         uuid id PK
@@ -189,7 +184,6 @@ erDiagram
 ## 設計上のポイント
 
 - **`user_id`境界**: `INGREDIENTS`以外の全テーブルが`user_id`を持つ(requirements.md 13章)。`INGREDIENTS`はシステム共通の食材マスタのため`user_id`を持たない。
-- **`USER_CREDENTIALS`の分離**: パスワードハッシュは`USERS`テーブルに含めず、1対1の別テーブルに分離している(Domain Model設計の方針に合わせたもの。auth/authenticator.py参照)。
 - **`USERS.locale`**: UI表示言語(`ja`/`en`)をユーザーごとに永続化する。ログイン時にSession Stateへコピーされ、`app/i18n.py`の`t()`がこれを参照して翻訳を切り替える。
 - **`WORKOUT_LOGS`の3階層構造**: 1回の運動セッション(`WORKOUT_LOGS`)は複数の種目(`WORKOUT_EXERCISES`)を持ち、筋力トレーニングの種目はさらに複数セット(`WORKOUT_SETS`)を持つ。有酸素運動は`WORKOUT_EXERCISES.duration_minutes`のみを使い、`WORKOUT_SETS`は持たない。
 - **`HEALTH_LOGS`の体調5軸化**: 従来の総合`condition_score`(1〜5)に加え、`morning_condition`/`evening_condition`/`mental_score`/`fatigue_score`/`stress_score`(いずれもNullable、1〜5)を持つ。既存データとの互換性のため`condition_score`は「総合スコア」として残し、5軸は追加フィールドとして併存させている。`symptoms`はPostgreSQL配列(`text[]`)としてタグを複数保持する。

@@ -57,13 +57,8 @@ TRANSLATIONS: dict[str, str] = {
     "ログアウト": "Log out",
     "ログインしてください。": "Please log in.",
     # --- pages/login.py ---
-    "新規登録": "Sign up",
-    "メールアドレス": "Email address",
-    "パスワード": "Password",
-    "メールアドレスまたはパスワードが正しくありません。": "Incorrect email address or password.",
-    "表示名": "Display name",
-    "登録する": "Sign up",
-    "このメールアドレスは既に登録されています。": "This email address is already registered.",
+    "Googleでログイン": "Log in with Google",
+    "このアプリは招待制です。": "This app is invite-only.",
     # --- pages/dashboard.py ---
     "指標": "Metric",
     "睡眠・体調": "Sleep & Condition",

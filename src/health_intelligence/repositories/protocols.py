@@ -54,18 +54,6 @@ class UserRepository(Protocol):
     def update_locale(self, user_id: UUID, locale: Locale) -> None: ...
 
 
-class UserCredentialRepository(Protocol):
-    """Userの認証情報(パスワードハッシュ)を扱うRepository。
-
-    パスワードハッシュはUser Domain Modelに含めない方針
-    (domain/models/user.py参照)のため、専用のRepositoryとして扱う。
-    """
-
-    def get_password_hash(self, user_id: UUID) -> str | None: ...
-
-    def set_password_hash(self, user_id: UUID, password_hash: str) -> None: ...
-
-
 class HealthLogRepository(Protocol):
     """HealthLogの永続化を担うRepository。"""
 

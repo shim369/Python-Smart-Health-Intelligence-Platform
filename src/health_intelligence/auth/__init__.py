@@ -1,25 +1,17 @@
 """Auth Layer。
 
-Streamlit Session Stateを利用した認証状態の管理を担当する。
-認証方式そのもの(ログイン処理・パスワード検証等)はPhase 4A(認証PoC)
-で別途設計する。ここではSession State Architectureの骨格のみを扱う。
+Google OAuth(OIDC)による認証はStreamlit標準の`st.login()` / `st.user` /
+`st.logout()`に一本化する(docs/auth-migration-design.md)。ここでは
+Streamlit本体に依存しない、Session State管理と許可リスト判定のみを扱う。
 """
 
-from health_intelligence.auth.authenticator import (
-    Authenticator,
-    EmailAlreadyRegisteredError,
-)
-from health_intelligence.auth.password_hashing import hash_password, verify_password
+from health_intelligence.auth.allowlist import is_email_allowed, parse_allowed_emails
 from health_intelligence.auth.session_keys import SessionKey
 from health_intelligence.auth.session_state import AuthSessionState
-from health_intelligence.auth.session_token_store import SessionTokenStore
 
 __all__ = [
     "AuthSessionState",
-    "Authenticator",
-    "EmailAlreadyRegisteredError",
     "SessionKey",
-    "hash_password",
-    "verify_password",
-    "SessionTokenStore",
+    "is_email_allowed",
+    "parse_allowed_emails",
 ]

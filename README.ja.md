@@ -20,7 +20,7 @@
 - 食べたものの自由記述からAIがカロリー・PFCを推定(食事記録の入力補助)
 - 「前回と同じ内容」「よく使うテンプレート/キーワード」によるクイック入力、CSVファイルからのログ一括インポート
 - 日本語/英語の表示切り替え(i18n、ユーザーごとにDB永続化)
-- Email/PasswordによるマルチユーザーWebアプリ(ユーザーごとにデータを分離)
+- Google OAuth(OIDC、`st.login()`)によるマルチユーザーWebアプリ(ユーザーごとにデータを分離)
 - Health Score(独自指標、医療診断目的ではない)とRule-basedによる改善提案(Recommendation Engine)をバックエンドに実装済み(現在のUIには非表示。[既知の制限事項](#既知の制限事項)参照)
 - LightGBMによる体重変化予測のML Pipeline(Rule-based Baseline比較、採用基準を満たした場合のみ有効化。未達時はRule-basedにFallback)
 
@@ -57,6 +57,30 @@ cp .env.example .env
 | `GEMINI_API_KEY` | Gemini APIキー |
 | `AI_PROVIDER` | `gemini`(既定)または`fake`。`fake`を指定するとAPIキー無しで[`FakeAIProvider`](src/health_intelligence/ai/fake_provider.py)を使って動作確認できる |
 | `LOG_LEVEL` | `DEBUG`/`INFO`/`WARNING`/`ERROR`。未設定時は`INFO` |
+
+### 2.5. Google OAuthの設定
+
+ログインにはGoogle OAuth(OIDC)を使う(`st.login()`)。Google Cloud Consoleで
+OAuthクライアントを作成し、`.streamlit/secrets.toml`に設定する
+(`.env`ではなくStreamlitのSecrets機構を使う点に注意)。詳細な手順は
+[docs/auth-migration-design.md](docs/auth-migration-design.md)を参照。
+
+```bash
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+```
+
+```toml
+# .streamlit/secrets.toml
+[auth]
+redirect_uri = "http://localhost:8501/oauth2callback"
+cookie_secret = "ランダムな文字列"
+client_id = "xxxxx.apps.googleusercontent.com"
+client_secret = "xxxxx"
+server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
+
+# 任意。設定しなければ誰でもログイン可能。
+allowed_emails = "your-email@gmail.com,friend@gmail.com"
+```
 
 ### 3. データベースの準備
 
@@ -122,8 +146,9 @@ uv run python -m health_intelligence.ml.run_weight_pipeline
 
 1. [Neon](https://neon.tech/)でPostgreSQLプロジェクトを作成し、接続文字列を取得する
 2. ローカルから本番用DBに対して`uv run alembic upgrade head`を実行し、スキーマを適用する
-3. [Streamlit Community Cloud](https://streamlit.io/cloud)でアプリをデプロイし、アプリの設定画面から Secrets に`.env.example`と同じキーで値を設定する(`st.secrets`経由で環境変数として読み込まれる)
-4. デプロイ後、アプリのURLにアクセスして新規登録から動作確認する
+3. [Streamlit Community Cloud](https://streamlit.io/cloud)でアプリをデプロイし、アプリの設定画面から Secrets に`.env.example`のキー(DB接続等)に加え、[2.5節](#25-google-oauthの設定)の`[auth]`セクション(`redirect_uri`は本番URLの`https://<app-name>.streamlit.app/oauth2callback`に置き換える)を設定する
+4. Google Cloud Console側で、承認済みリダイレクトURIに本番の`redirect_uri`を追加登録する
+5. デプロイ後、アプリのURLにアクセスしてGoogleログインから動作確認する
 
 ## 既知の制限事項
 
@@ -131,7 +156,6 @@ uv run python -m health_intelligence.ml.run_weight_pipeline
 
 - **Health Score / Recommendation Engine**: `RecommendationService`としてバックエンドには実装済みだが、Dashboardを週間グラフ中心の構成へ変更した際にUI表示を外しており、現在どのページからも呼び出されていない
 - **Recipe Cache**: プロセスメモリ上の実装。アプリ再起動やStreamlit Community Cloudのスリープ復帰で消える([ai/recipe_cache.py](src/health_intelligence/ai/recipe_cache.py))
-- **セッショントークン**: ブラウザ更新後もログイン状態を復元するため、トークンをURLクエリパラメータに載せている。ブラウザ履歴等に残るリスクがあるため、より厳密にするならhttponly Cookieへの置き換えを検討([auth/session_token_store.py](src/health_intelligence/auth/session_token_store.py))
 - **HealthLogのフィールド構成**: 汎用的な体調記録の受け皿として、総合スコア(`condition_score`)・体調5軸(朝/夜/メンタル/疲労/ストレス)・`symptoms`・`memo`を持つ。実運用しながら見直しを重ねてきた経緯があり、今後もフィールド構成が変わる前提
 - **ML Pipeline**: 実データが60日分・欠損率30%未満に達するまでは、Rule-basedのみで動作する(意図した挙動)。対象領域は現状Weightのみ(Nutrition/Sleep/Workoutへの横展開は未着手)
 - **運動記録フォーム**: 同じ種目名・カテゴリの入力行をまとめて1種目・複数セットとして保存する設計のため、同じ種目を1日に複数回(例: 午前と夕方で2回)行った場合を区別できない

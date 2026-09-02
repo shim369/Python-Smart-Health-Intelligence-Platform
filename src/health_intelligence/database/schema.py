@@ -30,15 +30,6 @@ class UserORM(Base):
     locale: Mapped[str] = mapped_column(default="ja")
 
 
-class UserCredentialORM(Base):
-    """Userのパスワードハッシュ。Userと1対1で、user_idを主キー兼外部キーとする。"""
-
-    __tablename__ = "user_credentials"
-
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    password_hash: Mapped[str]
-
-
 class HealthLogORM(Base):
     __tablename__ = "health_logs"
 
