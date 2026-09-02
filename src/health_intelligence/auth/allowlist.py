@@ -1,7 +1,7 @@
 """Google OAuthログインの許可リスト(ALLOWED_EMAILS)判定。
 
 Streamlit本体(`st.secrets`)には依存しない純粋なロジックとして切り出し、
-Unit Testを容易にする(docs/auth-migration-design.md 5章)。
+Unit Testを容易にする。
 """
 
 from __future__ import annotations

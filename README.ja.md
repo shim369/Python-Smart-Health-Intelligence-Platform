@@ -60,10 +60,16 @@ cp .env.example .env
 
 ### 2.5. Google OAuthの設定
 
-ログインにはGoogle OAuth(OIDC)を使う(`st.login()`)。Google Cloud Consoleで
-OAuthクライアントを作成し、`.streamlit/secrets.toml`に設定する
-(`.env`ではなくStreamlitのSecrets機構を使う点に注意)。詳細な手順は
-[docs/auth-migration-design.md](docs/auth-migration-design.md)を参照。
+ログインにはGoogle OAuth(OIDC)を使う(`st.login()`)。
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials)で
+以下を行う。
+
+1. OAuth同意画面を設定する
+2. 認証情報 → OAuthクライアントID(ウェブアプリケーション)を作成する
+3. 承認済みリダイレクトURIを登録する(ローカル: `http://localhost:8501/oauth2callback`)
+
+その後、`.streamlit/secrets.toml`に設定する(`.env`ではなくStreamlitの
+Secrets機構を使う点に注意)。
 
 ```bash
 cp .streamlit/secrets.toml.example .streamlit/secrets.toml

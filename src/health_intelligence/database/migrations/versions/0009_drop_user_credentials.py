@@ -1,8 +1,7 @@
 """drop user_credentials
 
 認証方式をEmail/PasswordからGoogle OAuth(OIDC)へ移行するため、パスワード
-ハッシュを保持していたuser_credentialsテーブルを削除する
-(docs/auth-migration-design.md 4.8)。
+ハッシュを保持していたuser_credentialsテーブルを削除する。
 
 Revision ID: 0009
 Revises: 0008

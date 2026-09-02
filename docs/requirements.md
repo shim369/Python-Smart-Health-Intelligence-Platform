@@ -621,7 +621,10 @@ Recipe Cacheを導入し、不要なAI API呼び出しを抑制する。
 
 ## 12.1 Authentication
 
-ログイン・ログアウト機能を実装する。
+ログイン・ログアウト機能を実装する。認証方式はGoogle OAuth(OpenID Connect)とし、
+Streamlit標準の`st.login()` / `st.user` / `st.logout()`(Authlibベース)を利用する。
+自前のパスワード管理は行わない。許可リスト(`ALLOWED_EMAILS`)は任意機能とし、
+未設定時は誰でもログイン可能とする。
 
 ## 12.2 Session State
 
@@ -839,7 +842,7 @@ pytest
 
 主な画面：
 
-* ログイン / 新規登録
+* ログイン(Google OAuth。初回ログイン時にUserを自動作成するため、別画面での新規登録は不要)
 * Dashboard(ダッシュボード)
 * 今日(1日分のP/D/C/Aを1画面で完結させるカード型UI。睡眠・体調・食事・運動・学習/PF開発/仕事・家計の実績入力と、長期目標管理画面で登録したTaskの選択をここで行う。詳細は4.4節・4.5節参照)
 * 長期目標(Goal/Taskの一覧・追加・編集・ステータス変更・アーカイブ)

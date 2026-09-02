@@ -60,11 +60,16 @@ Edit `.env` and set the following.
 
 ### 2.5. Configure Google OAuth
 
-Login uses Google OAuth (OIDC) via `st.login()`. Create an OAuth client in
-Google Cloud Console and configure it in `.streamlit/secrets.toml` (note:
-this uses Streamlit's Secrets mechanism, not `.env`). See
-[docs/auth-migration-design.md](docs/auth-migration-design.md) (Japanese)
-for the full setup steps.
+Login uses Google OAuth (OIDC) via `st.login()`. In
+[Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+
+1. Configure the OAuth consent screen.
+2. Under Credentials, create an OAuth client ID (Web application).
+3. Register an authorized redirect URI: `http://localhost:8501/oauth2callback`
+   for local development.
+
+Then configure the client in `.streamlit/secrets.toml` (note: this uses
+Streamlit's Secrets mechanism, not `.env`).
 
 ```bash
 cp .streamlit/secrets.toml.example .streamlit/secrets.toml

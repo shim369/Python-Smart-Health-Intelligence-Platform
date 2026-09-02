@@ -42,7 +42,4 @@ Thumbs.db
 .streamlit/secrets.toml
 
 kiroku
-
 data
-
-docs/auth-migration-design.md

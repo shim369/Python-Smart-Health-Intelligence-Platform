@@ -5,11 +5,11 @@
 ナビゲーションに含めることで、実質的な認証ガードとしても機能させる
 (architecture.md Section 9.1 Session Lifecycle)。
 
-認証はStreamlit標準の`st.login()`が発行する認証Cookieに一本化する
-(docs/auth-migration-design.md)。ブラウザ更新で`st.session_state`
-(`AuthSessionState`)が失われても、Cookie自体は残るため`st.user.is_logged_in`
-はTrueのままとなる。その場合はここで許可リストチェック→User取得/作成を
-やり直し、`AuthSessionState`へ再度ログイン状態を反映する。
+認証はStreamlit標準の`st.login()`が発行する認証Cookieに一本化する。
+ブラウザ更新で`st.session_state`(`AuthSessionState`)が失われても、
+Cookie自体は残るため`st.user["is_logged_in"]`はTrueのままとなる。
+その場合はここで許可リストチェック→User取得/作成をやり直し、
+`AuthSessionState`へ再度ログイン状態を反映する。
 
 各ページ内の`auth_guard.require_login()`は、直接URLアクセス等に
 対する防御として残す(多層防御)。

@@ -2,8 +2,7 @@
 
 未認証時に`streamlit_app.py`のルーターから唯一表示されるページ。
 Googleアカウントでのログイン(`st.login()`)ボタンを表示するのみで、
-ログイン成功後のUser取得/作成・許可リストチェックは`streamlit_app.py`側で
-行う(docs/auth-migration-design.md 4.6)。
+ログイン成功後のUser取得/作成・許可リストチェックは`streamlit_app.py`側で行う。
 """
 
 from __future__ import annotations

@@ -40,8 +40,8 @@ class UserService:
     def get_or_create_user(self, *, email: str, display_name: str) -> User:
         """Google OAuthログイン成功時、メールアドレスをキーにUserを取得または新規作成する。
 
-        `st.user.email`をキーに既存Userを検索し、無ければ自動作成する
-        (docs/auth-migration-design.md 4.4)。パスワードは不要。
+        `st.user.email`をキーに既存Userを検索し、無ければ自動作成する。
+        パスワードは不要。
 
         事前チェック(`get_by_email`)をすり抜ける同時ログインの競合状態
         (TOCTOU)に備え、DB制約違反(`DuplicateKeyError`)時は新しい

@@ -1,8 +1,8 @@
 """Auth Layer。
 
 Google OAuth(OIDC)による認証はStreamlit標準の`st.login()` / `st.user` /
-`st.logout()`に一本化する(docs/auth-migration-design.md)。ここでは
-Streamlit本体に依存しない、Session State管理と許可リスト判定のみを扱う。
+`st.logout()`に一本化する。ここではStreamlit本体に依存しない、
+Session State管理と許可リスト判定のみを扱う。
 """
 
 from health_intelligence.auth.allowlist import is_email_allowed, parse_allowed_emails
