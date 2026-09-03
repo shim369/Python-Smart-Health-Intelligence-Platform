@@ -47,5 +47,10 @@ def require_login() -> AuthSessionState:
         if st.button(t("ログアウト")):
             auth_state.logout()
             st.logout()
+            # st.logout()はブラウザへのリダイレクトを予約するだけで、
+            # このスクリプト実行自体は続行してしまう。ここで止めないと
+            # 未認証状態になったauth_stateのままページ本体の描画が進み、
+            # require_user_id()等が例外を投げてエラー画面が一瞬表示される。
+            st.stop()
 
     return auth_state
