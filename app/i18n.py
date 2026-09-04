@@ -47,7 +47,7 @@ def t(text: str, **kwargs: object) -> str:
 
 TRANSLATIONS: dict[str, str] = {
     # --- streamlit_app.py / auth_guard.py (ナビゲーション・共通) ---
-    "ログイン": "Login",
+    "ログイン": "Log in",
     "ダッシュボード": "Dashboard",
     "今日": "Today",
     "長期目標": "Goals",
@@ -57,7 +57,6 @@ TRANSLATIONS: dict[str, str] = {
     "ログアウト": "Log out",
     "ログインしてください。": "Please log in.",
     # --- pages/login.py ---
-    "Googleでログイン": "Log in with Google",
     "このアプリは招待制です。": "This app is invite-only.",
     # --- pages/dashboard.py ---
     "指標": "Metric",

@@ -35,7 +35,7 @@ st.markdown(
 with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
     st.markdown("### :material/monitor_heart: Smart Health Intelligence Platform")
     if not st.user.get("is_logged_in", False):
-        st.button(t("Googleでログイン"), on_click=st.login, type="primary")
+        st.button(t("ログイン"), on_click=st.login, type="primary")
 
 with st.container(key="login-hero"):
     st.image(str(_HERO_IMAGE), width="stretch")
