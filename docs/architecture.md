@@ -217,7 +217,6 @@ flowchart LR
 ```text
 repositories/
 ├── user_repository.py
-├── user_credential_repository.py
 ├── health_log_repository.py
 ├── meal_log_repository.py
 ├── workout_log_repository.py
@@ -666,7 +665,6 @@ Python-Smart-Health-Intelligence-Platform/
 │       │   ├── unit_of_work.py       # Unit of Work Interface(Protocol)
 │       │   └── sqlalchemy/           # 具体的な実装
 │       │       ├── user_repository.py
-│       │       ├── user_credential_repository.py
 │       │       ├── health_log_repository.py
 │       │       ├── meal_log_repository.py
 │       │       ├── workout_log_repository.py

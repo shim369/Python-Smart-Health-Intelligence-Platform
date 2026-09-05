@@ -196,7 +196,7 @@ erDiagram
 
 ## Migration
 
-スキーマの変更履歴は`database/migrations/versions/`配下のAlembicリビジョンで管理する。初期スキーマは`0001_initial.py`。以降、日時列へのtimezone付与(`0002`)、`recipes`への栄養情報列追加(`0003`)、`learning_logs`テーブル追加(`0004`)、`health_logs`の体調5軸化(`0005`)、`goals`/`tasks`/`daily_plan_items`/`daily_task_logs`/`daily_journals`テーブル追加(`0006`)、未使用列`daily_journals.work_hours`の削除(`0007`)、`users.locale`追加(`0008`)などをリビジョンとして積み重ねている。最新リビジョンは`uv run alembic history`で確認できる。
+スキーマの変更履歴は`database/migrations/versions/`配下のAlembicリビジョンで管理する。初期スキーマは`0001_initial.py`。以降、日時列へのtimezone付与(`0002`)、`recipes`への栄養情報列追加(`0003`)、`learning_logs`テーブル追加(`0004`)、`health_logs`の体調5軸化(`0005`)、`goals`/`tasks`/`daily_plan_items`/`daily_task_logs`/`daily_journals`テーブル追加(`0006`)、未使用列`daily_journals.work_hours`の削除(`0007`)、`users.locale`追加(`0008`)、Google OAuth移行に伴う`user_credentials`テーブル削除(`0009`)などをリビジョンとして積み重ねている。最新リビジョンは`uv run alembic history`で確認できる。
 
 ```bash
 # 最新スキーマを適用
