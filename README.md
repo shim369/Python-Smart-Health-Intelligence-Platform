@@ -6,9 +6,8 @@ A web application that records health data (meals, workouts, sleep, weight, cond
 
 See below for the detailed design (documents are in Japanese).
 
-- [docs/requirements.md](docs/requirements.md) — Requirements definition
+- [docs/requirements.md](docs/requirements.md) — Requirements definition (ER diagram / database design in section 14.1)
 - [docs/architecture.md](docs/architecture.md) — Architecture design
-- [docs/database.md](docs/database.md) — ER diagram / database design
 
 ## Key features
 
@@ -138,7 +137,7 @@ uv run mypy src
 uv run pytest
 ```
 
-CI (GitHub Actions) runs the full suite above on every push. Integration tests run against a Postgres service container in CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+CI (GitHub Actions) runs the full suite above on every push. However, CI does not set `DATABASE_URL`, so migration tests and integration tests are automatically skipped there — only the unit tests (which require no external services) actually run ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## ML pipeline
 

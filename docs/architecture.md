@@ -706,8 +706,7 @@ Python-Smart-Health-Intelligence-Platform/
 ├── data/
 ├── docs/
 │   ├── architecture.md
-│   ├── requirements.md
-│   └── database.md
+│   └── requirements.md        # ER図は14.1節に統合
 │
 ├── .env.example
 ├── .gitignore

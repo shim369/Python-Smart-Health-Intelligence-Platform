@@ -6,9 +6,8 @@
 
 詳細な設計は以下を参照。
 
-- [docs/requirements.md](docs/requirements.md) — 要件定義書
+- [docs/requirements.md](docs/requirements.md) — 要件定義書(ER図・データベース設計は14.1節)
 - [docs/architecture.md](docs/architecture.md) — アーキテクチャ設計書
-- [docs/database.md](docs/database.md) — ER図・データベース設計
 
 ## 主な機能
 
@@ -136,7 +135,7 @@ uv run mypy src
 uv run pytest
 ```
 
-CI(GitHub Actions)はPushごとに上記一式を実行する。Integration TestはCI上でPostgresサービスコンテナを使って実行される([.github/workflows/ci.yml](.github/workflows/ci.yml))。
+CI(GitHub Actions)はPushごとに上記一式を実行する。ただしCIでは`DATABASE_URL`を設定していないため、Migration Test・Integration Testは自動的にskipされ、外部サービス不要なUnit Testのみが実行される([.github/workflows/ci.yml](.github/workflows/ci.yml))。
 
 ## ML Pipeline
 
