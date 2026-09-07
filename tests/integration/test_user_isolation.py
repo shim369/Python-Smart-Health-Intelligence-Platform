@@ -8,8 +8,9 @@ PostgreSQL固有の型(`postgresql.UUID` / `postgresql.ARRAY`)を
 `alembic upgrade head`でスキーマを適用してから実行すること。
 DATABASE_URLが未設定の場合は自動的にスキップする。
 
-CI(GitHub Actions)で実行する場合は、ジョブにPostgresサービス
-コンテナを追加することを想定している(Phase 9で設定予定)。
+CI(GitHub Actions)では.github/workflows/ci.ymlにPostgresサービス
+コンテナとDATABASE_URLを設定済みで、`alembic upgrade head`を
+実行した後にこのテストも自動実行される。
 """
 
 from __future__ import annotations

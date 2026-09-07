@@ -5,6 +5,22 @@ on: [push, pull_request]
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: health_intelligence_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/health_intelligence_test
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +42,9 @@ jobs:
 
       - name: Type Check (Mypy)
         run: uv run mypy src
+
+      - name: Run Migrations (Alembic upgrade head)
+        run: uv run alembic upgrade head
 
       - name: Run Tests (Pytest)
         run: uv run pytest
