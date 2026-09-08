@@ -8,6 +8,7 @@ Evaluation Resultsを記録し、実験の再現性・モデル比較・Baseline
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import mlflow
@@ -17,6 +18,12 @@ from health_intelligence.ml.evaluation import (
     OVERFIT_GAP_THRESHOLD,
     MLEvaluationResult,
 )
+
+os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
+"""ファイルベースのTracking Store(`mlruns/`)はMLflowでメンテナンス
+モード扱いとなり、既定では例外を送出するようになった。PROJECT_ROOT
+基準のファイルStoreを使う設計(このモジュールのdocstring参照)は
+意図的なものであるため、明示的に許可する。"""
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 """src/health_intelligence/ml/mlflow_tracking.py から4階層上。"""
