@@ -15,9 +15,10 @@ def render_recipe_card(
     recipe: Recipe,
     ingredients: list[RecipeIngredient],
     ingredient_names: dict[UUID, str],
+    key_prefix: str = "",
 ) -> None:
     """1件のRecipeをカード形式で表示する。"""
-    with st.container(border=True, key=f"recipe-card-{recipe.recipe_id}"):
+    with st.container(border=True, key=f"recipe-card-{key_prefix}{recipe.recipe_id}"):
         st.subheader(recipe.title)
         st.caption(format_datetime_jst(recipe.created_at))
 
