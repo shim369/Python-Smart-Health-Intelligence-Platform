@@ -53,6 +53,16 @@ class RecipeService:
         with self._uow_factory() as uow:
             return uow.recipes.list_by_user(user_id)
 
+    def delete_recipe(self, user_id: UUID, recipe_id: UUID) -> None:
+        """Recipeを削除する。
+
+        RecipeORM.ingredients のORMレベルcascade(`delete-orphan`)により、
+        紐づくRecipeIngredientも合わせて削除される。
+        """
+        with self._uow_factory() as uow:
+            uow.recipes.delete(user_id, recipe_id)
+            uow.commit()
+
     def get_recipe_ingredients(self, recipe_id: UUID) -> list[RecipeIngredient]:
         with self._uow_factory() as uow:
             return uow.recipe_ingredients.list_by_recipe(recipe_id)
