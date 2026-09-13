@@ -62,7 +62,6 @@ def t(text: str, **kwargs: object) -> str:
 
 TRANSLATIONS: dict[str, str] = {
     # --- streamlit_app.py / auth_guard.py (ナビゲーション・共通) ---
-    "ログイン": "Log in",
     "ダッシュボード": "Dashboard",
     "今日": "Today",
     "長期目標": "Goals",

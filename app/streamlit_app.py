@@ -174,7 +174,7 @@ if st.user.get("is_logged_in", False) and not auth_state.is_authenticated:
     )
     auth_state.login(user.user_id, user.locale)
 
-login_page = st.Page("pages/login.py", title=t("ログイン"), icon=":material/login:")
+login_page = st.Page("pages/login.py", title="Login", icon=":material/login:")
 
 if not auth_state.is_authenticated:
     pg = st.navigation([login_page])
