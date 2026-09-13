@@ -34,7 +34,7 @@ class GeneratedRecipe(BaseModel):
     (実際のValidation Error変換は各Provider実装側で行う)。
     """
 
-    title: str
+    title: str = Field(description="料理名のみ。「レンジで簡単」等の煽り修飾語は含めない。")
     instructions: str
     ingredients: list[GeneratedRecipeIngredient] = Field(min_length=1)
     total_calories: float
