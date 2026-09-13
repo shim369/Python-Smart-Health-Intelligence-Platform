@@ -18,7 +18,7 @@ Cookie自体は残るため`st.user["is_logged_in"]`はTrueのままとなる。
 from __future__ import annotations
 
 import streamlit as st
-from i18n import t
+from i18n import detect_browser_locale, t
 from services import get_user_service
 
 from health_intelligence.auth import AuthSessionState, is_email_allowed, parse_allowed_emails
@@ -162,17 +162,17 @@ if st.user.get("is_logged_in", False) and not auth_state.is_authenticated:
         st.button(t("ログアウト"), on_click=st.logout)
         st.stop()
 
+    # st.login()はOAuthプロバイダを経由するリダイレクトを伴い、戻ってきた時点で
+    # st.session_stateはリセットされている(ログイン画面での言語切り替えは
+    # 引き継げない)。そのため新規User作成時の初期表示言語は、ブラウザの
+    # Accept-Language(st.context.locale)から判定する。既存Userの場合は
+    # DBに保存済みの本人の選択が常に優先される(get_or_create_user参照)。
     user = get_user_service().get_or_create_user(
-        email=st.user.email, display_name=st.user.name or st.user.email
+        email=st.user.email,
+        display_name=st.user.name or st.user.email,
+        default_locale=detect_browser_locale(),
     )
-
-    login_locale = user.locale
-    if st.session_state.pop("pre_login_locale_changed", False) and auth_state.locale != user.locale:
-        # ログイン画面(ログイン前)で言語を切り替えていた場合、その選択をDBへ反映する。
-        get_user_service().update_locale(user.user_id, auth_state.locale)
-        login_locale = auth_state.locale
-
-    auth_state.login(user.user_id, login_locale)
+    auth_state.login(user.user_id, user.locale)
 
 login_page = st.Page("pages/login.py", title=t("ログイン"), icon=":material/login:")
 

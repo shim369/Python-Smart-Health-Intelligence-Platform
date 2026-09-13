@@ -51,8 +51,11 @@ with st.container(horizontal=True, horizontal_alignment="distribute", vertical_a
             width=110,
         )
         if selected_locale != auth_state.locale:
+            # st.login()のOAuthリダイレクト後はSession Stateがリセットされる
+            # ため、ここでの選択はこのログイン画面のプレビュー表示にのみ反映
+            # される(ログイン後はUser.locale、初回ログイン時はブラウザの
+            # 言語設定が使われる。streamlit_app.py参照)。
             auth_state.set_locale(selected_locale)
-            st.session_state["pre_login_locale_changed"] = True
             st.rerun()
 
         if not st.user.get("is_logged_in", False):

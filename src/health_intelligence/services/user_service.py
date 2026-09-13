@@ -37,11 +37,18 @@ class UserService:
             uow.users.add(user)
             uow.commit()
 
-    def get_or_create_user(self, *, email: str, display_name: str) -> User:
+    def get_or_create_user(
+        self, *, email: str, display_name: str, default_locale: Locale = Locale.JA
+    ) -> User:
         """Google OAuthログイン成功時、メールアドレスをキーにUserを取得または新規作成する。
 
         `st.user.email`をキーに既存Userを検索し、無ければ自動作成する。
         パスワードは不要。
+
+        `default_locale`は新規作成時のみ使う初期表示言語(例: ブラウザの
+        Accept-Languageから判定した値)。既存Userの場合は、既にDBに
+        保存されている本人の選択(`update_locale`)を常に優先し、
+        `default_locale`では上書きしない。
 
         事前チェック(`get_by_email`)をすり抜ける同時ログインの競合状態
         (TOCTOU)に備え、DB制約違反(`DuplicateKeyError`)時は新しい
@@ -59,6 +66,7 @@ class UserService:
                 email=email,
                 display_name=display_name,
                 created_at=datetime.now(UTC),
+                locale=default_locale,
             )
             try:
                 uow.users.add(user)

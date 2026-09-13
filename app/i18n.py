@@ -32,6 +32,21 @@ def current_locale() -> Locale:
     return AuthSessionState(st.session_state).locale
 
 
+def detect_browser_locale() -> Locale:
+    """ブラウザのAccept-Language(`st.context.locale`)からLocaleを推定する。
+
+    新規User作成時の初期表示言語を決めるためだけに使う
+    (`st.login()`によるOAuthリダイレクト後はSession Stateがリセット
+    されるため、ログイン画面での手動切り替えをログイン後まで
+    引き継ぐことはできない。代わりにブラウザの言語設定を使う)。
+    判定できない場合は日本語を既定値とする。
+    """
+    browser_locale = st.context.locale
+    if browser_locale and browser_locale.lower().startswith("en"):
+        return Locale.EN
+    return Locale.JA
+
+
 def t(text: str, **kwargs: object) -> str:
     """`text`(日本語原文)を現在の言語設定に応じて翻訳する。
 
