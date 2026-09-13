@@ -165,7 +165,14 @@ if st.user.get("is_logged_in", False) and not auth_state.is_authenticated:
     user = get_user_service().get_or_create_user(
         email=st.user.email, display_name=st.user.name or st.user.email
     )
-    auth_state.login(user.user_id, user.locale)
+
+    login_locale = user.locale
+    if st.session_state.pop("pre_login_locale_changed", False) and auth_state.locale != user.locale:
+        # ログイン画面(ログイン前)で言語を切り替えていた場合、その選択をDBへ反映する。
+        get_user_service().update_locale(user.user_id, auth_state.locale)
+        login_locale = auth_state.locale
+
+    auth_state.login(user.user_id, login_locale)
 
 login_page = st.Page("pages/login.py", title=t("ログイン"), icon=":material/login:")
 
