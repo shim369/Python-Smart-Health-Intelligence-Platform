@@ -64,4 +64,10 @@ else:
     for recipe in sorted(history, key=lambda r: r.created_at, reverse=True):
         recipe_ingredients = recipe_service.get_recipe_ingredients(recipe.recipe_id)
         ingredient_names_map = recipe_service.get_ingredient_names(recipe_ingredients)
-        render_recipe_card(recipe, recipe_ingredients, ingredient_names_map, key_prefix="history-")
+        render_recipe_card(
+            recipe,
+            recipe_ingredients,
+            ingredient_names_map,
+            key_prefix="history-",
+            as_expander=True,
+        )

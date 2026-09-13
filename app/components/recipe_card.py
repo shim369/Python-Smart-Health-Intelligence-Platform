@@ -16,10 +16,23 @@ def render_recipe_card(
     ingredients: list[RecipeIngredient],
     ingredient_names: dict[UUID, str],
     key_prefix: str = "",
+    as_expander: bool = False,
+    expanded: bool = False,
 ) -> None:
-    """1件のRecipeをカード形式で表示する。"""
-    with st.container(border=True, key=f"recipe-card-{key_prefix}{recipe.recipe_id}"):
-        st.subheader(recipe.title)
+    """1件のRecipeをカード形式で表示する。
+
+    as_expander=Trueの場合、タイトルをクリックして開閉できるアコーディオン
+    (st.expander)として表示する。
+    """
+    card_key = f"recipe-card-{key_prefix}{recipe.recipe_id}"
+    container = (
+        st.expander(recipe.title, expanded=expanded, key=card_key)
+        if as_expander
+        else st.container(border=True, key=card_key)
+    )
+    with container:
+        if not as_expander:
+            st.subheader(recipe.title)
         st.caption(format_datetime_jst(recipe.created_at))
 
         if recipe.total_calories is not None:
