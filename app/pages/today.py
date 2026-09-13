@@ -907,15 +907,16 @@ st.title(":material/today: " + t("今日"))
 if "today_journal_date" not in st.session_state:
     st.session_state["today_journal_date"] = date.today()
 
-nav_col1, nav_col2, nav_col3 = st.columns([1, 4, 1])
-if nav_col1.button("◀", key="today_prev_date", width="stretch"):
-    st.session_state["today_journal_date"] -= timedelta(days=1)
-    st.rerun()
-if nav_col3.button("▶", key="today_next_date", width="stretch"):
-    st.session_state["today_journal_date"] += timedelta(days=1)
-    st.rerun()
 journal_date: date = st.session_state["today_journal_date"]
-nav_col2.markdown(f"### {journal_date.isoformat()}")
+with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
+    st.markdown(f"### {journal_date.isoformat()}")
+    with st.container(horizontal=True, vertical_alignment="center"):
+        if st.button("◀", key="today_prev_date"):
+            st.session_state["today_journal_date"] -= timedelta(days=1)
+            st.rerun()
+        if st.button("▶", key="today_next_date"):
+            st.session_state["today_journal_date"] += timedelta(days=1)
+            st.rerun()
 date_suffix = journal_date.isoformat()
 
 plan_items = daily_journal_service.list_plan(user_id, journal_date)
