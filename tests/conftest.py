@@ -177,6 +177,15 @@ class FakeDailyTaskLogRepository:
             if log.user_id == user_id and log.journal_date == journal_date
         ]
 
+    def list_by_date_range(
+        self, user_id: UUID, start_date: date, end_date: date
+    ) -> list[DailyTaskLog]:
+        return [
+            log
+            for log in self._logs.values()
+            if log.user_id == user_id and start_date <= log.journal_date <= end_date
+        ]
+
     def list_by_task(self, user_id: UUID, task_id: UUID) -> list[DailyTaskLog]:
         return [
             log for log in self._logs.values() if log.user_id == user_id and log.task_id == task_id
@@ -203,6 +212,15 @@ class FakeDailyJournalRepository:
             if journal.user_id == user_id and journal.journal_date == journal_date:
                 return journal
         return None
+
+    def list_by_date_range(
+        self, user_id: UUID, start_date: date, end_date: date
+    ) -> list[DailyJournal]:
+        return [
+            journal
+            for journal in self._journals.values()
+            if journal.user_id == user_id and start_date <= journal.journal_date <= end_date
+        ]
 
     def add(self, daily_journal: DailyJournal) -> None:
         self._journals[daily_journal.daily_journal_id] = daily_journal

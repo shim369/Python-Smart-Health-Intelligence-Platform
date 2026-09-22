@@ -27,6 +27,17 @@ class DailyJournalService:
         with self._uow_factory() as uow:
             return uow.daily_journals.get_by_date(user_id, journal_date)
 
+    def list_journals_in_range(
+        self, user_id: UUID, start_date: date, end_date: date
+    ) -> list[DailyJournal]:
+        """[start_date, end_date]のDailyJournalを1回のDBアクセスでまとめて返す。
+
+        ダッシュボードの期間集計用。日ごとに`get_journal`をループ呼び出しする
+        とDBラウンドトリップが日数分発生してしまう(N+1)ため、こちらを使う。
+        """
+        with self._uow_factory() as uow:
+            return uow.daily_journals.list_by_date_range(user_id, start_date, end_date)
+
     def get_or_create_draft(self, user_id: UUID, journal_date: date) -> DailyJournal:
         """指定日のDailyJournalが無ければ、未保存のドラフトを返す。
 
@@ -68,6 +79,17 @@ class DailyJournalService:
     def list_task_logs(self, user_id: UUID, journal_date: date) -> list[DailyTaskLog]:
         with self._uow_factory() as uow:
             return uow.daily_task_logs.list_by_date(user_id, journal_date)
+
+    def list_task_logs_in_range(
+        self, user_id: UUID, start_date: date, end_date: date
+    ) -> list[DailyTaskLog]:
+        """[start_date, end_date]のDailyTaskLogを1回のDBアクセスでまとめて返す。
+
+        ダッシュボードの期間集計用。日ごとに`list_task_logs`をループ呼び出し
+        するとDBラウンドトリップが日数分発生してしまう(N+1)ため、こちらを使う。
+        """
+        with self._uow_factory() as uow:
+            return uow.daily_task_logs.list_by_date_range(user_id, start_date, end_date)
 
     def save_task_log(self, daily_task_log: DailyTaskLog) -> None:
         """指定日・指定Taskの実績をupsertする。"""

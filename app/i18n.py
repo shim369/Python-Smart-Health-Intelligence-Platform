@@ -73,6 +73,8 @@ TRANSLATIONS: dict[str, str] = {
     # --- pages/login.py ---
     "このアプリは招待制です。": "This app is invite-only.",
     # --- pages/dashboard.py ---
+    "表示期間": "Period",
+    "直近{days}日間": "Last {days} days",
     "指標": "Metric",
     "睡眠・体調": "Sleep & Condition",
     "睡眠時間(h)": "Sleep duration (h)",
@@ -85,7 +87,7 @@ TRANSLATIONS: dict[str, str] = {
     "ストレス": "Stress",
     "スコア": "Score",
     "体重(kg)": "Weight (kg)",
-    "直近7日間の体重記録がありません。": "No weight records in the past 7 days.",
+    "直近{days}日間の体重記録がありません。": "No weight records in the past {days} days.",
     "食事": "Meals",
     "カロリー(kcal)": "Calories (kcal)",
     "PFC(g)": "PFC (g)",

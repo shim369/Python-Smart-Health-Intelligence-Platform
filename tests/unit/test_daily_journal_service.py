@@ -146,6 +146,52 @@ def test_save_task_log_inserts_when_absent(
     assert logs[0].quantity == 10
 
 
+def test_list_task_logs_in_range_returns_only_logs_within_range(
+    make_fake_uow_factory,
+    fake_daily_journal_repo,
+    fake_daily_task_log_repo,
+    fake_daily_plan_item_repo,
+) -> None:
+    user_id = uuid4()
+    task_id = uuid4()
+    service = _make_service(
+        make_fake_uow_factory,
+        fake_daily_journal_repo=fake_daily_journal_repo,
+        fake_daily_task_log_repo=fake_daily_task_log_repo,
+        fake_daily_plan_item_repo=fake_daily_plan_item_repo,
+    )
+    for d in (date(2026, 8, 28), date(2026, 8, 30), date(2026, 9, 2)):
+        service.save_task_log(
+            DailyTaskLog(
+                daily_task_log_id=uuid4(),
+                user_id=user_id,
+                journal_date=d,
+                task_id=task_id,
+                quantity=1,
+            )
+        )
+
+    logs = service.list_task_logs_in_range(user_id, date(2026, 8, 29), date(2026, 9, 1))
+
+    assert [log.journal_date for log in logs] == [date(2026, 8, 30)]
+
+
+def test_list_journals_in_range_returns_only_journals_within_range(
+    make_fake_uow_factory, fake_daily_journal_repo
+) -> None:
+    user_id = uuid4()
+    for d in (date(2026, 8, 28), date(2026, 8, 30), date(2026, 9, 2)):
+        fake_daily_journal_repo.add(
+            DailyJournal(daily_journal_id=uuid4(), user_id=user_id, journal_date=d)
+        )
+    uow_factory = make_fake_uow_factory(daily_journals=fake_daily_journal_repo)
+    service = DailyJournalService(uow_factory)
+
+    journals = service.list_journals_in_range(user_id, date(2026, 8, 29), date(2026, 9, 1))
+
+    assert [j.journal_date for j in journals] == [date(2026, 8, 30)]
+
+
 def test_save_task_log_updates_existing_entry_for_same_task_and_date(
     make_fake_uow_factory,
     fake_daily_journal_repo,
