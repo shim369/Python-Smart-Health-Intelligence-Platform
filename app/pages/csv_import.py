@@ -107,6 +107,13 @@ def _render_import_tab(
     uploaded = st.file_uploader(
         t("CSVファイルを選択"), type="csv", key=f"{key_prefix}_uploader_{uploader_version}"
     )
+
+    # インポート直後はst.rerun()で画面が作り直されるため、成功メッセージは
+    # session_stateへ預けておき、再描画後にアップローダの直下で表示する。
+    imported_count = st.session_state.pop(f"{key_prefix}_imported_count", None)
+    if imported_count is not None:
+        st.success(t("{count}件のログをインポートしました。", count=imported_count))
+
     if uploaded is None:
         return
 
@@ -159,7 +166,7 @@ def _render_import_tab(
             for log in result.logs:
                 record_fn(log)
             st.session_state[uploader_version_key] = uploader_version + 1
-            st.success(t("{count}件のログをインポートしました。", count=len(result.logs)))
+            st.session_state[f"{key_prefix}_imported_count"] = len(result.logs)
             st.rerun()
 
 
