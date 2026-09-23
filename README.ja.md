@@ -14,11 +14,11 @@
 - 「今日」ページ: 1日分の記録をP(計画)→D(実績)→C(振り返り)→A(改善)のPDCA形式で1画面完結。睡眠・体調(5軸)・食事・運動(セッション/種目/セット構造)・学習/PF開発/仕事・家計(買い物メモ/食費)をここで記録する
 - 長期目標(Goal)・タスク(Task)管理: 長期目標ごとにタスクを紐づけ、「今日」ページのPで日々選択、進捗を集計。学習/PF開発/仕事は数量・時間・メモを記録し、食事方針/運動目標/睡眠目標は選ぶだけで実績は既存ドメイン(MealLog/WorkoutLog/SleepLog)に記録される
 - 学習ログ(試験勉強・PF開発・調べ物・キャリア/プロダクト戦略設計、カテゴリごとに入力項目が切り替わる)。「今日」ページのD(実績)タブで記録
-- Dashboardページで過去7日間の睡眠・体調・食事・学習/作業時間・運動・食費をグラフ表示
-- Gemini APIによるAIレシピ生成(食材入力 → レシピ提案、生成結果はキャッシュ)。生成したレシピの材料は「今日」ページの買い物メモへワンタップで追記可能
+- Dashboardページで睡眠・体調・食事・学習/作業時間・運動・食費をグラフ表示(表示期間は直近7日/30日/90日から選択。既定は7日)
+- Gemini APIによるAIレシピ生成(食材入力 → レシピ提案、生成結果はキャッシュ)。生成したレシピの材料は「今日」ページの買い物メモへワンタップで追記可能。レシピ履歴は開閉式のアコーディオンで一覧し、削除も可能
 - 食べたものの自由記述からAIがカロリー・PFCを推定(食事記録の入力補助)
 - 「前回と同じ内容」「よく使うテンプレート/キーワード」によるクイック入力、CSVファイルからのログ一括インポート
-- 日本語/英語の表示切り替え(i18n、ユーザーごとにDB永続化)
+- 日本語/英語の表示切り替え(i18n、ユーザーごとにDB永続化)。新規ユーザーの初期表示言語はブラウザの`Accept-Language`から判定する(ログイン画面自体は常に英語表示)
 - Google OAuth(OIDC、`st.login()`)によるマルチユーザーWebアプリ(ユーザーごとにデータを分離)
 - Health Score(独自指標、医療診断目的ではない)とRule-basedによる改善提案(Recommendation Engine)をバックエンドに実装済み(現在のUIには非表示。[既知の制限事項](#既知の制限事項)参照)
 - LightGBMによる体重変化予測のML Pipeline(Rule-based Baseline比較、採用基準を満たした場合のみ有効化。未達時はRule-basedにFallback)
@@ -135,7 +135,7 @@ uv run mypy src
 uv run pytest
 ```
 
-CI(GitHub Actions)はPushごとに上記一式を実行する。ただしCIでは`DATABASE_URL`を設定していないため、Migration Test・Integration Testは自動的にskipされ、外部サービス不要なUnit Testのみが実行される([.github/workflows/ci.yml](.github/workflows/ci.yml))。
+CI(GitHub Actions)はPush・Pull Requestごとに上記一式を実行する。CIでは使い捨てのPostgreSQL 16サービスコンテナを起動して`DATABASE_URL`をそこへ向け、`pytest`の前に`alembic upgrade head`を実行するため、Migration Test・Integration Testも含めて実行される([.github/workflows/ci.yml](.github/workflows/ci.yml))。
 
 ## ML Pipeline
 
@@ -145,7 +145,14 @@ CI(GitHub Actions)はPushごとに上記一式を実行する。ただしCIで�
 uv run python -m health_intelligence.ml.run_weight_pipeline
 ```
 
-評価結果は`mlruns/`(MLflow)に記録され、採用判断は`ml_artifacts/weight_model_decision.json`に保存される。アプリ本体(`RecommendationService`)はこの判断を読み取り、採用基準(Baseline比で改善率10%以上、過学習チェック20%以内、最低60日分のデータ)を満たしていればAI予測を表示し、満たしていなければRule-basedの提案のみを表示する。判断基準の詳細は[docs/requirements.md](docs/requirements.md)の9.3.1を参照。
+スクリプトはまずDBに蓄積された実データの状況(Weight領域: 60日分以上・欠損率30%未満)を確認する。
+
+- **基準を満たす場合**: 実データでPipelineを評価し、結果を`mlruns/`(MLflow)に記録、採用判断を`ml_artifacts/weight_model_decision.json`に保存する
+- **基準を満たさない場合**: 60日到達の見込み日を表示し、ダミーデータでPipelineの配線確認のみを行う。ダミーデータの評価結果はMLflowには記録する(run名`weight_change_model_dummy_wiring_check`)が、採用判断としては**保存しない**
+
+このスクリプトは定期ワークフロー([.github/workflows/ml-weight-readiness.yml](.github/workflows/ml-weight-readiness.yml))により毎週月曜06:00 JSTに(手動実行も可)、リポジトリSecretの`DATABASE_URL`に対して実行され、出力はJob Summaryに書き出される。
+
+`RecommendationService`はこの判断を読み取り、採用基準(Baseline比で改善率10%以上、過学習チェック20%以内、最低60日分のデータ)を満たしていればAI予測を表示し、満たしていなければRule-basedの提案のみを表示する。判断基準の詳細は[docs/requirements.md](docs/requirements.md)の9.3.1を参照。
 
 ## デプロイ(Streamlit Community Cloud + Neon を想定)
 

@@ -243,8 +243,11 @@ Repositoryはビジネスルールを持たない。「条件付きでMealLogを
 
 翻訳キーには日本語原文をそのまま使う(意味付きキーは導入しない)。`t(text, **kwargs)`が現在の表示言語に応じて`TRANSLATIONS`辞書を引き、無ければ原文をそのままフォールバック返却する。表示言語(`Locale`)は`User.locale`にDB永続化し、ログイン時にSession State(`AuthSessionState`)へコピーする。切り替えUIは`app/auth_guard.py`のサイドバーに置く。
 
+新規User作成時の初期表示言語は、ブラウザの`Accept-Language`(`st.context.locale`)から`detect_browser_locale()`で判定し、`UserService.get_or_create_user(default_locale=...)`へ渡す。既存Userの場合はDBに保存済みの本人の選択が常に優先される。ログイン画面には言語切り替えを置かない(`st.login()`はOAuthプロバイダ経由のリダイレクトを伴い、戻った時点でSession Stateがリセットされるため、ログイン前の選択をログイン後へ引き継げない)。そのためログイン画面の文言は常に英語固定とする。
+
 ```mermaid
 flowchart LR
+    Browser[Accept-Language] -. 新規User作成時のみ .-> DB
     DB[(User.locale)] --> Login[Login]
     Login --> Session[AuthSessionState.locale]
     Session --> T["t(text)"]
@@ -439,6 +442,8 @@ flowchart LR
 
 対象領域はPhase 8開始時点で、データ量・欠損率・Featureの品質・目的変数の定義可能性・予測可能性・Rule-based Baselineの性能・ML導入によるメリットを評価して決定する。
 
+現状の対象はWeight領域(`ml/run_weight_pipeline.py`)。実行時にまず`ml/real_data.py`でDBの実データから`DailyFeatures`を組み立て、データ量・欠損率の基準(11.5.1)を確認する。基準を満たせば実データで評価して採用判断を`ml_artifacts/`へ保存し、満たさなければ60日到達の見込み日を表示した上で、ダミーデータによる配線確認のみを行う(ダミーデータの評価結果はMLflowへ記録するが、採用判断としては保存しない)。この判定はGitHub Actionsの定期ワークフロー(`ml-weight-readiness.yml`、毎週月曜06:00 JST)で継続的に実行する。
+
 ### 11.4 MLflow
 
 Parameters / Metrics / Model / Experiment / Evaluation Resultsを記録し、実験の再現性・モデル比較・Baseline比較・採用判断に利用する。
@@ -525,7 +530,7 @@ flowchart LR
     RR --> DB[(PostgreSQL)]
 ```
 
-生成済みRecipeはCacheを利用し、不要なAI API呼び出しを抑制する。Recipe作成時など複数Repositoryにまたがる更新では、Unit of Workによって1つのトランザクションとして扱う。
+生成済みRecipeはCacheを利用し、不要なAI API呼び出しを抑制する。レシピ履歴はUI上で開閉式のアコーディオンとして一覧し、個別に削除できる(`RecipeService.delete_recipe`。紐づくRecipeIngredientはORMのcascadeで合わせて削除される)。Recipe作成時など複数Repositoryにまたがる更新では、Unit of Workによって1つのトランザクションとして扱う。
 
 ---
 
@@ -620,7 +625,8 @@ Application全体で適切なLoggingおよびException Handlingを実装する�
 Python-Smart-Health-Intelligence-Platform/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml
+│       ├── ci.yml                     # Lint/型チェック/テスト(Postgresサービスコンテナ付き)
+│       └── ml-weight-readiness.yml    # Weight ML実データ蓄積状況の週次チェック
 │
 ├── src/
 │   └── health_intelligence/
