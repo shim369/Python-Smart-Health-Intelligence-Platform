@@ -453,7 +453,7 @@ def _hashable(value: Any) -> Any:
     return value
 
 
-def _content_key(log: Any) -> Any:
+def content_key(log: Any) -> Any:
     """IDフィールド(`*_log_id`)を除いた全フィールドの値を、比較用のキーにする。
 
     CSVインポートではIDを毎回`uuid4()`で採番するため、同じ行を取り込み直すと
@@ -470,9 +470,9 @@ def split_new_logs[T](logs: list[T], existing: Iterable[T]) -> tuple[list[T], li
     取り込まない。CSVファイル内で同じ内容の行が複数ある場合は、
     それぞれ別の記録(例: 同じ時刻の間食2回)とみなして両方取り込む。
     """
-    existing_keys = {_content_key(log) for log in existing}
+    existing_keys = {content_key(log) for log in existing}
     new: list[T] = []
     duplicates: list[T] = []
     for log in logs:
-        (duplicates if _content_key(log) in existing_keys else new).append(log)
+        (duplicates if content_key(log) in existing_keys else new).append(log)
     return new, duplicates
