@@ -95,12 +95,18 @@ def _bar_chart(
     小数を取り得ない値用。指定しない場合、Altairが値の範囲に応じて
     0.5刻み等の目盛りを自動生成し、整数しかないデータでも小数表示に
     見えてしまうことがあるため)。`y_domain`でy軸の表示範囲を固定する
-    (カロリー等、目安値に合わせた見やすさのため)。
+    (カロリー等、目安値に合わせた見やすさのため)。上限を超える日がある
+    場合は、棒が描画領域からはみ出して見えなくならないよう上限をその値まで
+    広げる。
     """
     date_col = t("日付")
     df = pd.DataFrame({date_col: _DATE_LABELS, y_title: values})
     y_axis = alt.Axis(tickMinStep=1, format="d") if integer_y else alt.Axis()
-    y_scale = alt.Scale(domain=list(y_domain)) if y_domain is not None else alt.Undefined
+    y_scale = (
+        alt.Scale(domain=[y_domain[0], max(y_domain[1], *values)])
+        if y_domain is not None
+        else alt.Undefined
+    )
     chart = (
         alt.Chart(df)
         .mark_bar(cornerRadiusTopLeft=2, cornerRadiusTopRight=2)
@@ -129,11 +135,15 @@ def _line_chart(
     """
     date_col = t("日付")
     indicator_col = t("指標")
-    frames = [
-        pd.DataFrame({date_col: _DATE_LABELS, y_title: values, indicator_col: name})
-        for name, values in series.items()
-    ]
-    df = pd.concat(frames, ignore_index=True)
+    # 系列ごとのDataFrameをpd.concatすると、値がすべてNone(記録なし)の系列が
+    # あるときpandasのFutureWarningが出るため、縦持ちの列を直接組み立てる。
+    df = pd.DataFrame(
+        {
+            date_col: [label for _ in series for label in _DATE_LABELS],
+            y_title: pd.Series([v for values in series.values() for v in values], dtype="float64"),
+            indicator_col: [name for name, values in series.items() for _ in values],
+        }
+    )
     y_axis = alt.Axis(tickMinStep=1, format="d") if integer_y else alt.Axis()
     encode_kwargs: dict[str, object] = {
         "x": alt.X(f"{date_col}:N", sort=None, title=None, axis=alt.Axis(labelAngle=_LABEL_ANGLE)),
@@ -268,12 +278,14 @@ with pfc_col:
         values = group_sum_by_date(meal_logs, lambda m: jst_date_of(m.consumed_at), getter, _DAYS)
         pfc_frames.append(pd.DataFrame({date_col: _DATE_LABELS, "g": values, nutrient_col: label}))
     pfc_df = pd.concat(pfc_frames, ignore_index=True)
+    # カロリーと同様、積み上げ合計が固定上限(500g)を超える日は上限を広げる。
+    pfc_max = max(500.0, *pfc_df.groupby(date_col)["g"].sum())
     pfc_chart = (
         alt.Chart(pfc_df)
         .mark_bar()
         .encode(
             x=alt.X(f"{date_col}:N", sort=None, title=None, axis=alt.Axis(labelAngle=_LABEL_ANGLE)),
-            y=alt.Y("g:Q", stack="zero", scale=alt.Scale(domain=[0, 500])),
+            y=alt.Y("g:Q", stack="zero", scale=alt.Scale(domain=[0, pfc_max])),
             color=alt.Color(
                 f"{nutrient_col}:N",
                 title=nutrient_col,

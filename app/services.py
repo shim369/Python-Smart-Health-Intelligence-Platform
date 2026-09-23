@@ -24,6 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, cast
 
 import streamlit as st
+from streamlit.runtime.scriptrunner import add_script_run_ctx, get_script_run_ctx
 
 from health_intelligence.config import get_ai_provider
 from health_intelligence.repositories.sqlalchemy import build_uow_factory
@@ -165,10 +166,15 @@ def prefetch(*loaders: Callable[[], object]) -> None:
     即座に返る(引数が完全に一致する呼び出しのみヒットする点に注意)。
     例外はここでは握りつぶし、ページ本体の同じ呼び出しで改めて
     発生させる(通常の実行経路でエラー表示させるため)。
-    """
 
+    ワーカースレッドには呼び出し元のScriptRunContextを引き継ぐ。loader内で
+    `get_*_service()`(`st.cache_resource`)を呼ぶため、引き継がないと
+    「missing ScriptRunContext」警告がスレッド数分出力される。
+    """
     if not loaders:
         return
+
+    ctx = get_script_run_ctx()
 
     def run(loader: Callable[[], object]) -> None:
         try:
@@ -176,7 +182,10 @@ def prefetch(*loaders: Callable[[], object]) -> None:
         except Exception:  # noqa: BLE001
             pass
 
-    with ThreadPoolExecutor(max_workers=min(len(loaders), 8)) as executor:
+    with ThreadPoolExecutor(
+        max_workers=min(len(loaders), 8),
+        initializer=lambda: add_script_run_ctx(threading.current_thread(), ctx),
+    ) as executor:
         list(executor.map(run, loaders))
 
 

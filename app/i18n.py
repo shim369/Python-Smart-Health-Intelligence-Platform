@@ -210,6 +210,9 @@ TRANSLATIONS: dict[str, str] = {
     "行番号": "Row",
     "エラー内容": "Error",
     "有効な{count}件をインポートする": "Import {count} valid row(s)",
+    "登録済みのログと同じ内容の{count}件は、重複を避けるため取り込みません。": (
+        "{count} rows match existing logs and will be skipped to avoid duplicates."
+    ),
     "{count}件のログをインポートしました。": "Imported {count} log(s).",
     "納豆ご飯": "Natto rice bowl",
     "日時": "Date/time",

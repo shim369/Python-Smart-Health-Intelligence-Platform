@@ -17,9 +17,11 @@ CSVとして書き出して取り込むための変換処理。`csv.DictReader`�
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass
 from datetime import date as date_type
 from datetime import time as time_type
+from typing import Any
 from uuid import UUID, uuid4
 
 from components.formatting import combine_jst_to_utc
@@ -441,3 +443,36 @@ def parse_learning_rows(rows: list[dict[str, str]], *, user_id: UUID) -> ImportR
         )
 
     return ImportResult(logs=logs, errors=errors)
+
+
+def _hashable(value: Any) -> Any:
+    if isinstance(value, list | tuple):
+        return tuple(_hashable(v) for v in value)
+    if isinstance(value, dict):
+        return tuple(sorted((k, _hashable(v)) for k, v in value.items()))
+    return value
+
+
+def _content_key(log: Any) -> Any:
+    """IDフィールド(`*_log_id`)を除いた全フィールドの値を、比較用のキーにする。
+
+    CSVインポートではIDを毎回`uuid4()`で採番するため、同じ行を取り込み直すと
+    IDだけが異なる重複レコードになる。内容が完全に一致するかで判定する。
+    """
+    return _hashable({k: v for k, v in asdict(log).items() if not k.endswith("_log_id")})
+
+
+def split_new_logs[T](logs: list[T], existing: Iterable[T]) -> tuple[list[T], list[T]]:
+    """`logs`を、登録済みの`existing`と内容が一致しない新規分と、一致する重複分に分ける。
+
+    同じCSVを誤って複数回インポートすると、ダッシュボードの合計値が
+    インポート回数倍に膨らんでしまうため、登録済みと同じ内容の行は
+    取り込まない。CSVファイル内で同じ内容の行が複数ある場合は、
+    それぞれ別の記録(例: 同じ時刻の間食2回)とみなして両方取り込む。
+    """
+    existing_keys = {_content_key(log) for log in existing}
+    new: list[T] = []
+    duplicates: list[T] = []
+    for log in logs:
+        (duplicates if _content_key(log) in existing_keys else new).append(log)
+    return new, duplicates

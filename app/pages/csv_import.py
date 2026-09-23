@@ -33,6 +33,7 @@ from components.csv_import import (  # noqa: E402
     parse_sleep_rows,
     parse_weight_rows,
     parse_workout_rows,
+    split_new_logs,
 )
 from components.formatting import format_datetime_jst  # noqa: E402
 from components.workout_form import format_exercise_line  # noqa: E402
@@ -83,6 +84,7 @@ def _render_import_tab(
     example_row: list[str],
     caption: str,
     parse_fn,
+    existing_fn,
     record_fn,
     preview_columns: dict[str, object],
 ) -> None:
@@ -91,6 +93,9 @@ def _render_import_tab(
     5種類のログでUIの流れ(テンプレート→アップロード→プレビュー→
     インポート)は共通なため、差分(列定義・パース関数・保存関数・
     プレビュー列)だけをパラメータ化する。
+
+    `existing_fn`で取得した登録済みログと内容が完全に一致する行は、
+    同じCSVの二重インポートとみなして取り込まない(split_new_logs参照)。
     """
     st.caption(caption)
     st.download_button(
@@ -128,14 +133,22 @@ def _render_import_tab(
         return
 
     result: ImportResult = parse_fn(rows, user_id=user_id)
+    new_logs, duplicate_logs = split_new_logs(result.logs, existing_fn())
 
     st.write(
         t(
             "有効な行: {valid}件 / エラー: {error}件",
-            valid=len(result.logs),
+            valid=len(new_logs),
             error=len(result.errors),
         )
     )
+    if duplicate_logs:
+        st.info(
+            t(
+                "登録済みのログと同じ内容の{count}件は、重複を避けるため取り込みません。",
+                count=len(duplicate_logs),
+            )
+        )
 
     if result.errors:
         st.dataframe(
@@ -149,23 +162,23 @@ def _render_import_tab(
             width="stretch",
         )
 
-    if result.logs:
+    if new_logs:
         st.dataframe(
             pd.DataFrame(
-                {name: [fn(log) for log in result.logs] for name, fn in preview_columns.items()}
+                {name: [fn(log) for log in new_logs] for name, fn in preview_columns.items()}
             ),
             hide_index=True,
             width="stretch",
         )
 
         if st.button(
-            t("有効な{count}件をインポートする", count=len(result.logs)),
+            t("有効な{count}件をインポートする", count=len(new_logs)),
             key=f"{key_prefix}_import_button",
             type="primary",
         ):
-            record_fn(result.logs)
+            record_fn(new_logs)
             st.session_state[uploader_version_key] = uploader_version + 1
-            st.session_state[f"{key_prefix}_imported_count"] = len(result.logs)
+            st.session_state[f"{key_prefix}_imported_count"] = len(new_logs)
             st.rerun()
 
 
@@ -208,6 +221,7 @@ with meal_tab:
             "AIによる推定は行わず、CSVの数値をそのまま取り込みます。"
         ),
         parse_fn=parse_meal_rows,
+        existing_fn=lambda: get_meal_service().list_meal_logs(user_id),
         record_fn=lambda logs: get_meal_service().record_meal_logs(logs),
         preview_columns={
             t("日時"): lambda m: format_datetime_jst(m.consumed_at),
@@ -237,6 +251,7 @@ with workout_tab:
             "複数セットとして取り込まれます。"
         ),
         parse_fn=parse_workout_rows,
+        existing_fn=lambda: get_workout_service().list_workout_logs(user_id),
         record_fn=lambda logs: get_workout_service().record_workout_logs(logs),
         preview_columns={
             t("日時"): lambda w: format_datetime_jst(w.performed_at),
@@ -253,6 +268,7 @@ with sleep_tab:
         example_row=["2026-06-01", "23:30", "2026-06-02", "07:00", "good"],
         caption=t("qualityは任意。poor / fair / good / excellent のいずれか。"),
         parse_fn=parse_sleep_rows,
+        existing_fn=lambda: get_sleep_service().list_sleep_logs(user_id),
         record_fn=lambda logs: get_sleep_service().record_sleep_logs(logs),
         preview_columns={
             t("就寝"): lambda s: format_datetime_jst(s.bedtime),
@@ -269,6 +285,7 @@ with weight_tab:
         example_row=["2026-06-01", "07:00", "65.5"],
         caption=t("timeは任意(省略時は00:00として記録されます)。"),
         parse_fn=parse_weight_rows,
+        existing_fn=lambda: get_weight_service().list_weight_logs(user_id),
         record_fn=lambda logs: get_weight_service().record_weight_logs(logs),
         preview_columns={
             t("日時"): lambda w: format_datetime_jst(w.recorded_at),
@@ -287,6 +304,7 @@ with health_tab:
             "複数ある場合はセミコロン(;)区切りで記入してください。"
         ),
         parse_fn=parse_health_rows,
+        existing_fn=lambda: get_health_service().list_health_logs(user_id),
         record_fn=lambda logs: get_health_service().record_health_logs(logs),
         preview_columns={
             t("日時"): lambda h: format_datetime_jst(h.recorded_at),
@@ -329,6 +347,7 @@ with learning_tab:
             "セミコロン(;)区切りで記入してください。"
         ),
         parse_fn=parse_learning_rows,
+        existing_fn=lambda: get_learning_service().list_learning_logs(user_id),
         record_fn=lambda logs: get_learning_service().record_learning_logs(logs),
         preview_columns={
             t("日時"): lambda learning: format_datetime_jst(learning.started_at),
