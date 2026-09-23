@@ -190,7 +190,7 @@ else:
     csv_import_page = st.Page(
         "pages/csv_import.py", title=t("CSVインポート"), icon=":material/upload_file:"
     )
-    recipe_page = st.Page("pages/recipe.py", title=t("レシピ"), icon=":material/restaurant_menu:")
+    recipe_page = st.Page("pages/recipe.py", title=t("AIレシピ"), icon=":material/restaurant_menu:")
     pg = st.navigation(
         [
             dashboard_page,

@@ -19,9 +19,12 @@ import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 from auth_guard import require_login  # noqa: E402
 from components.dashboard_charts import (  # noqa: E402
+    cardio_minutes_by_exercise,
     group_average_by_date,
     group_sum_by_date,
     last_n_days,
+    strength_max_weight_by_exercise,
+    strength_volume_by_date,
 )
 from components.formatting import jst_date_of  # noqa: E402
 from i18n import t  # noqa: E402
@@ -38,12 +41,11 @@ from services import (  # noqa: E402
 )
 
 from health_intelligence.domain.enums import (  # noqa: E402
-    ExerciseCategory,
     GoalCategory,
     LearningCategory,
     TaskLogType,
 )
-from health_intelligence.domain.models import DailyTaskLog  # noqa: E402
+from health_intelligence.domain.models import DailyTaskLog, WorkoutLog  # noqa: E402
 
 auth_state = require_login()
 user_id = auth_state.require_user_id()
@@ -127,11 +129,17 @@ def _line_chart(
     key: str,
     caption: str,
     integer_y: bool = False,
+    connect_gaps: bool = False,
 ) -> None:
     """`integer_y=True`で、y軸の目盛りを整数のみにする(体調スコア等、
     値自体は1〜5の整数だが、1日に複数回記録した日はその日の平均を
     プロットするため点の位置は小数になり得る値用。目盛りだけを整数に
     揃え、点・線の位置(実際の平均値)自体は変えない)。
+
+    `connect_gaps=True`で、記録の無い日(None)を飛ばして前後の点を線で
+    結ぶ(筋トレ種目の重量等、数日おきにしか記録しない値用。既定では
+    Noneの日で線が途切れ、点が孤立して推移が読み取れないため)。
+    x軸には記録の無い日も含めて表示期間の全日付を並べる。
     """
     date_col = t("日付")
     indicator_col = t("指標")
@@ -144,10 +152,18 @@ def _line_chart(
             indicator_col: [name for name, values in series.items() for _ in values],
         }
     )
+    if connect_gaps:
+        df = df.dropna(subset=[y_title])
     y_axis = alt.Axis(tickMinStep=1, format="d") if integer_y else alt.Axis()
     encode_kwargs: dict[str, object] = {
-        "x": alt.X(f"{date_col}:N", sort=None, title=None, axis=alt.Axis(labelAngle=_LABEL_ANGLE)),
-        "y": alt.Y(f"{y_title}:Q", axis=y_axis),
+        "x": alt.X(
+            f"{date_col}:N",
+            sort=None,
+            title=None,
+            axis=alt.Axis(labelAngle=_LABEL_ANGLE),
+            scale=alt.Scale(domain=_DATE_LABELS),
+        ),
+        "y": alt.Y(f"{y_title}:Q", axis=y_axis, scale=alt.Scale(zero=not connect_gaps)),
     }
     if len(series) > 1:
         encode_kwargs["color"] = alt.Color(
@@ -384,30 +400,67 @@ st.divider()
 st.subheader(t("運動"))
 
 workout_logs = get_workout_service().list_workout_logs(user_id)
-session_col, cardio_col = st.columns(2)
-with session_col:
+
+
+def _workout_date(w: WorkoutLog) -> date:
+    return jst_date_of(w.performed_at)
+
+
+max_weight_series = strength_max_weight_by_exercise(workout_logs, _workout_date, _DAYS)
+if max_weight_series:
+    _line_chart(
+        max_weight_series,
+        y_title=t("重量(kg)"),
+        key="strength-max-weight",
+        caption=t("種目別の最大重量(kg) — 記録日数の多い上位5種目"),
+        connect_gaps=True,
+    )
+else:
+    with st.container(border=True, key="dashboard-chart-strength-max-weight"):
+        st.caption(t("種目別の最大重量(kg) — 記録日数の多い上位5種目"))
+        st.caption(t("直近{days}日間の筋トレ(重量あり)の記録がありません。", days=selected_period))
+
+volume_col, cardio_col = st.columns(2)
+with volume_col:
     _bar_chart(
-        group_sum_by_date(workout_logs, lambda w: jst_date_of(w.performed_at), lambda w: 1, _DAYS),
-        y_title=t("セッション数"),
-        key="workout-sessions",
-        caption=t("運動セッション数"),
-        integer_y=True,
-        y_domain=(0, 10),
+        strength_volume_by_date(workout_logs, _workout_date, _DAYS),
+        y_title=t("総挙上量(kg)"),
+        key="strength-volume",
+        caption=t("総挙上量(kg) — 重量×回数の合計、自重種目は除く"),
     )
 with cardio_col:
-    cardio_pairs = [
-        (jst_date_of(w.performed_at), exercise.duration_minutes or 0)
-        for w in workout_logs
-        for exercise in w.exercises
-        if exercise.category == ExerciseCategory.CARDIO
-    ]
-    _bar_chart(
-        group_sum_by_date(cardio_pairs, lambda p: p[0], lambda p: p[1], _DAYS),
-        y_title=t("有酸素運動時間(分)"),
-        key="cardio",
-        caption=t("有酸素運動時間(分)"),
-        y_domain=(0, 360),
+    exercise_col = t("種目")
+    minutes_col = t("時間(分)")
+    cardio_series = cardio_minutes_by_exercise(workout_logs, _workout_date, _DAYS)
+    cardio_df = pd.DataFrame(
+        {
+            _date_col: [label for _ in cardio_series for label in _DATE_LABELS],
+            minutes_col: pd.Series(
+                [v for values in cardio_series.values() for v in values], dtype="float64"
+            ),
+            exercise_col: [name for name, values in cardio_series.items() for _ in values],
+        }
     )
+    # カロリー等と同様、積み上げ合計が固定上限(90分)を超える日は上限を広げる。
+    cardio_max = max([90.0, *(sum(day) for day in zip(*cardio_series.values(), strict=True))])
+    cardio_chart = (
+        alt.Chart(cardio_df)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                f"{_date_col}:N",
+                sort=None,
+                title=None,
+                axis=alt.Axis(labelAngle=_LABEL_ANGLE),
+                scale=alt.Scale(domain=_DATE_LABELS),
+            ),
+            y=alt.Y(f"{minutes_col}:Q", stack="zero", scale=alt.Scale(domain=[0, cardio_max])),
+            color=alt.Color(f"{exercise_col}:N", title=exercise_col, sort=list(cardio_series)),
+        )
+    )
+    with st.container(border=True, key="dashboard-chart-cardio"):
+        st.caption(t("有酸素運動時間(分) — 種目別"))
+        st.altair_chart(cardio_chart, width="stretch")
 
 st.divider()
 

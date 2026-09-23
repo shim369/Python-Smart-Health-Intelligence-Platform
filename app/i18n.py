@@ -66,7 +66,6 @@ TRANSLATIONS: dict[str, str] = {
     "今日": "Today",
     "長期目標": "Goals",
     "CSVインポート": "CSV Import",
-    "レシピ": "Recipe",
     "言語": "Language",
     "ログアウト": "Log out",
     "ログインしてください。": "Please log in.",
@@ -102,9 +101,18 @@ TRANSLATIONS: dict[str, str] = {
     "作業時間(分) — 学習ログ + タスク実績": "Work time (min) — learning log + task records",
     "作業時間(分)": "Work time (min)",
     "運動": "Exercise",
-    "運動セッション数": "Workout sessions",
-    "セッション数": "Sessions",
     "有酸素運動時間(分)": "Cardio time (min)",
+    "有酸素運動時間(分) — 種目別": "Cardio time (min) — by exercise",
+    "種目別の最大重量(kg) — 記録日数の多い上位5種目": (
+        "Max weight per exercise (kg) — top 5 most frequent"
+    ),
+    "直近{days}日間の筋トレ(重量あり)の記録がありません。": (
+        "No weighted strength training records in the past {days} days."
+    ),
+    "総挙上量(kg)": "Total volume (kg)",
+    "総挙上量(kg) — 重量×回数の合計、自重種目は除く": (
+        "Total volume (kg) — weight × reps, excluding bodyweight exercises"
+    ),
     "家計": "Household",
     "食費合計(円)": "Total food expense (JPY)",
     # --- pages/recipe.py ---
