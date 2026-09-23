@@ -60,6 +60,15 @@ class SqlAlchemyDailyJournalRepository:
         orm = self._session.scalars(stmt).first()
         return _to_domain(orm) if orm is not None else None
 
+    def list_by_date_range(
+        self, user_id: UUID, start_date: date, end_date: date
+    ) -> list[DailyJournal]:
+        stmt = select(DailyJournalORM).where(
+            DailyJournalORM.user_id == user_id,
+            DailyJournalORM.journal_date.between(start_date, end_date),
+        )
+        return [_to_domain(orm) for orm in self._session.scalars(stmt)]
+
     def add(self, daily_journal: DailyJournal) -> None:
         self._session.add(_to_orm(daily_journal))
 

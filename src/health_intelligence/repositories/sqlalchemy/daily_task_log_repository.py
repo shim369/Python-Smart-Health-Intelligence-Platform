@@ -60,9 +60,26 @@ class SqlAlchemyDailyTaskLogRepository:
         )
         return [_to_domain(orm) for orm in self._session.scalars(stmt)]
 
+    def list_by_date_range(
+        self, user_id: UUID, start_date: date, end_date: date
+    ) -> list[DailyTaskLog]:
+        stmt = select(DailyTaskLogORM).where(
+            DailyTaskLogORM.user_id == user_id,
+            DailyTaskLogORM.journal_date.between(start_date, end_date),
+        )
+        return [_to_domain(orm) for orm in self._session.scalars(stmt)]
+
     def list_by_task(self, user_id: UUID, task_id: UUID) -> list[DailyTaskLog]:
         stmt = select(DailyTaskLogORM).where(
             DailyTaskLogORM.user_id == user_id, DailyTaskLogORM.task_id == task_id
+        )
+        return [_to_domain(orm) for orm in self._session.scalars(stmt)]
+
+    def list_by_tasks(self, user_id: UUID, task_ids: list[UUID]) -> list[DailyTaskLog]:
+        if not task_ids:
+            return []
+        stmt = select(DailyTaskLogORM).where(
+            DailyTaskLogORM.user_id == user_id, DailyTaskLogORM.task_id.in_(task_ids)
         )
         return [_to_domain(orm) for orm in self._session.scalars(stmt)]
 

@@ -48,6 +48,17 @@ class MealService:
             uow.meal_logs.add(meal_log)
             uow.commit()
 
+    def record_meal_logs(self, meal_logs: list[MealLog]) -> None:
+        """複数件を1トランザクションでまとめて記録する(CSV一括インポート用)。
+
+        1件ずつ`record_meal_log`を呼ぶと件数分のDB往復・commitが発生し、
+        リモートDBでは件数に比例して著しく遅くなるため。
+        """
+        with self._uow_factory() as uow:
+            for meal_log in meal_logs:
+                uow.meal_logs.add(meal_log)
+            uow.commit()
+
     def list_meal_logs(self, user_id: UUID) -> list[MealLog]:
         with self._uow_factory() as uow:
             return uow.meal_logs.list_by_user(user_id)

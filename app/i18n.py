@@ -66,13 +66,14 @@ TRANSLATIONS: dict[str, str] = {
     "今日": "Today",
     "長期目標": "Goals",
     "CSVインポート": "CSV Import",
-    "レシピ": "Recipe",
     "言語": "Language",
     "ログアウト": "Log out",
     "ログインしてください。": "Please log in.",
     # --- pages/login.py ---
     "このアプリは招待制です。": "This app is invite-only.",
     # --- pages/dashboard.py ---
+    "表示期間": "Period",
+    "直近{days}日間": "Last {days} days",
     "指標": "Metric",
     "睡眠・体調": "Sleep & Condition",
     "睡眠時間(h)": "Sleep duration (h)",
@@ -85,7 +86,7 @@ TRANSLATIONS: dict[str, str] = {
     "ストレス": "Stress",
     "スコア": "Score",
     "体重(kg)": "Weight (kg)",
-    "直近7日間の体重記録がありません。": "No weight records in the past 7 days.",
+    "直近{days}日間の体重記録がありません。": "No weight records in the past {days} days.",
     "食事": "Meals",
     "カロリー(kcal)": "Calories (kcal)",
     "PFC(g)": "PFC (g)",
@@ -100,9 +101,14 @@ TRANSLATIONS: dict[str, str] = {
     "作業時間(分) — 学習ログ + タスク実績": "Work time (min) — learning log + task records",
     "作業時間(分)": "Work time (min)",
     "運動": "Exercise",
-    "運動セッション数": "Workout sessions",
-    "セッション数": "Sessions",
     "有酸素運動時間(分)": "Cardio time (min)",
+    "有酸素運動時間(分) — 種目別": "Cardio time (min) — by exercise",
+    "種目別の最大重量(kg) — 記録日数の多い上位5種目": (
+        "Max weight per exercise (kg) — top 5 most frequent"
+    ),
+    "直近{days}日間の筋トレ(重量あり)の記録がありません。": (
+        "No weighted strength training records in the past {days} days."
+    ),
     "家計": "Household",
     "食費合計(円)": "Total food expense (JPY)",
     # --- pages/recipe.py ---
@@ -208,6 +214,9 @@ TRANSLATIONS: dict[str, str] = {
     "行番号": "Row",
     "エラー内容": "Error",
     "有効な{count}件をインポートする": "Import {count} valid row(s)",
+    "登録済みのログと同じ内容の{count}件は、重複を避けるため取り込みません。": (
+        "{count} rows match existing logs and will be skipped to avoid duplicates."
+    ),
     "{count}件のログをインポートしました。": "Imported {count} log(s).",
     "納豆ご飯": "Natto rice bowl",
     "日時": "Date/time",

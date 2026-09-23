@@ -243,8 +243,11 @@ Repositoryはビジネスルールを持たない。「条件付きでMealLogを
 
 翻訳キーには日本語原文をそのまま使う(意味付きキーは導入しない)。`t(text, **kwargs)`が現在の表示言語に応じて`TRANSLATIONS`辞書を引き、無ければ原文をそのままフォールバック返却する。表示言語(`Locale`)は`User.locale`にDB永続化し、ログイン時にSession State(`AuthSessionState`)へコピーする。切り替えUIは`app/auth_guard.py`のサイドバーに置く。
 
+新規User作成時の初期表示言語は、ブラウザの`Accept-Language`(`st.context.locale`)から`detect_browser_locale()`で判定し、`UserService.get_or_create_user(default_locale=...)`へ渡す。既存Userの場合はDBに保存済みの本人の選択が常に優先される。ログイン画面には言語切り替えを置かない(`st.login()`はOAuthプロバイダ経由のリダイレクトを伴い、戻った時点でSession Stateがリセットされるため、ログイン前の選択をログイン後へ引き継げない)。そのためログイン画面の文言は常に英語固定とする。
+
 ```mermaid
 flowchart LR
+    Browser[Accept-Language] -. 新規User作成時のみ .-> DB
     DB[(User.locale)] --> Login[Login]
     Login --> Session[AuthSessionState.locale]
     Session --> T["t(text)"]
@@ -277,6 +280,15 @@ flowchart LR
 Database接続情報は環境変数またはStreamlit Secretsから取得する(ローカル: `.env`、本番: Streamlit Secrets)。`DATABASE_URL` をソースコードへ直接記述しない。
 
 秘密情報(`DATABASE_URL`、`GEMINI_API_KEY` 等)はGit Repositoryへコミットしない。
+
+### 7.4 リモートDB前提の性能設計
+
+DBはリモート(Neon、アプリ実行環境からの往復は約110ms)のため、1回のService呼び出し(接続確認 + BEGIN + クエリ + ROLLBACK)に約360msかかる。一方Streamlitはウィジェット操作のたびにページ全体を再実行するため、DB往復の回数そのものを減らすことを性能設計の中心に置く。
+
+* **読み取りキャッシュ**(`app/services.py`): 各Serviceを`_CachedService`で包み、読み取り系メソッド(`list_`/`get_`/`compute_`で始まるもの)の結果を引数ごとにプロセス内でキャッシュする(TTL 10分)。書き込み系メソッドが呼ばれたら、そのServiceと、同じテーブルを読む関連Service(`_DEPENDENTS`。例: 食事/睡眠/体重/運動 → `RecommendationService`、Goal/Task/DailyJournalは相互)のキャッシュを破棄する。読み込み中に書き込みがあった場合は古い値を保存しない(世代番号で判定)。アプリを経由しないDB変更はTTL経過まで反映されない。
+* **並列プリフェッチ**(`prefetch()`): ページ冒頭の互いに独立した読み取りをスレッドプールで並列実行し、キャッシュが空の初回表示・書き込み直後の再描画でDB往復が直列に積み上がるのを防ぐ。ワーカースレッドには呼び出し元の`ScriptRunContext`を引き継ぐ。
+* **一括書き込み**: CSVインポートは`record_*_logs(list)`で全件を1トランザクション・1回のcommitで保存する(1件ずつcommitすると件数×DB往復になる)。
+* **N+1の回避**: 一覧取得で関連データを1件ずつ引かない(運動ログの種目・セットは`selectinload`、ダッシュボードのTask実績は期間一括取得、レシピの材料名・Goal進捗のTask実績は`IN`句で一括取得)。
 
 ---
 
@@ -439,6 +451,8 @@ flowchart LR
 
 対象領域はPhase 8開始時点で、データ量・欠損率・Featureの品質・目的変数の定義可能性・予測可能性・Rule-based Baselineの性能・ML導入によるメリットを評価して決定する。
 
+現状の対象はWeight領域(`ml/run_weight_pipeline.py`)。実行時にまず`ml/real_data.py`でDBの実データから`DailyFeatures`を組み立て、データ量・欠損率の基準(11.5.1)を確認する。基準を満たせば実データで評価して採用判断を`ml_artifacts/`へ保存し、満たさなければ60日到達の見込み日を表示した上で、ダミーデータによる配線確認のみを行う(ダミーデータの評価結果はMLflowへ記録するが、採用判断としては保存しない)。この判定はGitHub Actionsの定期ワークフロー(`ml-weight-readiness.yml`、毎週月曜06:00 JST)で継続的に実行する。
+
 ### 11.4 MLflow
 
 Parameters / Metrics / Model / Experiment / Evaluation Resultsを記録し、実験の再現性・モデル比較・Baseline比較・採用判断に利用する。
@@ -525,7 +539,7 @@ flowchart LR
     RR --> DB[(PostgreSQL)]
 ```
 
-生成済みRecipeはCacheを利用し、不要なAI API呼び出しを抑制する。Recipe作成時など複数Repositoryにまたがる更新では、Unit of Workによって1つのトランザクションとして扱う。
+生成済みRecipeはCacheを利用し、不要なAI API呼び出しを抑制する。レシピ履歴はUI上で開閉式のアコーディオンとして一覧し、個別に削除できる(`RecipeService.delete_recipe`。紐づくRecipeIngredientはORMのcascadeで合わせて削除される)。Recipe作成時など複数Repositoryにまたがる更新では、Unit of Workによって1つのトランザクションとして扱う。
 
 ---
 
@@ -604,6 +618,12 @@ Application → E2E Test
 
 重要なテスト対象：user_id分離、Repository境界、Transaction境界、Unit of Work、Rollback、AI Retry/Timeout/Validation、ML / Rule-based切り替え、Fallback、Authentication、Session State。
 
+**テスト用DBの保護**: `tests/unit/test_migrations.py`は`DATABASE_URL`のDBに対して全テーブルのdrop/再作成を行い、`tests/integration/`も実データを書き込む。日常用DBを巻き込まないよう、以下の多層防御を置く。
+
+* `.env.test`が存在すれば、`tests/conftest.py`が`DATABASE_URL`をテスト専用DBへ上書きする
+* ローカルの品質チェックは`.claude/skills/check/check.sh`(Claude Codeの`/check`スキル)で行う。`DATABASE_URL`を到達不能なlocalhostへ差し替え、`test_migrations.py`を除外して実行する
+* Claude CodeのPreToolUse hook(`.claude/hooks/guard_pytest_db.py`)が、`.env.test`が無い状態でのpytest実行を(`DATABASE_URL`をlocalhostへ上書きしている場合を除き)ブロックする
+
 ---
 
 ## 19. Configuration & Logging
@@ -620,7 +640,8 @@ Application全体で適切なLoggingおよびException Handlingを実装する�
 Python-Smart-Health-Intelligence-Platform/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml
+│       ├── ci.yml                     # Lint/型チェック/テスト(Postgresサービスコンテナ付き)
+│       └── ml-weight-readiness.yml    # Weight ML実データ蓄積状況の週次チェック
 │
 ├── src/
 │   └── health_intelligence/
@@ -698,12 +719,19 @@ Python-Smart-Health-Intelligence-Platform/
 │   ├── streamlit_app.py       # st.navigation()によるルーター
 │   ├── auth_guard.py          # 認証ガード・言語切り替えUI
 │   ├── i18n.py                # 6.6節
-│   ├── services.py            # DIコンテナ(Service/Repository/UoWの組み立て)
+│   ├── services.py            # DIコンテナ(Service/UoWの組み立て)・読み取りキャッシュ・prefetch(7.4節)
 │   ├── pages/                 # login / dashboard / today / goals / csv_import / recipe
 │   └── components/
 │
 ├── tests/
 ├── data/
+├── .claude/
+│   ├── settings.json          # Claude Code設定(PreToolUse hookの登録)
+│   ├── hooks/
+│   │   └── guard_pytest_db.py # .env.test無しのpytest実行をブロック(18章)
+│   └── skills/
+│       ├── check/             # /check: lint・型・i18n・Unit Testの一括実行
+│       └── db-health/         # /db-health: 本番DBの読み取り専用点検
 ├── docs/
 │   ├── architecture.md
 │   └── requirements.md        # ER図は14.1節に統合

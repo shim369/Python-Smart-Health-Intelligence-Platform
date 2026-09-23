@@ -20,6 +20,7 @@ from components.csv_import import (  # noqa: E402
     parse_sleep_rows,
     parse_weight_rows,
     parse_workout_rows,
+    split_new_logs,
 )
 
 
@@ -298,3 +299,57 @@ def test_parse_learning_rows_rejects_invalid_category_and_location() -> None:
 
     assert result.logs == []
     assert len(result.errors) == 2
+
+
+def test_split_new_logs_skips_rows_already_imported() -> None:
+    user_id = uuid4()
+    rows = [
+        {"date": "2026-06-01", "time": "07:00", "weight_kg": "65.5"},
+        {"date": "2026-06-02", "time": "07:00", "weight_kg": "65.2"},
+    ]
+    existing = parse_weight_rows(rows[:1], user_id=user_id).logs
+    # 再パースすると別IDが採番されるが、内容が同じなら重複と判定する
+    logs = parse_weight_rows(rows, user_id=user_id).logs
+
+    new, duplicates = split_new_logs(logs, existing)
+
+    assert [log.weight_kg for log in new] == [65.2]
+    assert [log.weight_kg for log in duplicates] == [65.5]
+
+
+def test_split_new_logs_compares_nested_workout_exercises() -> None:
+    user_id = uuid4()
+    row = {
+        "date": "2026-06-01",
+        "time": "19:00",
+        "exercise_name": "レッグプレス",
+        "category": "strength",
+        "reps": "10",
+        "weight_kg": "75",
+    }
+    existing = parse_workout_rows([row], user_id=user_id).logs
+    same = parse_workout_rows([row], user_id=user_id).logs
+    heavier = parse_workout_rows([{**row, "weight_kg": "80"}], user_id=user_id).logs
+
+    assert split_new_logs(same, existing) == ([], same)
+    assert split_new_logs(heavier, existing) == (heavier, [])
+
+
+def test_split_new_logs_keeps_identical_rows_within_same_file() -> None:
+    user_id = uuid4()
+    row = {
+        "date": "2026-06-01",
+        "time": "15:00",
+        "meal_type": "snack",
+        "calories": "100",
+        "protein_g": "1",
+        "fat_g": "1",
+        "carbohydrate_g": "20",
+        "memo": "",
+    }
+    logs = parse_meal_rows([row, row], user_id=user_id).logs
+
+    new, duplicates = split_new_logs(logs, [])
+
+    assert len(new) == 2
+    assert duplicates == []

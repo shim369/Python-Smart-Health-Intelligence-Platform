@@ -20,6 +20,17 @@ class WorkoutService:
             uow.workout_logs.add(workout_log)
             uow.commit()
 
+    def record_workout_logs(self, workout_logs: list[WorkoutLog]) -> None:
+        """複数件を1トランザクションでまとめて記録する(CSV一括インポート用)。
+
+        1件ずつ`record_workout_log`を呼ぶと件数分のDB往復・commitが発生し、
+        リモートDBでは件数に比例して著しく遅くなるため。
+        """
+        with self._uow_factory() as uow:
+            for workout_log in workout_logs:
+                uow.workout_logs.add(workout_log)
+            uow.commit()
+
     def list_workout_logs(self, user_id: UUID) -> list[WorkoutLog]:
         with self._uow_factory() as uow:
             return uow.workout_logs.list_by_user(user_id)

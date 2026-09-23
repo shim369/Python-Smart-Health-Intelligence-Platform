@@ -147,6 +147,8 @@ class IngredientRepository(Protocol):
 
     def get_by_id(self, ingredient_id: UUID) -> Ingredient | None: ...
 
+    def list_by_ids(self, ingredient_ids: list[UUID]) -> list[Ingredient]: ...
+
     def get_by_name(self, name: str) -> Ingredient | None: ...
 
     def list_all(self) -> list[Ingredient]: ...
@@ -230,8 +232,22 @@ class DailyTaskLogRepository(Protocol):
 
     def list_by_date(self, user_id: UUID, journal_date: date) -> list[DailyTaskLog]: ...
 
+    def list_by_date_range(
+        self, user_id: UUID, start_date: date, end_date: date
+    ) -> list[DailyTaskLog]:
+        """ダッシュボードの期間集計用、[start_date, end_date]の全日分を1回で返す。
+
+        `list_by_date`を表示日数分ループ呼び出しするとDBラウンドトリップが
+        日数分発生してしまう(N+1)ため、範囲一括取得用に用意する。
+        """
+        ...
+
     def list_by_task(self, user_id: UUID, task_id: UUID) -> list[DailyTaskLog]:
         """Goalの進捗集計(累計問題数・累計時間等)のため、同一Taskの全日分を返す。"""
+        ...
+
+    def list_by_tasks(self, user_id: UUID, task_ids: list[UUID]) -> list[DailyTaskLog]:
+        """複数Task分の全日分を1回で返す(`list_by_task`のTask数分ループ=N+1を避ける)。"""
         ...
 
     def add(self, daily_task_log: DailyTaskLog) -> None: ...
@@ -245,6 +261,16 @@ class DailyJournalRepository(Protocol):
     """DailyJournalの永続化を担うRepository。"""
 
     def get_by_date(self, user_id: UUID, journal_date: date) -> DailyJournal | None: ...
+
+    def list_by_date_range(
+        self, user_id: UUID, start_date: date, end_date: date
+    ) -> list[DailyJournal]:
+        """ダッシュボードの期間集計用、[start_date, end_date]の全日分を1回で返す。
+
+        `get_by_date`を表示日数分ループ呼び出しするとDBラウンドトリップが
+        日数分発生してしまう(N+1)ため、範囲一括取得用に用意する。
+        """
+        ...
 
     def add(self, daily_journal: DailyJournal) -> None: ...
 
