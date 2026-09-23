@@ -56,9 +56,7 @@ flowchart TD
 * Alembic
 * psycopg3
 
-PostgreSQLのホスティングサービスはPhase 2で決定する。
-
-候補：Neon / Supabase / Render / その他の無料または低コストPostgreSQLサービス
+PostgreSQLのホスティングサービスにはNeon(サーバーレスPostgreSQL)を採用した。標準のPostgreSQL接続文字列で接続するため、Neon固有の機能には依存しない(7.1節)。Neonはアイドル時に自動停止(scale-to-zero)するため、切断済みコネクションは`pool_pre_ping`で検知して再接続する(`database/connection.py`)。
 
 ### 3.3 AI
 
@@ -68,12 +66,10 @@ PostgreSQLのホスティングサービスはPhase 2で決定する。
 
 ### 3.4 ML
 
-* LightGBM
-* MLflow
-* pandas
-* scikit-learn 等
+* LightGBM(モデル)
+* MLflow(実験管理)
 
-MLライブラリの最終構成はPhase 8で決定する。
+評価指標(MAE)・交差検証(forward-chaining)は外部ライブラリに頼らず`ml/metrics.py`・`ml/cross_validation.py`で実装している。
 
 ### 3.5 Development
 
@@ -110,8 +106,8 @@ MLライブラリの最終構成はPhase 8で決定する。
 
 ```mermaid
 flowchart TD
-    UI["<b>Streamlit UI</b><br/>Dashboard / Logs / Recipe / Authentication"]
-    Service["<b>Service Layer</b><br/>Health / Meal / Workout / Sleep / Recipe<br/>Recommendation / Authentication"]
+    UI["<b>Streamlit UI</b><br/>Login / Dashboard / Today / Goals<br/>CSV Import / AI Recipes"]
+    Service["<b>Service Layer</b><br/>User / Health / Meal / Workout / Sleep / Weight / Learning<br/>Goal / Task / DailyJournal / Recipe / Recommendation"]
     Domain["<b>Domain Layer</b><br/>Domain Models<br/>Business Rules"]
     AIML["<b>AI / ML Layer</b><br/>Gemini Provider<br/>FakeAIProvider<br/>ML Pipeline"]
     Repo["<b>Repository / Unit of Work</b><br/>Repository Pattern<br/>Transaction Management (UoW)"]
@@ -260,7 +256,7 @@ flowchart LR
 
 ### 7.1 Database / ORM / Migration
 
-* PostgreSQL(特定クラウドサービスに直接依存しない。候補: Neon / Supabase 等。Phase 2で比較・決定)
+* PostgreSQL(本番はNeonを採用。標準の接続文字列のみを使い、特定クラウドサービスに直接依存しない)
 * SQLAlchemyを利用。Domain ModelとORM Modelは分離する
 * MigrationはAlembicを利用し、GitでMigrationファイルを管理する
 
@@ -392,12 +388,12 @@ Timeout / 429 Rate Limit / 503 Service Unavailable / Validation Error / その�
 | バックオフ基準秒数 | 1秒 |
 | バックオフ倍率 | 2倍(指数) |
 | Jitter | ±20% |
-| 1回あたりのTimeout | 20秒 |
-| 最悪ケース総待ち時間 | 約63秒(3回×20秒 + 1秒 + 2秒) |
+| 1回あたりのTimeout | 60秒 |
+| 最悪ケース総待ち時間 | 約183秒(3回×60秒 + 1秒 + 2秒) |
 | Retry対象 | 429 Rate Limit、503 Service Unavailableのみ |
 | Retry対象外(即座に失敗) | Timeout、Validation Error、その他の4xxエラー |
 
-`ai/retry_policy.py` の `RetryPolicy` / `DEFAULT_RETRY_POLICY` として定数化済み。GeminiProvider(Phase 4B)はこれを用いてRetryループを実装する。最悪ケースの待ち時間が長いため、Streamlit UI側(Phase 6)では生成中である旨とおおよその所要時間をユーザーに提示する。
+`ai/retry_policy.py` の `RetryPolicy` / `DEFAULT_RETRY_POLICY` として定数化済みで、`GeminiProvider`はこれに従ってRetryループを実装している(google-genai SDK組み込みのRetryは無効化)。Timeoutは当初20秒としていたが、Gemini API連携の実装時に60秒へ変更した。最悪ケースの待ち時間が長いため、Streamlit UI側では生成中である旨をスピナーで表示し、最終的に失敗した場合はエラーメッセージを表示する。
 
 ---
 
@@ -469,7 +465,7 @@ Nutrition/Weight/Sleep/Workoutの各領域ごとに、以下の基準で独立�
 
 | 項目 | 基準 |
 | --- | --- |
-| 評価指標 | 回帰: MAE、分類: F1スコア(目的変数の型はPhase 8で確定) |
+| 評価指標 | 回帰: MAE、分類: F1スコア。Weight領域は回帰(目的変数: 翌日の体重 − 当日の体重)のためMAE |
 | 改善率閾値 | Baseline比で相対10%以上の改善 |
 | 過学習チェック | train/validation誤差の差が相対20%以内 |
 | 最低データ量 | 60日分以上のログ、欠損率30%未満 |
@@ -581,7 +577,7 @@ Repositoryは原則として独自にSessionを生成・commit・rollbackしな�
 
 例：Recipe作成時、RecipeRepositoryとRecipeIngredientRepositoryは単一Sessionを共有し、片方の保存に失敗した場合は全体をRollbackすることで部分的更新を防止する。
 
-具体的なUnit of Work実装方式、Sessionライフサイクル、RepositoryへのSession注入方式はPhase 2で確定する。
+実装は`repositories/sqlalchemy/unit_of_work.py`の`SqlAlchemyUnitOfWork`。`with`ブロックに入るたびに新しいSessionを生成して全Repositoryへ注入し、ブロック終了時にSessionを閉じる。ブロック内で`commit()`が呼ばれなかった場合、または例外が発生した場合はrollbackする。Serviceは`uow_factory`(`repositories/sqlalchemy/factory.py`の`build_uow_factory()`)を受け取り、ユースケースごとに1つのUnit of Workを開く。
 
 ---
 
@@ -709,11 +705,11 @@ Python-Smart-Health-Intelligence-Platform/
 │       ├── features/
 │       ├── analysis/
 │       ├── recommendation/
-│       ├── recipe/
-│       ├── ai/
+│       ├── ai/                    # AIProvider(Gemini/Fake)・Retry方針・Recipe Cache
 │       ├── auth/
 │       ├── ml/
-│       └── config.py
+│       ├── config.py
+│       └── logging_config.py
 │
 ├── app/
 │   ├── streamlit_app.py       # st.navigation()によるルーター
