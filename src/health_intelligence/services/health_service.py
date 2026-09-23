@@ -20,6 +20,17 @@ class HealthService:
             uow.health_logs.add(health_log)
             uow.commit()
 
+    def record_health_logs(self, health_logs: list[HealthLog]) -> None:
+        """複数件を1トランザクションでまとめて記録する(CSV一括インポート用)。
+
+        1件ずつ`record_health_log`を呼ぶと件数分のDB往復・commitが発生し、
+        リモートDBでは件数に比例して著しく遅くなるため。
+        """
+        with self._uow_factory() as uow:
+            for health_log in health_logs:
+                uow.health_logs.add(health_log)
+            uow.commit()
+
     def list_health_logs(self, user_id: UUID) -> list[HealthLog]:
         with self._uow_factory() as uow:
             return uow.health_logs.list_by_user(user_id)

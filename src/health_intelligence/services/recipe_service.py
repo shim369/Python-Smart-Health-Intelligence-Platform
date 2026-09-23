@@ -73,13 +73,9 @@ class RecipeService:
         Presentation Layer(app/)がIngredientRepositoryへ直接
         アクセスしないよう、Service経由でまとめて解決する。
         """
+        ingredient_ids = list({ri.ingredient_id for ri in recipe_ingredients})
         with self._uow_factory() as uow:
-            names: dict[UUID, str] = {}
-            for recipe_ingredient in recipe_ingredients:
-                ingredient = uow.ingredients.get_by_id(recipe_ingredient.ingredient_id)
-                if ingredient is not None:
-                    names[recipe_ingredient.ingredient_id] = ingredient.name
-            return names
+            return {i.ingredient_id: i.name for i in uow.ingredients.list_by_ids(ingredient_ids)}
 
     def generate_recipe(self, user_id: UUID, ingredient_names: list[str]) -> Recipe:
         """食材リストからAIによってレシピを生成し、保存する。

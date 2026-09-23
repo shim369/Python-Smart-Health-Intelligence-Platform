@@ -163,8 +163,7 @@ def _render_import_tab(
             key=f"{key_prefix}_import_button",
             type="primary",
         ):
-            for log in result.logs:
-                record_fn(log)
+            record_fn(result.logs)
             st.session_state[uploader_version_key] = uploader_version + 1
             st.session_state[f"{key_prefix}_imported_count"] = len(result.logs)
             st.rerun()
@@ -209,7 +208,7 @@ with meal_tab:
             "AIによる推定は行わず、CSVの数値をそのまま取り込みます。"
         ),
         parse_fn=parse_meal_rows,
-        record_fn=lambda log: get_meal_service().record_meal_log(log),
+        record_fn=lambda logs: get_meal_service().record_meal_logs(logs),
         preview_columns={
             t("日時"): lambda m: format_datetime_jst(m.consumed_at),
             t("区分"): lambda m: m.meal_type.value,
@@ -238,7 +237,7 @@ with workout_tab:
             "複数セットとして取り込まれます。"
         ),
         parse_fn=parse_workout_rows,
-        record_fn=lambda log: get_workout_service().record_workout_log(log),
+        record_fn=lambda logs: get_workout_service().record_workout_logs(logs),
         preview_columns={
             t("日時"): lambda w: format_datetime_jst(w.performed_at),
             t("種目数"): lambda w: len(w.exercises),
@@ -254,7 +253,7 @@ with sleep_tab:
         example_row=["2026-06-01", "23:30", "2026-06-02", "07:00", "good"],
         caption=t("qualityは任意。poor / fair / good / excellent のいずれか。"),
         parse_fn=parse_sleep_rows,
-        record_fn=lambda log: get_sleep_service().record_sleep_log(log),
+        record_fn=lambda logs: get_sleep_service().record_sleep_logs(logs),
         preview_columns={
             t("就寝"): lambda s: format_datetime_jst(s.bedtime),
             t("起床"): lambda s: format_datetime_jst(s.wake_time),
@@ -270,7 +269,7 @@ with weight_tab:
         example_row=["2026-06-01", "07:00", "65.5"],
         caption=t("timeは任意(省略時は00:00として記録されます)。"),
         parse_fn=parse_weight_rows,
-        record_fn=lambda log: get_weight_service().record_weight_log(log),
+        record_fn=lambda logs: get_weight_service().record_weight_logs(logs),
         preview_columns={
             t("日時"): lambda w: format_datetime_jst(w.recorded_at),
             t("体重(kg)"): lambda w: w.weight_kg,
@@ -288,7 +287,7 @@ with health_tab:
             "複数ある場合はセミコロン(;)区切りで記入してください。"
         ),
         parse_fn=parse_health_rows,
-        record_fn=lambda log: get_health_service().record_health_log(log),
+        record_fn=lambda logs: get_health_service().record_health_logs(logs),
         preview_columns={
             t("日時"): lambda h: format_datetime_jst(h.recorded_at),
             t("スコア"): lambda h: h.condition_score,
@@ -330,7 +329,7 @@ with learning_tab:
             "セミコロン(;)区切りで記入してください。"
         ),
         parse_fn=parse_learning_rows,
-        record_fn=lambda log: get_learning_service().record_learning_log(log),
+        record_fn=lambda logs: get_learning_service().record_learning_logs(logs),
         preview_columns={
             t("日時"): lambda learning: format_datetime_jst(learning.started_at),
             t("カテゴリ"): lambda learning: learning.category.value,

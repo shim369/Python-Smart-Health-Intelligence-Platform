@@ -20,6 +20,17 @@ class WeightService:
             uow.weight_logs.add(weight_log)
             uow.commit()
 
+    def record_weight_logs(self, weight_logs: list[WeightLog]) -> None:
+        """複数件を1トランザクションでまとめて記録する(CSV一括インポート用)。
+
+        1件ずつ`record_weight_log`を呼ぶと件数分のDB往復・commitが発生し、
+        リモートDBでは件数に比例して著しく遅くなるため。
+        """
+        with self._uow_factory() as uow:
+            for weight_log in weight_logs:
+                uow.weight_logs.add(weight_log)
+            uow.commit()
+
     def list_weight_logs(self, user_id: UUID) -> list[WeightLog]:
         with self._uow_factory() as uow:
             return uow.weight_logs.list_by_user(user_id)

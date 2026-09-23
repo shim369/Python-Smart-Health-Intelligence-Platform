@@ -78,6 +78,7 @@ from services import (  # noqa: E402
     get_task_service,
     get_weight_service,
     get_workout_service,
+    prefetch,
 )
 
 from health_intelligence.ai.errors import AIProviderError  # noqa: E402
@@ -918,6 +919,24 @@ with st.container(horizontal=True, horizontal_alignment="distribute", vertical_a
             st.session_state["today_journal_date"] += timedelta(days=1)
             st.rerun()
 date_suffix = journal_date.isoformat()
+yesterday = journal_date - timedelta(days=1)
+
+prefetch(
+    lambda: daily_journal_service.list_plan(user_id, journal_date),
+    lambda: daily_journal_service.list_task_logs(user_id, journal_date),
+    lambda: daily_journal_service.get_journal(user_id, journal_date),
+    lambda: daily_journal_service.get_journal(user_id, yesterday),
+    lambda: daily_journal_service.list_plan(user_id, yesterday),
+    lambda: daily_journal_service.get_or_create_draft(user_id, journal_date),
+    lambda: task_service.list_tasks(user_id, include_archived=False),
+    lambda: meal_service.list_meal_logs(user_id),
+    lambda: workout_service.list_workout_logs(user_id),
+    lambda: sleep_service.list_sleep_logs(user_id),
+    lambda: weight_service.list_weight_logs(user_id),
+    lambda: health_service.list_health_logs(user_id),
+    lambda: learning_service.list_learning_logs(user_id),
+    lambda: recipe_service.list_recipe_history(user_id),
+)
 
 plan_items = daily_journal_service.list_plan(user_id, journal_date)
 task_logs_today = daily_journal_service.list_task_logs(user_id, journal_date)
@@ -957,7 +976,6 @@ pdca_status = compute_pdca_status(
 )
 st.caption(f"P:{pdca_status.plan}　D:{pdca_status.do}　C:{pdca_status.check}　A:{pdca_status.act}")
 
-yesterday = journal_date - timedelta(days=1)
 yesterday_journal = daily_journal_service.get_journal(user_id, yesterday)
 if yesterday_journal is not None and yesterday_journal.improvement_point:
     st.info(t("前日の改善点(A): {point}", point=yesterday_journal.improvement_point))

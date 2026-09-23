@@ -34,6 +34,7 @@ from services import (  # noqa: E402
     get_task_service,
     get_weight_service,
     get_workout_service,
+    prefetch,
 )
 
 from health_intelligence.domain.enums import (  # noqa: E402
@@ -65,6 +66,17 @@ selected_period = st.radio(
 # datetime.now(UTC).date()をそのまま使うとJST 0:00〜8:59の間だけ
 # 「今日」が1日ズレるため、jst_date_ofで変換してから使う。
 _DAYS = last_n_days(jst_date_of(datetime.now(UTC)), selected_period)
+
+prefetch(
+    lambda: get_sleep_service().list_sleep_logs(user_id),
+    lambda: get_health_service().list_health_logs(user_id),
+    lambda: get_weight_service().list_weight_logs(user_id),
+    lambda: get_meal_service().list_meal_logs(user_id),
+    lambda: get_learning_service().list_learning_logs(user_id),
+    lambda: get_daily_journal_service().list_task_logs_in_range(user_id, _DAYS[0], _DAYS[-1]),
+    lambda: get_task_service().list_tasks(user_id),
+    lambda: get_workout_service().list_workout_logs(user_id),
+)
 _DATE_LABELS = [d.strftime("%m/%d") for d in _DAYS]
 # 表示日数が多いほど日付ラベルが重なるため、その場合は斜めにする。
 _LABEL_ANGLE = 0 if selected_period <= 7 else -45

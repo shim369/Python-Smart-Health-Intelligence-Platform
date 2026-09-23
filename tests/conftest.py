@@ -191,6 +191,11 @@ class FakeDailyTaskLogRepository:
             log for log in self._logs.values() if log.user_id == user_id and log.task_id == task_id
         ]
 
+    def list_by_tasks(self, user_id: UUID, task_ids: list[UUID]) -> list[DailyTaskLog]:
+        return [
+            log for log in self._logs.values() if log.user_id == user_id and log.task_id in task_ids
+        ]
+
     def add(self, daily_task_log: DailyTaskLog) -> None:
         self._logs[daily_task_log.daily_task_log_id] = daily_task_log
 

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from health_intelligence.domain.enums import GoalStatus, TaskLogType
-from health_intelligence.domain.models import Goal, Task
+from health_intelligence.domain.models import DailyTaskLog, Goal, Task
 from health_intelligence.repositories.unit_of_work import UnitOfWork
 
 
@@ -75,9 +75,12 @@ class GoalService:
                 for task in uow.tasks.list_by_user(user_id, goal_id=goal_id)
                 if task.log_type == TaskLogType.COUNT_AND_DURATION
             ]
+            logs_by_task: dict[UUID, list[DailyTaskLog]] = {task.task_id: [] for task in tasks}
+            for log in uow.daily_task_logs.list_by_tasks(user_id, list(logs_by_task)):
+                logs_by_task[log.task_id].append(log)
             progresses = []
             for task in tasks:
-                logs = uow.daily_task_logs.list_by_task(user_id, task.task_id)
+                logs = logs_by_task[task.task_id]
                 progresses.append(
                     TaskProgress(
                         task=task,

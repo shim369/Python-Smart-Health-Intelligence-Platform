@@ -15,7 +15,7 @@ import streamlit as st  # noqa: E402
 from auth_guard import require_login  # noqa: E402
 from components.recipe_card import render_recipe_card  # noqa: E402
 from i18n import t  # noqa: E402
-from services import get_recipe_service  # noqa: E402
+from services import get_recipe_service, prefetch  # noqa: E402
 
 from health_intelligence.ai.errors import AIProviderError  # noqa: E402
 
@@ -59,6 +59,17 @@ st.divider()
 st.subheader(t("レシピ履歴"))
 
 history = recipe_service.list_recipe_history(user_id)
+# 履歴1件ごとに材料・材料名を直列に取得するとDB往復が件数×2回積み上がるため、
+# 先に並列で取得してキャッシュに載せておく(材料名は材料一覧に依存するため2段階)。
+prefetch(*(lambda r=r: recipe_service.get_recipe_ingredients(r.recipe_id) for r in history))
+prefetch(
+    *(
+        lambda r=r: recipe_service.get_ingredient_names(
+            recipe_service.get_recipe_ingredients(r.recipe_id)
+        )
+        for r in history
+    )
+)
 if not history:
     st.info(t("まだ生成されたレシピがありません。"))
 else:

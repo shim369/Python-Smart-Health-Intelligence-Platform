@@ -20,6 +20,17 @@ class SleepService:
             uow.sleep_logs.add(sleep_log)
             uow.commit()
 
+    def record_sleep_logs(self, sleep_logs: list[SleepLog]) -> None:
+        """複数件を1トランザクションでまとめて記録する(CSV一括インポート用)。
+
+        1件ずつ`record_sleep_log`を呼ぶと件数分のDB往復・commitが発生し、
+        リモートDBでは件数に比例して著しく遅くなるため。
+        """
+        with self._uow_factory() as uow:
+            for sleep_log in sleep_logs:
+                uow.sleep_logs.add(sleep_log)
+            uow.commit()
+
     def list_sleep_logs(self, user_id: UUID) -> list[SleepLog]:
         with self._uow_factory() as uow:
             return uow.sleep_logs.list_by_user(user_id)

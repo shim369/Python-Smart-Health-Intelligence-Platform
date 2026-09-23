@@ -75,6 +75,14 @@ class SqlAlchemyDailyTaskLogRepository:
         )
         return [_to_domain(orm) for orm in self._session.scalars(stmt)]
 
+    def list_by_tasks(self, user_id: UUID, task_ids: list[UUID]) -> list[DailyTaskLog]:
+        if not task_ids:
+            return []
+        stmt = select(DailyTaskLogORM).where(
+            DailyTaskLogORM.user_id == user_id, DailyTaskLogORM.task_id.in_(task_ids)
+        )
+        return [_to_domain(orm) for orm in self._session.scalars(stmt)]
+
     def add(self, daily_task_log: DailyTaskLog) -> None:
         self._session.add(_to_orm(daily_task_log))
 

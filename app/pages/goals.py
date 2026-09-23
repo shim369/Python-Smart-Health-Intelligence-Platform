@@ -25,7 +25,7 @@ from components.goal_task_labels import (  # noqa: E402
     task_log_type_labels,
 )
 from i18n import t  # noqa: E402
-from services import get_goal_service, get_task_service  # noqa: E402
+from services import get_goal_service, get_task_service, prefetch  # noqa: E402
 
 from health_intelligence.domain.enums import GoalCategory, GoalStatus, TaskLogType  # noqa: E402
 from health_intelligence.domain.models import Goal, Task  # noqa: E402
@@ -234,6 +234,10 @@ def _render_task_row(task: Task, *, goal: Goal | None) -> None:
         _task_edit_dialog(task, goals_all)
 
 
+prefetch(
+    lambda: task_service.list_tasks(user_id),
+    lambda: goal_service.list_goals(user_id),
+)
 all_tasks = task_service.list_tasks(user_id)
 goals_all = sorted(
     goal_service.list_goals(user_id),
@@ -242,6 +246,10 @@ goals_all = sorted(
         g.deadline is None,
         g.deadline or datetime.max.date(),
     ),
+)
+
+prefetch(
+    *(lambda g=goal: goal_service.compute_task_progress(user_id, g.goal_id) for goal in goals_all)
 )
 
 if st.button(t("+ 新しい長期目標を追加"), type="primary"):

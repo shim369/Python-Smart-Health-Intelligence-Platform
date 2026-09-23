@@ -20,6 +20,17 @@ class LearningService:
             uow.learning_logs.add(learning_log)
             uow.commit()
 
+    def record_learning_logs(self, learning_logs: list[LearningLog]) -> None:
+        """複数件を1トランザクションでまとめて記録する(CSV一括インポート用)。
+
+        1件ずつ`record_learning_log`を呼ぶと件数分のDB往復・commitが発生し、
+        リモートDBでは件数に比例して著しく遅くなるため。
+        """
+        with self._uow_factory() as uow:
+            for learning_log in learning_logs:
+                uow.learning_logs.add(learning_log)
+            uow.commit()
+
     def list_learning_logs(self, user_id: UUID) -> list[LearningLog]:
         with self._uow_factory() as uow:
             return uow.learning_logs.list_by_user(user_id)
