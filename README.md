@@ -14,10 +14,10 @@ See below for the detailed design (documents are in Japanese).
 - **"Today" page**: Complete one day's record in a single screen, in PDCA order — Plan → Do → Check → Act. Sleep, condition (5 axes), meals, workouts (session/exercise/set structure), study/PF-dev/work, and household (shopping memo/food expense) are all recorded here.
 - **Goal & Task management**: Attach tasks to long-term goals, select them daily in the "Today" page's Plan step, and track progress. Study/PF-dev/work tasks record quantity/duration/memo; diet-policy/exercise-goal/sleep-goal tasks are just selected, with the actual record still living in the existing domains (MealLog/WorkoutLog/SleepLog).
 - **Learning log** (exam study, portfolio development, research, career/product strategy — the input fields change per category). Recorded in the "Today" page's Do tab.
-- **Dashboard** showing sleep/condition, meals, study/work time, workouts, and food expense as charts, with a selectable period (last 7 / 30 / 90 days; defaults to 7).
+- **Dashboard** showing sleep/condition, meals, study/work time, workouts (max weight per strength exercise over time, cardio time by exercise), and food expense as charts, with a selectable period (last 7 / 30 / 90 days; defaults to 7).
 - **AI recipe generation** via the Gemini API (enter ingredients → get a recipe suggestion, results are cached). Past recipes are listed as collapsible accordions and can be deleted. Ingredients from a generated recipe can be appended to the "Today" page's shopping memo with one tap.
 - AI estimates calories/PFC from a free-text description of what you ate (assists meal logging).
-- Quick entry via "same as last time" / frequently-used templates & keywords, plus bulk log import from CSV files.
+- Quick entry via "same as last time" / frequently-used templates & keywords, plus bulk log import from CSV files (rows identical to an existing log are skipped automatically to prevent double imports).
 - **i18n**: switch the UI between Japanese and English (persisted per user in the DB). A new user's initial language is detected from the browser's `Accept-Language`; the login screen itself is always shown in English.
 - Multi-user web app with Google OAuth (OIDC, via `st.login()`) login (data isolated per user).
 - **Health Score** (a proprietary metric, not intended for medical diagnosis) and rule-based improvement suggestions (Recommendation Engine) are implemented on the backend (currently hidden from the UI — see [Known limitations](#known-limitations)).
@@ -115,6 +115,11 @@ with it at startup, so `pytest` never touches your everyday database
 (if `.env.test` is absent, the `DATABASE_URL` from `.env` is used for
 tests as before — CI relies on this default behavior).
 
+When developing with Claude Code, a PreToolUse hook in
+`.claude/settings.json` ([.claude/hooks/guard_pytest_db.py](.claude/hooks/guard_pytest_db.py))
+blocks pytest runs while `.env.test` is absent, unless the command
+overrides `DATABASE_URL` to localhost.
+
 ### 4. Run the app
 
 ```bash
@@ -124,17 +129,25 @@ uv run streamlit run app/streamlit_app.py
 ## Testing
 
 ```bash
-# Unit tests (no external services required)
-uv run pytest tests/unit
+# Lint / format / type check / i18n duplicate keys / unit tests in one go
+# (points DATABASE_URL at an unreachable localhost and excludes the
+#  DB-destroying test_migrations.py, so it is safe without .env.test)
+.claude/skills/check/check.sh
 
-# Integration tests (require DATABASE_URL; auto-skipped if unset)
-uv run pytest tests/integration
-
-# Everything (lint / format / type check / tests)
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
+# Everything, including migration and integration tests (requires .env.test; see 3.5)
 uv run pytest
+```
+
+`tests/unit/` also contains `test_migrations.py`, which uses the database,
+so running `uv run pytest tests/unit` without `.env.test` resets the DB in
+`.env`. Locally, use `check.sh` above (the `/check` skill in Claude Code).
+
+The production database can be inspected read-only (log counts,
+content-duplicate records, latest record date, etc.; the `/db-health`
+skill in Claude Code):
+
+```bash
+uv run python .claude/skills/db-health/db_health.py
 ```
 
 CI (GitHub Actions) runs the full suite above on every push and pull request. CI starts a disposable PostgreSQL 16 service container, points `DATABASE_URL` at it, and runs `alembic upgrade head` before `pytest`, so migration tests and integration tests run there too ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
@@ -168,6 +181,7 @@ Because development proceeded on a compressed schedule, the following are intent
 
 - **Health Score / Recommendation Engine**: implemented on the backend as `RecommendationService`, but its UI display was removed when the Dashboard was redesigned around weekly charts, and it is currently not called from any page.
 - **Recipe Cache**: an in-process-memory implementation. It is lost on app restart or when Streamlit Community Cloud wakes from sleep ([ai/recipe_cache.py](src/health_intelligence/ai/recipe_cache.py)).
+- **Read cache**: to cut round trips to the remote DB (Neon), each service's read results are cached in-process for up to 10 minutes ([app/services.py](app/services.py)). Writes made through the app invalidate it immediately, but changes made directly in the DB (e.g. via SQL) do not show up until the app restarts (up to 10 minutes).
 - **HealthLog field set**: as a catch-all for general condition tracking, it holds an overall score (`condition_score`), the 5-axis condition (morning/evening/mental/fatigue/stress), `symptoms`, and `memo`. This field set has already been revised once based on real-world use, and is expected to keep evolving.
 - **ML pipeline**: runs rule-based only until real data reaches 60 days with under 30% missing-value rate (intended behavior). Currently scoped to Weight only (extending to Nutrition/Sleep/Workout has not started).
 - **Workout log form**: rows with the same exercise name/category are grouped and saved as one exercise with multiple sets, so performing the same exercise more than once in a day (e.g., morning and evening) cannot be distinguished.
@@ -188,8 +202,9 @@ Because development proceeded on a compressed schedule, the following are intent
 │   ├── ml/                  ML pipeline (dataset/evaluation/LightGBM/MLflow)
 │   └── database/            SQLAlchemy ORM & Alembic migrations
 ├── tests/
-│   ├── unit/                 Tests requiring no external services
+│   ├── unit/                 Unit tests (only test_migrations.py needs DATABASE_URL)
 │   └── integration/          Requires DATABASE_URL (run in CI/local DB)
+├── .claude/                  Claude Code hook (pytest DB guard) & skills (/check, /db-health)
 └── docs/                     Requirements, architecture, DB design
 ```
 

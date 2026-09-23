@@ -281,6 +281,15 @@ Database接続情報は環境変数またはStreamlit Secretsから取得する(
 
 秘密情報(`DATABASE_URL`、`GEMINI_API_KEY` 等)はGit Repositoryへコミットしない。
 
+### 7.4 リモートDB前提の性能設計
+
+DBはリモート(Neon、アプリ実行環境からの往復は約110ms)のため、1回のService呼び出し(接続確認 + BEGIN + クエリ + ROLLBACK)に約360msかかる。一方Streamlitはウィジェット操作のたびにページ全体を再実行するため、DB往復の回数そのものを減らすことを性能設計の中心に置く。
+
+* **読み取りキャッシュ**(`app/services.py`): 各Serviceを`_CachedService`で包み、読み取り系メソッド(`list_`/`get_`/`compute_`で始まるもの)の結果を引数ごとにプロセス内でキャッシュする(TTL 10分)。書き込み系メソッドが呼ばれたら、そのServiceと、同じテーブルを読む関連Service(`_DEPENDENTS`。例: 食事/睡眠/体重/運動 → `RecommendationService`、Goal/Task/DailyJournalは相互)のキャッシュを破棄する。読み込み中に書き込みがあった場合は古い値を保存しない(世代番号で判定)。アプリを経由しないDB変更はTTL経過まで反映されない。
+* **並列プリフェッチ**(`prefetch()`): ページ冒頭の互いに独立した読み取りをスレッドプールで並列実行し、キャッシュが空の初回表示・書き込み直後の再描画でDB往復が直列に積み上がるのを防ぐ。ワーカースレッドには呼び出し元の`ScriptRunContext`を引き継ぐ。
+* **一括書き込み**: CSVインポートは`record_*_logs(list)`で全件を1トランザクション・1回のcommitで保存する(1件ずつcommitすると件数×DB往復になる)。
+* **N+1の回避**: 一覧取得で関連データを1件ずつ引かない(運動ログの種目・セットは`selectinload`、ダッシュボードのTask実績は期間一括取得、レシピの材料名・Goal進捗のTask実績は`IN`句で一括取得)。
+
 ---
 
 ## 8. user_id Architecture
@@ -609,6 +618,12 @@ Application → E2E Test
 
 重要なテスト対象：user_id分離、Repository境界、Transaction境界、Unit of Work、Rollback、AI Retry/Timeout/Validation、ML / Rule-based切り替え、Fallback、Authentication、Session State。
 
+**テスト用DBの保護**: `tests/unit/test_migrations.py`は`DATABASE_URL`のDBに対して全テーブルのdrop/再作成を行い、`tests/integration/`も実データを書き込む。日常用DBを巻き込まないよう、以下の多層防御を置く。
+
+* `.env.test`が存在すれば、`tests/conftest.py`が`DATABASE_URL`をテスト専用DBへ上書きする
+* ローカルの品質チェックは`.claude/skills/check/check.sh`(Claude Codeの`/check`スキル)で行う。`DATABASE_URL`を到達不能なlocalhostへ差し替え、`test_migrations.py`を除外して実行する
+* Claude CodeのPreToolUse hook(`.claude/hooks/guard_pytest_db.py`)が、`.env.test`が無い状態でのpytest実行を(`DATABASE_URL`をlocalhostへ上書きしている場合を除き)ブロックする
+
 ---
 
 ## 19. Configuration & Logging
@@ -704,12 +719,19 @@ Python-Smart-Health-Intelligence-Platform/
 │   ├── streamlit_app.py       # st.navigation()によるルーター
 │   ├── auth_guard.py          # 認証ガード・言語切り替えUI
 │   ├── i18n.py                # 6.6節
-│   ├── services.py            # DIコンテナ(Service/Repository/UoWの組み立て)
+│   ├── services.py            # DIコンテナ(Service/UoWの組み立て)・読み取りキャッシュ・prefetch(7.4節)
 │   ├── pages/                 # login / dashboard / today / goals / csv_import / recipe
 │   └── components/
 │
 ├── tests/
 ├── data/
+├── .claude/
+│   ├── settings.json          # Claude Code設定(PreToolUse hookの登録)
+│   ├── hooks/
+│   │   └── guard_pytest_db.py # .env.test無しのpytest実行をブロック(18章)
+│   └── skills/
+│       ├── check/             # /check: lint・型・i18n・Unit Testの一括実行
+│       └── db-health/         # /db-health: 本番DBの読み取り専用点検
 ├── docs/
 │   ├── architecture.md
 │   └── requirements.md        # ER図は14.1節に統合
