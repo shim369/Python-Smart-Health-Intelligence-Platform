@@ -109,10 +109,6 @@ TRANSLATIONS: dict[str, str] = {
     "直近{days}日間の筋トレ(重量あり)の記録がありません。": (
         "No weighted strength training records in the past {days} days."
     ),
-    "総挙上量(kg)": "Total volume (kg)",
-    "総挙上量(kg) — 重量×回数の合計、自重種目は除く": (
-        "Total volume (kg) — weight × reps, excluding bodyweight exercises"
-    ),
     "家計": "Household",
     "食費合計(円)": "Total food expense (JPY)",
     # --- pages/recipe.py ---

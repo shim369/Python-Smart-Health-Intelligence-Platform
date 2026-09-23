@@ -24,7 +24,6 @@ from components.dashboard_charts import (  # noqa: E402
     group_sum_by_date,
     last_n_days,
     strength_max_weight_by_exercise,
-    strength_volume_by_date,
 )
 from components.formatting import jst_date_of  # noqa: E402
 from i18n import t  # noqa: E402
@@ -420,47 +419,38 @@ else:
         st.caption(t("種目別の最大重量(kg) — 記録日数の多い上位5種目"))
         st.caption(t("直近{days}日間の筋トレ(重量あり)の記録がありません。", days=selected_period))
 
-volume_col, cardio_col = st.columns(2)
-with volume_col:
-    _bar_chart(
-        strength_volume_by_date(workout_logs, _workout_date, _DAYS),
-        y_title=t("総挙上量(kg)"),
-        key="strength-volume",
-        caption=t("総挙上量(kg) — 重量×回数の合計、自重種目は除く"),
+exercise_col = t("種目")
+minutes_col = t("時間(分)")
+cardio_series = cardio_minutes_by_exercise(workout_logs, _workout_date, _DAYS)
+cardio_df = pd.DataFrame(
+    {
+        _date_col: [label for _ in cardio_series for label in _DATE_LABELS],
+        minutes_col: pd.Series(
+            [v for values in cardio_series.values() for v in values], dtype="float64"
+        ),
+        exercise_col: [name for name, values in cardio_series.items() for _ in values],
+    }
+)
+# カロリー等と同様、積み上げ合計が固定上限(90分)を超える日は上限を広げる。
+cardio_max = max([90.0, *(sum(day) for day in zip(*cardio_series.values(), strict=True))])
+cardio_chart = (
+    alt.Chart(cardio_df)
+    .mark_bar()
+    .encode(
+        x=alt.X(
+            f"{_date_col}:N",
+            sort=None,
+            title=None,
+            axis=alt.Axis(labelAngle=_LABEL_ANGLE),
+            scale=alt.Scale(domain=_DATE_LABELS),
+        ),
+        y=alt.Y(f"{minutes_col}:Q", stack="zero", scale=alt.Scale(domain=[0, cardio_max])),
+        color=alt.Color(f"{exercise_col}:N", title=exercise_col, sort=list(cardio_series)),
     )
-with cardio_col:
-    exercise_col = t("種目")
-    minutes_col = t("時間(分)")
-    cardio_series = cardio_minutes_by_exercise(workout_logs, _workout_date, _DAYS)
-    cardio_df = pd.DataFrame(
-        {
-            _date_col: [label for _ in cardio_series for label in _DATE_LABELS],
-            minutes_col: pd.Series(
-                [v for values in cardio_series.values() for v in values], dtype="float64"
-            ),
-            exercise_col: [name for name, values in cardio_series.items() for _ in values],
-        }
-    )
-    # カロリー等と同様、積み上げ合計が固定上限(90分)を超える日は上限を広げる。
-    cardio_max = max([90.0, *(sum(day) for day in zip(*cardio_series.values(), strict=True))])
-    cardio_chart = (
-        alt.Chart(cardio_df)
-        .mark_bar()
-        .encode(
-            x=alt.X(
-                f"{_date_col}:N",
-                sort=None,
-                title=None,
-                axis=alt.Axis(labelAngle=_LABEL_ANGLE),
-                scale=alt.Scale(domain=_DATE_LABELS),
-            ),
-            y=alt.Y(f"{minutes_col}:Q", stack="zero", scale=alt.Scale(domain=[0, cardio_max])),
-            color=alt.Color(f"{exercise_col}:N", title=exercise_col, sort=list(cardio_series)),
-        )
-    )
-    with st.container(border=True, key="dashboard-chart-cardio"):
-        st.caption(t("有酸素運動時間(分) — 種目別"))
-        st.altair_chart(cardio_chart, width="stretch")
+)
+with st.container(border=True, key="dashboard-chart-cardio"):
+    st.caption(t("有酸素運動時間(分) — 種目別"))
+    st.altair_chart(cardio_chart, width="stretch")
 
 st.divider()
 

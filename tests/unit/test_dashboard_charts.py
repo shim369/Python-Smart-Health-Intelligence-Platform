@@ -16,7 +16,6 @@ from components.dashboard_charts import (  # noqa: E402
     group_sum_by_date,
     last_n_days,
     strength_max_weight_by_exercise,
-    strength_volume_by_date,
 )
 
 from health_intelligence.domain.enums import ExerciseCategory  # noqa: E402
@@ -134,16 +133,6 @@ def test_strength_max_weight_keeps_top_n_by_recorded_days() -> None:
     result = strength_max_weight_by_exercise(logs, _day_of, [_D1, _D2, _D3], top_n=2)
 
     assert list(result) == ["B", "C"]
-
-
-def test_strength_volume_sums_weight_times_reps_per_day() -> None:
-    logs = [
-        _workout(_D1, _strength("スクワット", (10, 60.0), (8, 70.0)), _strength("懸垂", (8, None))),
-        _workout(_D1, _strength("デッドリフト", (5, 100.0))),
-        _workout(_D2, _cardio("ランニング", 30)),
-    ]
-
-    assert strength_volume_by_date(logs, _day_of, [_D1, _D2]) == [1660.0, 0.0]
 
 
 def test_cardio_minutes_by_exercise_orders_by_total_minutes() -> None:

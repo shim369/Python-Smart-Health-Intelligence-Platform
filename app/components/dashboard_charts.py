@@ -91,27 +91,6 @@ def strength_max_weight_by_exercise(
     return {name: [max_by_exercise[name].get(d) for d in dates] for name in top}
 
 
-def strength_volume_by_date(
-    workout_logs: Iterable[WorkoutLog],
-    date_of: Callable[[WorkoutLog], date],
-    dates: list[date],
-) -> list[float]:
-    """筋トレの総挙上量(重量×回数の全セット合計、kg)を日別に返す。
-
-    重量の無いセット(自重種目)は重量を決められないため含めない。
-    """
-    totals = dict.fromkeys(dates, 0.0)
-    for log in workout_logs:
-        d = date_of(log)
-        if d not in totals:
-            continue
-        for exercise in log.exercises:
-            if exercise.category != ExerciseCategory.STRENGTH:
-                continue
-            totals[d] += sum(s.weight_kg * s.reps for s in exercise.sets if s.weight_kg is not None)
-    return [totals[d] for d in dates]
-
-
 def cardio_minutes_by_exercise(
     workout_logs: Iterable[WorkoutLog],
     date_of: Callable[[WorkoutLog], date],
