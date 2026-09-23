@@ -42,7 +42,7 @@ if st.button(t("レシピを生成")):
     if not ingredient_names:
         st.error(t("食材を1つ以上入力してください。"))
     else:
-        with st.spinner(t("レシピを生成しています(最大1分程度かかる場合があります)...")):
+        with st.spinner(t("レシピを生成しています(最大3分程度かかる場合があります)...")):
             try:
                 recipe = recipe_service.generate_recipe(user_id, ingredient_names)
             except AIProviderError as e:

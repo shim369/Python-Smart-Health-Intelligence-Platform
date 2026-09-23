@@ -118,8 +118,8 @@ TRANSLATIONS: dict[str, str] = {
     "鶏むね肉\nブロッコリー\n卵": "Chicken breast\nBroccoli\nEgg",
     "レシピを生成": "Generate recipe",
     "食材を1つ以上入力してください。": "Please enter at least one ingredient.",
-    "レシピを生成しています(最大1分程度かかる場合があります)...": (
-        "Generating recipe (may take up to about a minute)..."
+    "レシピを生成しています(最大3分程度かかる場合があります)...": (
+        "Generating recipe (may take up to about 3 minutes)..."
     ),
     "レシピの生成に失敗しました: {error}": "Failed to generate recipe: {error}",
     "レシピを生成しました。": "Recipe generated.",
