@@ -5,9 +5,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from datetime import date as date_type
 from datetime import time as time_type
-from zoneinfo import ZoneInfo
 
-_JST = ZoneInfo("Asia/Tokyo")
+from health_intelligence.local_time import APP_TIMEZONE as _JST
+from health_intelligence.local_time import local_today
 
 
 def format_datetime_jst(dt: datetime) -> str:
@@ -49,3 +49,21 @@ def jst_time_of(dt: datetime) -> time_type:
     編集フォームの`st.time_input`初期値として使う。
     """
     return dt.astimezone(_JST).time()
+
+
+def jst_today() -> date_type:
+    """日本時間での今日の日付。`st.date_input`の初期値として使う。
+
+    `date.today()`は実行環境(Streamlit Community CloudはUTC)の
+    タイムゾーンに依存し、JST 0:00〜8:59の間は前日になってしまう。
+    """
+    return local_today()
+
+
+def jst_now_time() -> time_type:
+    """日本時間での現在時刻(秒以下切り捨て)。`st.time_input`の初期値として使う。
+
+    `datetime.now().time()`は実行環境のタイムゾーン(UTC)の時刻になり、
+    `combine_jst_to_utc`でJSTとして解釈されると9時間ずれて保存される。
+    """
+    return jst_time_of(datetime.now(UTC)).replace(second=0, microsecond=0)
