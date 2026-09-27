@@ -11,6 +11,7 @@ from health_intelligence.ai.recipe_cache import RecipeCache
 from health_intelligence.ai.schemas import GeneratedRecipeIngredient, RecipeInput
 from health_intelligence.domain.enums import RecipeSource
 from health_intelligence.domain.models import Ingredient, Recipe, RecipeIngredient
+from health_intelligence.repositories.errors import DuplicateKeyError
 from health_intelligence.repositories.unit_of_work import UnitOfWork
 
 
@@ -138,7 +139,15 @@ class RecipeService:
             return existing
 
         ingredient = Ingredient(ingredient_id=uuid4(), name=generated_ingredient.name)
-        uow.ingredients.add(ingredient)
+        try:
+            uow.ingredients.add(ingredient)
+        except DuplicateKeyError:
+            # 事前チェック(`get_by_name`)をすり抜けて、別リクエストが同時に
+            # 同じ食材を登録した場合(TOCTOU)。`add`はSAVEPOINTまでしか
+            # rollbackしないため、同じUnitOfWorkのまま登録済みの食材を引き直す。
+            existing = uow.ingredients.get_by_name(generated_ingredient.name)
+            assert existing is not None
+            return existing
         return ingredient
 
 

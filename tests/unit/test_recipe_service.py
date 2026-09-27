@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 from health_intelligence.ai.fake_provider import FakeAIProvider
 from health_intelligence.ai.schemas import GeneratedRecipe, GeneratedRecipeIngredient
 from health_intelligence.domain.models import Ingredient, Recipe, RecipeIngredient
+from health_intelligence.repositories.errors import DuplicateKeyError
 from health_intelligence.services.recipe_service import RecipeService
 
 
@@ -86,3 +87,44 @@ def test_generate_recipe_merges_duplicate_ingredients(make_fake_uow_factory) -> 
         "Soy Sauce": (1, "大さじ"),
     }
     assert len(ingredients.items) == 3
+
+
+class _RacingIngredientRepository(_FakeIngredientRepository):
+    """`get_by_name`の直後に別リクエストが同名の食材を登録した状況を再現する。
+
+    最初の`add`で、先に登録された食材(`winner`)をマスタへ入れたうえで
+    実DBの一意制約違反と同様に`DuplicateKeyError`を送出する。
+    """
+
+    def __init__(self, winner: Ingredient) -> None:
+        super().__init__()
+        self._winner: Ingredient | None = winner
+
+    def add(self, ingredient: Ingredient) -> None:
+        if self._winner is not None:
+            self.items[self._winner.ingredient_id] = self._winner
+            self._winner = None
+        if self.get_by_name(ingredient.name) is not None:
+            raise DuplicateKeyError(ingredient.name)
+        super().add(ingredient)
+
+
+def test_generate_recipe_reuses_ingredient_created_concurrently(make_fake_uow_factory) -> None:
+    winner = Ingredient(ingredient_id=uuid4(), name="鶏もも肉")
+    ingredients = _RacingIngredientRepository(winner)
+    recipe_ingredients = _FakeRecipeIngredientRepository()
+    uow_factory = make_fake_uow_factory(
+        ingredients=ingredients,
+        recipes=_FakeRecipeRepository(),
+        recipe_ingredients=recipe_ingredients,
+    )
+    ai_provider = FakeAIProvider(
+        fixed_recipe=_generated(GeneratedRecipeIngredient(name="鶏もも肉", amount=200, unit="g"))
+    )
+    service = RecipeService(uow_factory, ai_provider)
+
+    recipe = service.generate_recipe(uuid4(), ["鶏もも肉"])
+
+    assert [ri.ingredient_id for ri in recipe_ingredients.items.values()] == [winner.ingredient_id]
+    assert recipe_ingredients.items[(recipe.recipe_id, winner.ingredient_id)].amount == 200
+    assert list(ingredients.items) == [winner.ingredient_id]
