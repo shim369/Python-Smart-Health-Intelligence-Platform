@@ -625,8 +625,8 @@ Recipe Cacheを導入し、不要なAI API呼び出しを抑制する。
 
 ログイン・ログアウト機能を実装する。認証方式はGoogle OAuth(OpenID Connect)とし、
 Streamlit標準の`st.login()` / `st.user` / `st.logout()`(Authlibベース)を利用する。
-自前のパスワード管理は行わない。許可リスト(`ALLOWED_EMAILS`)は任意機能とし、
-未設定時は誰でもログイン可能とする。
+自前のパスワード管理は行わない。許可リスト(`ALLOWED_EMAILS`)は必須とし、
+未設定(空)時は誰もログインできない(fail-closed)。誰でも許可する場合は`"*"`を明示的に設定する。
 
 ## 12.2 Session State
 

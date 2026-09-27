@@ -83,7 +83,7 @@ client_id = "xxxxx.apps.googleusercontent.com"
 client_secret = "xxxxx"
 server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
 
-# 任意。設定しなければ誰でもログイン可能。
+# 必須。未設定(空)の場合は誰もログインできない。誰でも許可する場合は "*" を設定。
 allowed_emails = "your-email@gmail.com,friend@gmail.com"
 ```
 

@@ -15,8 +15,14 @@ def test_parse_allowed_emails_empty_string_is_empty_set() -> None:
     assert parse_allowed_emails("") == frozenset()
 
 
-def test_is_email_allowed_passes_everyone_when_unset() -> None:
-    assert is_email_allowed("anyone@example.com", frozenset()) is True
+def test_is_email_allowed_rejects_everyone_when_unset() -> None:
+    assert is_email_allowed("anyone@example.com", frozenset()) is False
+
+
+def test_is_email_allowed_passes_everyone_with_wildcard() -> None:
+    allowed = parse_allowed_emails("*")
+
+    assert is_email_allowed("anyone@example.com", allowed) is True
 
 
 def test_is_email_allowed_matches_case_insensitively() -> None:

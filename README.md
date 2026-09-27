@@ -83,7 +83,7 @@ client_id = "xxxxx.apps.googleusercontent.com"
 client_secret = "xxxxx"
 server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
 
-# Optional. If unset, anyone can log in.
+# Required. If unset (empty), nobody can log in. Set "*" to allow anyone.
 allowed_emails = "your-email@gmail.com,friend@gmail.com"
 ```
 
