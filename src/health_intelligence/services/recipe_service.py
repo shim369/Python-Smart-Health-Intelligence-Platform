@@ -11,6 +11,7 @@ from health_intelligence.ai.recipe_cache import RecipeCache
 from health_intelligence.ai.schemas import GeneratedRecipeIngredient, RecipeInput
 from health_intelligence.domain.enums import RecipeSource
 from health_intelligence.domain.models import Ingredient, Recipe, RecipeIngredient
+from health_intelligence.repositories.errors import DuplicateKeyError
 from health_intelligence.repositories.unit_of_work import UnitOfWork
 
 
@@ -119,7 +120,7 @@ class RecipeService:
                     amount=generated_ingredient.amount,
                     unit=generated_ingredient.unit,
                 )
-                for generated_ingredient in generated.ingredients
+                for generated_ingredient in _merge_duplicate_ingredients(generated.ingredients)
             ]
 
             uow.recipes.add(recipe)
@@ -138,5 +139,42 @@ class RecipeService:
             return existing
 
         ingredient = Ingredient(ingredient_id=uuid4(), name=generated_ingredient.name)
-        uow.ingredients.add(ingredient)
+        try:
+            uow.ingredients.add(ingredient)
+        except DuplicateKeyError:
+            # 事前チェック(`get_by_name`)をすり抜けて、別リクエストが同時に
+            # 同じ食材を登録した場合(TOCTOU)。`add`はSAVEPOINTまでしか
+            # rollbackしないため、同じUnitOfWorkのまま登録済みの食材を引き直す。
+            existing = uow.ingredients.get_by_name(generated_ingredient.name)
+            assert existing is not None
+            return existing
         return ingredient
+
+
+def _merge_duplicate_ingredients(
+    ingredients: list[GeneratedRecipeIngredient],
+) -> list[GeneratedRecipeIngredient]:
+    """AIの出力に同じ食材が複数回含まれる場合、1件にまとめる。
+
+    recipe_ingredientsの主キーは(recipe_id, ingredient_id)のため、
+    「塩」が2回(例: 下味用と仕上げ用)返ってくると保存時に主キー違反と
+    なり、レシピ生成全体が失敗する。しかもAIの結果はRecipeCacheに
+    保存済みのため、同じ食材で再実行しても同じ結果で失敗し続ける。
+
+    食材名は`IngredientRepository.get_by_name`と同じく大文字小文字を
+    区別せず(前後の空白も無視して)突合する。単位が同じなら分量を合算し、
+    単位が異なる場合(例: "大さじ"と"少々")は合算できないため最初の
+    分量を採用する。
+    """
+    merged: dict[str, GeneratedRecipeIngredient] = {}
+    for ingredient in ingredients:
+        name = ingredient.name.strip()
+        key = name.lower()
+        existing = merged.get(key)
+        if existing is None:
+            merged[key] = ingredient.model_copy(update={"name": name})
+        elif existing.unit == ingredient.unit:
+            merged[key] = existing.model_copy(
+                update={"amount": existing.amount + ingredient.amount}
+            )
+    return list(merged.values())

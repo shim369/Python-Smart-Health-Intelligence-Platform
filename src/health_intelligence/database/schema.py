@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime, time
 
-from sqlalchemy import DateTime, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -156,6 +156,12 @@ class IngredientORM(Base):
     protein_per_100g: Mapped[float | None]
     fat_per_100g: Mapped[float | None]
     carbohydrate_per_100g: Mapped[float | None]
+
+
+# `IngredientRepository.get_by_name`は大文字小文字を区別せずに突合するため、
+# 一意制約も`lower(name)`に張る。同時リクエストによるget-or-createの
+# 競合(TOCTOU)で同名の食材が重複作成されるのをDB側で防ぐ。
+Index("uq_ingredients_name_lower", func.lower(IngredientORM.name), unique=True)
 
 
 class RecipeORM(Base):

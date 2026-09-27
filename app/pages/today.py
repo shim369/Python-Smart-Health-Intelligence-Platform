@@ -33,7 +33,9 @@ from components.formatting import (  # noqa: E402
     combine_jst_to_utc,
     format_datetime_jst,
     jst_date_of,
+    jst_now_time,
     jst_time_of,
+    jst_today,
 )
 from components.goal_task_labels import (  # noqa: E402
     DURATION_OPTIONS,
@@ -350,7 +352,7 @@ def _render_workout_new_record_section(
     exercise_templates = frequent_exercise_templates(all_workout_logs)
 
     workout_date = st.date_input(t("日付"), value=journal_date_value, key="today_workout_date")
-    workout_time = st.time_input(t("時刻"), value=datetime.now().time(), key="today_workout_time")
+    workout_time = st.time_input(t("時刻"), value=jst_now_time(), key="today_workout_time")
 
     quick_workout_col1, quick_workout_col2 = st.columns([1, 2])
     with quick_workout_col1:
@@ -819,7 +821,7 @@ def _render_learning_new_record_section(
         st.rerun(scope="fragment")
 
     learning_date = st.date_input(t("日付"), value=journal_date_value, key="today_learning_date")
-    learning_time = st.time_input(t("時刻"), value=datetime.now().time(), key="today_learning_time")
+    learning_time = st.time_input(t("時刻"), value=jst_now_time(), key="today_learning_time")
     learning_location = st.selectbox(
         t("場所"),
         options=[None, *LearningLocation],
@@ -906,7 +908,7 @@ def _render_learning_new_record_section(
 st.title(":material/today: " + t("今日"))
 
 if "today_journal_date" not in st.session_state:
-    st.session_state["today_journal_date"] = date.today()
+    st.session_state["today_journal_date"] = jst_today()
 
 journal_date: date = st.session_state["today_journal_date"]
 with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
@@ -1129,7 +1131,7 @@ with sleep_condition_tab:
     st.markdown(f"**{t('体重')}**")
     with st.form("today_weight_form"):
         weight_date = st.date_input(t("日付"), value=journal_date, key="today_weight_date")
-        weight_time = st.time_input(t("時刻"), value=datetime.now().time(), key="today_weight_time")
+        weight_time = st.time_input(t("時刻"), value=jst_now_time(), key="today_weight_time")
         weight_kg = st.number_input(t("体重(kg)"), min_value=0.0, step=0.1)
         submitted_weight = st.form_submit_button(t("体重記録を保存する"), type="primary")
 
@@ -1174,7 +1176,7 @@ with sleep_condition_tab:
     st.markdown(f"**{t('体調(5軸)')}**")
     with st.form("today_health_form"):
         health_date = st.date_input(t("日付"), value=journal_date, key="today_health_date")
-        health_time = st.time_input(t("時刻"), value=datetime.now().time(), key="today_health_time")
+        health_time = st.time_input(t("時刻"), value=jst_now_time(), key="today_health_time")
         axes = _condition_axis_sliders(key_prefix="today_health_new", initial=None)
         symptoms_text = st.text_input(
             t("症状(カンマ区切り、任意)"), placeholder=t("例: 頭痛, 倦怠感")
@@ -1305,7 +1307,7 @@ with meal_tab:
 
     with st.form("today_meal_form"):
         meal_date = st.date_input(t("日付"), value=journal_date, key="today_meal_date")
-        meal_time = st.time_input(t("時刻"), value=datetime.now().time(), key="today_meal_time")
+        meal_time = st.time_input(t("時刻"), value=jst_now_time(), key="today_meal_time")
         meal_type = st.selectbox(
             t("食事区分"),
             options=list(MealType),

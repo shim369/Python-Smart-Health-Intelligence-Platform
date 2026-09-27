@@ -153,7 +153,13 @@ class IngredientRepository(Protocol):
 
     def list_all(self) -> list[Ingredient]: ...
 
-    def add(self, ingredient: Ingredient) -> None: ...
+    def add(self, ingredient: Ingredient) -> None:
+        """同名(大文字小文字を区別しない)が既に存在する場合は`DuplicateKeyError`。
+
+        違反時もトランザクション全体は中断せず、同じUnitOfWork内で
+        `get_by_name`による引き直しができること。
+        """
+        ...
 
 
 class RecipeRepository(Protocol):

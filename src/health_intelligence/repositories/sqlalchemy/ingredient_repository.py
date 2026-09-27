@@ -8,10 +8,12 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from health_intelligence.database.schema import IngredientORM
 from health_intelligence.domain.models import Ingredient
+from health_intelligence.repositories.errors import DuplicateKeyError
 
 
 def _to_domain(orm: IngredientORM) -> Ingredient:
@@ -55,7 +57,8 @@ class SqlAlchemyIngredientRepository:
 
     def get_by_name(self, name: str) -> Ingredient | None:
         """大文字小文字を区別せず名前で検索する(get or create用)。"""
-        stmt = select(IngredientORM).where(func.lower(IngredientORM.name) == name.lower())
+        # 一意インデックス(lower(name))と判定を揃えるため、比較対象もDB側でlowerする
+        stmt = select(IngredientORM).where(func.lower(IngredientORM.name) == func.lower(name))
         orm = self._session.scalars(stmt).first()
         return _to_domain(orm) if orm is not None else None
 
@@ -64,4 +67,19 @@ class SqlAlchemyIngredientRepository:
         return [_to_domain(orm) for orm in self._session.scalars(stmt)]
 
     def add(self, ingredient: Ingredient) -> None:
-        self._session.add(_to_orm(ingredient))
+        """Ingredientを追加する。
+
+        同名(大文字小文字を区別しない)の食材が既に存在する場合は
+        `DuplicateKeyError`を送出する。
+
+        レシピ生成ではIngredientのget-or-createとRecipeの保存を1つの
+        トランザクションで行うため、SAVEPOINT(`begin_nested`)内で
+        `flush()`して一意制約違反を検知する。違反時はSAVEPOINTまでしか
+        rollbackされないので、呼び出し側は同じUnitOfWorkのまま
+        `get_by_name`で引き直して処理を続行できる。
+        """
+        try:
+            with self._session.begin_nested():
+                self._session.add(_to_orm(ingredient))
+        except IntegrityError as e:
+            raise DuplicateKeyError(f"ingredient already exists: {ingredient.name}") from e

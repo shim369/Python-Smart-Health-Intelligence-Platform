@@ -24,6 +24,7 @@ from health_intelligence.features.daily_features import (
     DailyFeatures,
     compute_daily_features,
 )
+from health_intelligence.local_time import local_date_of
 from health_intelligence.ml.dataset import MIN_DAYS
 from health_intelligence.repositories.sqlalchemy.meal_log_repository import (
     SqlAlchemyMealLogRepository,
@@ -64,10 +65,10 @@ def load_real_daily_features(session: Session) -> list[DailyFeatures]:
     weight_logs = weight_repo.list_by_user(target_user_id)
 
     all_dates: set[date] = set()
-    all_dates.update(m.consumed_at.date() for m in meal_logs)
-    all_dates.update(s.wake_time.date() for s in sleep_logs)
-    all_dates.update(w.performed_at.date() for w in workout_logs)
-    all_dates.update(w.recorded_at.date() for w in weight_logs)
+    all_dates.update(local_date_of(m.consumed_at) for m in meal_logs)
+    all_dates.update(local_date_of(s.wake_time) for s in sleep_logs)
+    all_dates.update(local_date_of(w.performed_at) for w in workout_logs)
+    all_dates.update(local_date_of(w.recorded_at) for w in weight_logs)
     if not all_dates:
         return []
 

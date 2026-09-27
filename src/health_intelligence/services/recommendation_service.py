@@ -20,6 +20,7 @@ from health_intelligence.features import (
     compute_weight_features,
     compute_workout_features,
 )
+from health_intelligence.local_time import local_date_of, local_today
 from health_intelligence.ml.dataset import DataQualityReport, check_data_quality
 from health_intelligence.ml.weight_predictor import WeightPredictorService
 from health_intelligence.recommendation import (
@@ -96,7 +97,7 @@ class RecommendationService:
         recommendations = self._recommendation_engine.generate(health_score)
 
         today_features = compute_daily_features(
-            now.date(),
+            local_date_of(now),
             meal_logs=meal_logs,
             sleep_logs=sleep_logs,
             workout_logs=workout_logs,
@@ -140,16 +141,16 @@ class RecommendationService:
             weight_logs = uow.weight_logs.list_by_user(user_id)
 
         candidate_dates = (
-            [m.consumed_at.date() for m in meal_logs]
-            + [s.wake_time.date() for s in sleep_logs]
-            + [w.performed_at.date() for w in workout_logs]
-            + [w.recorded_at.date() for w in weight_logs]
+            [local_date_of(m.consumed_at) for m in meal_logs]
+            + [local_date_of(s.wake_time) for s in sleep_logs]
+            + [local_date_of(w.performed_at) for w in workout_logs]
+            + [local_date_of(w.recorded_at) for w in weight_logs]
         )
         if not candidate_dates:
             return check_data_quality([])
 
         start_date = min(candidate_dates)
-        end_date = datetime.now(UTC).date()
+        end_date = local_today()
         num_days = (end_date - start_date).days + 1
 
         daily_features = [

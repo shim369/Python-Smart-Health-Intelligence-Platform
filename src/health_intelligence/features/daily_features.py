@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from health_intelligence.domain.models import MealLog, SleepLog, WeightLog, WorkoutLog
+from health_intelligence.local_time import local_date_of
 
 
 @dataclass(frozen=True, kw_only=True, slots=True)
@@ -39,17 +40,18 @@ def compute_daily_features(
 
     各引数は呼び出し側であらかじめ対象日でフィルタ済みのものを渡しても、
     フィルタ前の全期間分を渡してもよい(この関数内で`target_date`との
-    突合を行う)。
+    突合を行う)。`target_date`は日本時間の日付として扱い、各ログの
+    UTC日時もJSTの日付へ変換してから突合する(local_time.py参照)。
 
     workout_duration_minutesは有酸素運動(CARDIO)のduration_minutesの
     合計のみを対象とする。筋力トレーニング(STRENGTH)は所要時間を
     記録していないため計上されない(workout_features.pyの
     total_strength_volume_kgで別途評価する)。
     """
-    day_meals = [m for m in meal_logs if m.consumed_at.date() == target_date]
-    day_sleeps = [s for s in sleep_logs if s.wake_time.date() == target_date]
-    day_workouts = [w for w in workout_logs if w.performed_at.date() == target_date]
-    day_weights = [w for w in weight_logs if w.recorded_at.date() == target_date]
+    day_meals = [m for m in meal_logs if local_date_of(m.consumed_at) == target_date]
+    day_sleeps = [s for s in sleep_logs if local_date_of(s.wake_time) == target_date]
+    day_workouts = [w for w in workout_logs if local_date_of(w.performed_at) == target_date]
+    day_weights = [w for w in weight_logs if local_date_of(w.recorded_at) == target_date]
 
     calories = sum(m.calories for m in day_meals) if day_meals else None
     protein_g = sum(m.protein_g for m in day_meals) if day_meals else None
