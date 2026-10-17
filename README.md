@@ -2,7 +2,7 @@
 
 **English** | [日本語](README.ja.md)
 
-A web application that records health data (meals, workouts, sleep, weight, condition), study/portfolio-development/work logs (tracked per long-term goal/task), and a household-expense entry point, all in a daily PDCA (Plan/Do/Check/Act) format, and supports health management by combining Feature Engineering, rule-based analysis, AI recipe generation, and machine-learning prediction.
+A web application that records health data (meals, workouts, sleep, weight, condition), study/portfolio-development/work logs (tracked per long-term goal/task), and a shopping memo, all in a daily PDCA (Plan/Do/Check/Act) format, and supports health management by combining Feature Engineering, rule-based analysis, AI recipe generation, and machine-learning prediction.
 
 See below for the detailed design (documents are in Japanese).
 
@@ -11,10 +11,10 @@ See below for the detailed design (documents are in Japanese).
 
 ## Key features
 
-- **"Today" page**: Complete one day's record in a single screen, in PDCA order — Plan → Do → Check → Act. Sleep, condition (5 axes), meals, workouts (session/exercise/set structure), study/PF-dev/work, and household (shopping memo/food expense) are all recorded here.
+- **"Today" page**: Complete one day's record in a single screen, in PDCA order — Plan → Do → Check → Act. Sleep, condition (5 axes), meals, workouts (session/exercise/set structure), study/PF-dev/work, and a shopping memo are all recorded here.
 - **Goal & Task management**: Attach tasks to long-term goals, select them daily in the "Today" page's Plan step, and track progress. Study/PF-dev/work tasks record quantity/duration/memo; diet-policy/exercise-goal/sleep-goal tasks are just selected, with the actual record still living in the existing domains (MealLog/WorkoutLog/SleepLog).
 - **Learning log** (exam study, portfolio development, research, career/product strategy — the input fields change per category). Recorded in the "Today" page's Do tab.
-- **Dashboard** showing sleep/condition, meals, study/work time, workouts (max weight per strength exercise over time, cardio time by exercise), and food expense as charts, with a selectable period (last 7 / 30 / 90 days; defaults to 7).
+- **Dashboard** showing sleep/condition, meals, study/work time, workouts (max weight per strength exercise over time, cardio time by exercise) as charts, stacked one per row rather than side by side, with a selectable period (last 7 / 30 / 90 days; defaults to 7).
 - **AI recipe generation** via the Gemini API (enter ingredients → get a recipe suggestion, results are cached). Past recipes are listed as collapsible accordions and can be deleted. Ingredients from a generated recipe can be appended to the "Today" page's shopping memo with one tap.
 - AI estimates calories/PFC from a free-text description of what you ate (assists meal logging).
 - Quick entry via "same as last time" / frequently-used templates & keywords, plus bulk log import from CSV files (rows identical to an existing log are skipped automatically to prevent double imports).
