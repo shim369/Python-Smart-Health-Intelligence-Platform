@@ -969,9 +969,7 @@ pdca_status = compute_pdca_status(
         "weight": len(weight_logs_today),
         "health": len(health_logs_today),
         "task_logs": len(task_logs_today) + len(learning_logs_today),
-        "household": (
-            1 if journal is not None and (journal.shopping_memo or journal.food_expense_yen) else 0
-        ),
+        "shopping": 1 if journal is not None and journal.shopping_memo else 0,
     },
     has_reflection=bool(journal is not None and journal.reflection_memo),
     has_improvement=bool(journal is not None and journal.improvement_point),
@@ -1072,8 +1070,8 @@ st.divider()
 # ▼ D: 実績
 # ------------------------------------------------------------
 st.subheader(t("▼ D: 実績"))
-sleep_condition_tab, meal_tab, task_log_tab, workout_tab, household_tab = st.tabs(
-    [t("睡眠・体調"), t("食事"), t("学習・PF開発・仕事"), t("運動"), t("家計")]
+sleep_condition_tab, meal_tab, task_log_tab, workout_tab, shopping_tab = st.tabs(
+    [t("睡眠・体調"), t("食事"), t("学習・PF開発・仕事"), t("運動"), t("買い物メモ")]
 )
 
 with sleep_condition_tab:
@@ -1518,8 +1516,8 @@ with workout_tab:
         ):
             _workout_edit_dialog(selected_workout)
 
-with household_tab:
-    household_draft = daily_journal_service.get_or_create_draft(user_id, journal_date)
+with shopping_tab:
+    shopping_draft = daily_journal_service.get_or_create_draft(user_id, journal_date)
     shopping_memo_key = f"today_shopping_memo_{date_suffix}"
 
     # 買い物メモ(st.text_area)へのsession_state書き込みは、そのウィジェットが
@@ -1545,7 +1543,7 @@ with household_tab:
                 if ri.ingredient_id in ingredient_names_map
             ]
             current_memo = st.session_state.get(
-                shopping_memo_key, household_draft.shopping_memo or ""
+                shopping_memo_key, shopping_draft.shopping_memo or ""
             )
             st.session_state[shopping_memo_key] = append_recipe_ingredients(
                 current_memo, selected_recipe, ingredient_names
@@ -1556,26 +1554,15 @@ with household_tab:
 
     shopping_memo = st.text_area(
         t("買い物メモ"),
-        value=household_draft.shopping_memo or "",
+        value=shopping_draft.shopping_memo or "",
         key=shopping_memo_key,
     )
 
-    food_expense_yen = st.number_input(
-        t("食費合計(円)"),
-        min_value=0,
-        step=100,
-        value=household_draft.food_expense_yen or 0,
-        key=f"today_food_expense_{date_suffix}",
-    )
-    if st.button(t("家計を保存する"), type="primary", key=f"today_household_save_{date_suffix}"):
+    if st.button(
+        t("買い物メモを保存する"), type="primary", key=f"today_shopping_save_{date_suffix}"
+    ):
         latest = daily_journal_service.get_or_create_draft(user_id, journal_date)
-        daily_journal_service.save_journal(
-            replace(
-                latest,
-                shopping_memo=shopping_memo or None,
-                food_expense_yen=int(food_expense_yen) or None,
-            )
-        )
+        daily_journal_service.save_journal(replace(latest, shopping_memo=shopping_memo or None))
         st.success(t("保存しました。"))
         st.rerun()
 

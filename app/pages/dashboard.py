@@ -1,6 +1,6 @@
 """ダッシュボードページ。
 
-睡眠・体調/食事/学習/PF開発・仕事/運動/家計を、できるだけグラフのみで
+睡眠・体調/食事/学習/PF開発・仕事/運動を、できるだけグラフのみで
 一覧できるようにする。表示期間は7日/30日/90日から選べる(デフォルトは
 日々の状態把握という元来の用途に合わせ7日間。CSVインポート等でまとめて
 投入した過去のログを見たい場合は30日/90日に切り替える)。
@@ -440,27 +440,3 @@ cardio_chart = (
 with st.container(border=True, key="dashboard-chart-cardio"):
     st.caption(t("有酸素運動時間(分) — 種目別"))
     st.altair_chart(cardio_chart, width="stretch")
-
-st.divider()
-
-# ============================================================
-# 家計
-# ============================================================
-st.subheader(t("家計"))
-
-daily_journal_service = get_daily_journal_service()
-# get_journalを_DAYS分ループするとDBラウンドトリップが日数分発生する(N+1)
-# ため、range一括取得してからPython側で日付ごとの食費に振り分ける。
-journals_by_day = {
-    j.journal_date: j
-    for j in daily_journal_service.list_journals_in_range(user_id, _DAYS[0], _DAYS[-1])
-}
-expense_values = [
-    journals_by_day[d].food_expense_yen or 0 if d in journals_by_day else 0 for d in _DAYS
-]
-_bar_chart(
-    expense_values,
-    y_title=t("食費合計(円)"),
-    key="expense",
-    caption=t("食費合計(円)"),
-)

@@ -109,8 +109,6 @@ TRANSLATIONS: dict[str, str] = {
     "直近{days}日間の筋トレ(重量あり)の記録がありません。": (
         "No weighted strength training records in the past {days} days."
     ),
-    "家計": "Household",
-    "食費合計(円)": "Total food expense (JPY)",
     # --- pages/recipe.py ---
     "AIレシピ": "AI Recipes",
     "レシピを生成する": "Generate a recipe",
@@ -454,7 +452,7 @@ TRANSLATIONS: dict[str, str] = {
         'No recipes generated yet (you can generate one on the "Recipe" page).'
     ),
     "買い物メモ": "Shopping memo",
-    "家計を保存する": "Save household",
+    "買い物メモを保存する": "Save shopping memo",
     "▼ C: 振り返り": "▼ C: Reflection",
     "振り返り": "Reflection",
     "Cを保存する": "Save C",
