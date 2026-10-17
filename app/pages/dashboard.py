@@ -180,57 +180,54 @@ def _line_chart(
 st.subheader(t("睡眠・体調"))
 
 sleep_logs = get_sleep_service().list_sleep_logs(user_id)
-sleep_col, condition_col = st.columns(2)
-with sleep_col:
-    _bar_chart(
-        group_sum_by_date(
-            sleep_logs,
-            lambda s: jst_date_of(s.bedtime),
-            lambda s: s.duration_minutes / 60,
-            _DAYS,
-        ),
-        y_title=t("睡眠時間(h)"),
-        key="sleep",
-        caption=t("睡眠時間(h)"),
-    )
+_bar_chart(
+    group_sum_by_date(
+        sleep_logs,
+        lambda s: jst_date_of(s.bedtime),
+        lambda s: s.duration_minutes / 60,
+        _DAYS,
+    ),
+    y_title=t("睡眠時間(h)"),
+    key="sleep",
+    caption=t("睡眠時間(h)"),
+)
 
 health_logs = get_health_service().list_health_logs(user_id)
-with condition_col:
-    _line_chart(
-        {
-            t("総合"): group_average_by_date(
-                health_logs,
-                lambda h: jst_date_of(h.recorded_at),
-                lambda h: h.condition_score,
-                _DAYS,
-            ),
-            t("朝"): group_average_by_date(
-                health_logs,
-                lambda h: jst_date_of(h.recorded_at),
-                lambda h: h.morning_condition,
-                _DAYS,
-            ),
-            t("夜"): group_average_by_date(
-                health_logs,
-                lambda h: jst_date_of(h.recorded_at),
-                lambda h: h.evening_condition,
-                _DAYS,
-            ),
-            t("メンタル"): group_average_by_date(
-                health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.mental_score, _DAYS
-            ),
-            t("疲労"): group_average_by_date(
-                health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.fatigue_score, _DAYS
-            ),
-            t("ストレス"): group_average_by_date(
-                health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.stress_score, _DAYS
-            ),
-        },
-        y_title=t("スコア"),
-        key="condition",
-        caption=t("体調スコア(1〜5)"),
-        integer_y=True,
-    )
+_line_chart(
+    {
+        t("総合"): group_average_by_date(
+            health_logs,
+            lambda h: jst_date_of(h.recorded_at),
+            lambda h: h.condition_score,
+            _DAYS,
+        ),
+        t("朝"): group_average_by_date(
+            health_logs,
+            lambda h: jst_date_of(h.recorded_at),
+            lambda h: h.morning_condition,
+            _DAYS,
+        ),
+        t("夜"): group_average_by_date(
+            health_logs,
+            lambda h: jst_date_of(h.recorded_at),
+            lambda h: h.evening_condition,
+            _DAYS,
+        ),
+        t("メンタル"): group_average_by_date(
+            health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.mental_score, _DAYS
+        ),
+        t("疲労"): group_average_by_date(
+            health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.fatigue_score, _DAYS
+        ),
+        t("ストレス"): group_average_by_date(
+            health_logs, lambda h: jst_date_of(h.recorded_at), lambda h: h.stress_score, _DAYS
+        ),
+    },
+    y_title=t("スコア"),
+    key="condition",
+    caption=t("体調スコア(1〜5)"),
+    integer_y=True,
+)
 
 weight_logs = get_weight_service().list_weight_logs(user_id)
 weight_values = group_average_by_date(
@@ -270,47 +267,42 @@ st.divider()
 st.subheader(t("食事"))
 
 meal_logs = get_meal_service().list_meal_logs(user_id)
-cal_col, pfc_col = st.columns(2)
-with cal_col:
-    _bar_chart(
-        group_sum_by_date(
-            meal_logs, lambda m: jst_date_of(m.consumed_at), lambda m: m.calories, _DAYS
+_bar_chart(
+    group_sum_by_date(meal_logs, lambda m: jst_date_of(m.consumed_at), lambda m: m.calories, _DAYS),
+    y_title=t("カロリー(kcal)"),
+    key="calories",
+    caption=t("カロリー(kcal)"),
+    y_domain=(0, 3500),
+)
+date_col = t("日付")
+nutrient_col = t("栄養素")
+pfc_frames = []
+for label, getter in (
+    (t("タンパク質"), lambda m: m.protein_g),
+    (t("脂質"), lambda m: m.fat_g),
+    (t("炭水化物"), lambda m: m.carbohydrate_g),
+):
+    values = group_sum_by_date(meal_logs, lambda m: jst_date_of(m.consumed_at), getter, _DAYS)
+    pfc_frames.append(pd.DataFrame({date_col: _DATE_LABELS, "g": values, nutrient_col: label}))
+pfc_df = pd.concat(pfc_frames, ignore_index=True)
+# カロリーと同様、積み上げ合計が固定上限(500g)を超える日は上限を広げる。
+pfc_max = max(500.0, *pfc_df.groupby(date_col)["g"].sum())
+pfc_chart = (
+    alt.Chart(pfc_df)
+    .mark_bar()
+    .encode(
+        x=alt.X(f"{date_col}:N", sort=None, title=None, axis=alt.Axis(labelAngle=_LABEL_ANGLE)),
+        y=alt.Y("g:Q", stack="zero", scale=alt.Scale(domain=[0, pfc_max])),
+        color=alt.Color(
+            f"{nutrient_col}:N",
+            title=nutrient_col,
+            sort=[t("タンパク質"), t("脂質"), t("炭水化物")],
         ),
-        y_title=t("カロリー(kcal)"),
-        key="calories",
-        caption=t("カロリー(kcal)"),
-        y_domain=(0, 3500),
     )
-with pfc_col:
-    date_col = t("日付")
-    nutrient_col = t("栄養素")
-    pfc_frames = []
-    for label, getter in (
-        (t("タンパク質"), lambda m: m.protein_g),
-        (t("脂質"), lambda m: m.fat_g),
-        (t("炭水化物"), lambda m: m.carbohydrate_g),
-    ):
-        values = group_sum_by_date(meal_logs, lambda m: jst_date_of(m.consumed_at), getter, _DAYS)
-        pfc_frames.append(pd.DataFrame({date_col: _DATE_LABELS, "g": values, nutrient_col: label}))
-    pfc_df = pd.concat(pfc_frames, ignore_index=True)
-    # カロリーと同様、積み上げ合計が固定上限(500g)を超える日は上限を広げる。
-    pfc_max = max(500.0, *pfc_df.groupby(date_col)["g"].sum())
-    pfc_chart = (
-        alt.Chart(pfc_df)
-        .mark_bar()
-        .encode(
-            x=alt.X(f"{date_col}:N", sort=None, title=None, axis=alt.Axis(labelAngle=_LABEL_ANGLE)),
-            y=alt.Y("g:Q", stack="zero", scale=alt.Scale(domain=[0, pfc_max])),
-            color=alt.Color(
-                f"{nutrient_col}:N",
-                title=nutrient_col,
-                sort=[t("タンパク質"), t("脂質"), t("炭水化物")],
-            ),
-        )
-    )
-    with st.container(border=True, key="dashboard-chart-pfc"):
-        st.caption(t("PFC(g)"))
-        st.altair_chart(pfc_chart, width="stretch")
+)
+with st.container(border=True, key="dashboard-chart-pfc"):
+    st.caption(t("PFC(g)"))
+    st.altair_chart(pfc_chart, width="stretch")
 
 st.divider()
 
@@ -346,50 +338,47 @@ def _task_minutes_by_category(categories: set[GoalCategory]) -> list[float]:
     return [totals[d] for d in _DAYS]
 
 
-study_col, pfdev_col = st.columns(2)
-with study_col:
-    st.subheader(t("学習"))
-    learning_minutes = group_sum_by_date(
-        [
-            log
-            for log in learning_logs
-            if log.category in (LearningCategory.EXAM_STUDY, LearningCategory.RESEARCH)
-        ],
-        lambda log: jst_date_of(log.started_at),
-        lambda log: log.duration_minutes or 0,
-        _DAYS,
-    )
-    task_minutes = _task_minutes_by_category({GoalCategory.STUDY})
-    _bar_chart(
-        [a + b for a, b in zip(learning_minutes, task_minutes, strict=True)],
-        y_title=t("学習時間(分)"),
-        key="study",
-        caption=t("学習時間(分) — 学習ログ + タスク実績"),
-        y_domain=(0, 600),
-    )
+st.subheader(t("学習"))
+learning_minutes = group_sum_by_date(
+    [
+        log
+        for log in learning_logs
+        if log.category in (LearningCategory.EXAM_STUDY, LearningCategory.RESEARCH)
+    ],
+    lambda log: jst_date_of(log.started_at),
+    lambda log: log.duration_minutes or 0,
+    _DAYS,
+)
+task_minutes = _task_minutes_by_category({GoalCategory.STUDY})
+_bar_chart(
+    [a + b for a, b in zip(learning_minutes, task_minutes, strict=True)],
+    y_title=t("学習時間(分)"),
+    key="study",
+    caption=t("学習時間(分) — 学習ログ + タスク実績"),
+    y_domain=(0, 600),
+)
 
-with pfdev_col:
-    st.subheader(t("PF開発・仕事"))
-    pfdev_learning_minutes = group_sum_by_date(
-        [
-            log
-            for log in learning_logs
-            if log.category in (LearningCategory.PORTFOLIO_DEV, LearningCategory.CAREER_STRATEGY)
-        ],
-        lambda log: jst_date_of(log.started_at),
-        lambda log: log.duration_minutes or 0,
-        _DAYS,
-    )
-    pfdev_task_minutes = _task_minutes_by_category(
-        {GoalCategory.PF_DEV, GoalCategory.WORK, GoalCategory.CAREER}
-    )
-    _bar_chart(
-        [a + b for a, b in zip(pfdev_learning_minutes, pfdev_task_minutes, strict=True)],
-        y_title=t("作業時間(分)"),
-        key="pfdev",
-        caption=t("作業時間(分) — 学習ログ + タスク実績"),
-        y_domain=(0, 600),
-    )
+st.subheader(t("PF開発・仕事"))
+pfdev_learning_minutes = group_sum_by_date(
+    [
+        log
+        for log in learning_logs
+        if log.category in (LearningCategory.PORTFOLIO_DEV, LearningCategory.CAREER_STRATEGY)
+    ],
+    lambda log: jst_date_of(log.started_at),
+    lambda log: log.duration_minutes or 0,
+    _DAYS,
+)
+pfdev_task_minutes = _task_minutes_by_category(
+    {GoalCategory.PF_DEV, GoalCategory.WORK, GoalCategory.CAREER}
+)
+_bar_chart(
+    [a + b for a, b in zip(pfdev_learning_minutes, pfdev_task_minutes, strict=True)],
+    y_title=t("作業時間(分)"),
+    key="pfdev",
+    caption=t("作業時間(分) — 学習ログ + タスク実績"),
+    y_domain=(0, 600),
+)
 
 st.divider()
 
