@@ -15,7 +15,7 @@ See below for the detailed design (documents are in Japanese).
 - **Goal & Task management**: Attach tasks to long-term goals, select them daily in the "Today" page's Plan step, and track progress. Study/PF-dev/work tasks record quantity/duration/memo; diet-policy/exercise-goal/sleep-goal tasks are just selected, with the actual record still living in the existing domains (MealLog/WorkoutLog/SleepLog).
 - **Learning log** (exam study, portfolio development, research, career/product strategy — the input fields change per category). Recorded in the "Today" page's Do tab.
 - **Dashboard** showing sleep/condition, meals, study/work time, workouts (max weight per strength exercise over time, cardio time by exercise) as charts, stacked one per row rather than side by side, with a selectable period (last 7 / 30 / 90 days; defaults to 7).
-- **AI recipe generation** via the Gemini API (enter ingredients → get a recipe suggestion, results are cached). Past recipes are listed as collapsible accordions and can be deleted. Ingredients from a generated recipe can be appended to the "Today" page's shopping memo with one tap.
+- **AI recipe generation** via the Gemini API (enter ingredients → get a recipe suggestion written in the UI language, results are cached). Past recipes are listed as collapsible accordions and can be deleted. Ingredients from a generated recipe can be appended to the "Today" page's shopping memo with one tap.
 - AI estimates calories/PFC from a free-text description of what you ate (assists meal logging).
 - Quick entry via "same as last time" / frequently-used templates & keywords, plus bulk log import from CSV files (rows identical to an existing log are skipped automatically to prevent double imports).
 - **i18n**: switch the UI between Japanese and English (persisted per user in the DB). A new user's initial language is detected from the browser's `Accept-Language`; the login screen itself is always shown in English.
@@ -31,9 +31,9 @@ Captured with demo data (not real records).
 |---|---|
 | ![Dashboard](docs/images/dashboard_en.png) | ![Today page](docs/images/today_en.png) |
 
-| Goals |
-|---|
-| ![Goals page](docs/images/goals_en.png) |
+| Goals | AI Recipes |
+|---|---|
+| ![Goals page](docs/images/goals_en.png) | ![AI Recipes page](docs/images/recipe_en.png) |
 
 ## Tech stack
 

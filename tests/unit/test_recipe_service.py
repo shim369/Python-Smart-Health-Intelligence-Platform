@@ -5,7 +5,9 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 
 from health_intelligence.ai.fake_provider import FakeAIProvider
-from health_intelligence.ai.schemas import GeneratedRecipe, GeneratedRecipeIngredient
+from health_intelligence.ai.gemini_provider import _build_recipe_prompt
+from health_intelligence.ai.schemas import GeneratedRecipe, GeneratedRecipeIngredient, RecipeInput
+from health_intelligence.domain.enums import Locale
 from health_intelligence.domain.models import Ingredient, Recipe, RecipeIngredient
 from health_intelligence.repositories.errors import DuplicateKeyError
 from health_intelligence.services.recipe_service import RecipeService
@@ -128,3 +130,31 @@ def test_generate_recipe_reuses_ingredient_created_concurrently(make_fake_uow_fa
     assert [ri.ingredient_id for ri in recipe_ingredients.items.values()] == [winner.ingredient_id]
     assert recipe_ingredients.items[(recipe.recipe_id, winner.ingredient_id)].amount == 200
     assert list(ingredients.items) == [winner.ingredient_id]
+
+
+def test_generate_recipe_uses_locale_and_caches_per_locale(make_fake_uow_factory) -> None:
+    uow_factory = make_fake_uow_factory(
+        ingredients=_FakeIngredientRepository(),
+        recipes=_FakeRecipeRepository(),
+        recipe_ingredients=_FakeRecipeIngredientRepository(),
+    )
+    ai_provider = FakeAIProvider()
+    service = RecipeService(uow_factory, ai_provider)
+
+    ja = service.generate_recipe(uuid4(), ["Egg"])
+    en = service.generate_recipe(uuid4(), ["Egg"], Locale.EN)
+    en_again = service.generate_recipe(uuid4(), ["Egg"], Locale.EN)
+
+    assert ja.title == "Eggのレシピ"
+    assert en.title == "Egg recipe"
+    assert en_again.title == "Egg recipe"
+    # 同じ食材でも言語が違えば別キャッシュ(AI呼び出しは言語ごとに1回)
+    assert ai_provider.call_count == 2
+
+
+def test_build_recipe_prompt_requests_ui_language() -> None:
+    ja_prompt = _build_recipe_prompt(RecipeInput(ingredient_names=["卵"]))
+    en_prompt = _build_recipe_prompt(RecipeInput(ingredient_names=["Egg"], locale=Locale.EN))
+
+    assert "日本語で提案" in ja_prompt
+    assert "英語で提案" in en_prompt

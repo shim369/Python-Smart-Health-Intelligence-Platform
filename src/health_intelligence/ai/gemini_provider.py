@@ -38,6 +38,7 @@ from health_intelligence.ai.schemas import (
     MealNutritionInput,
     RecipeInput,
 )
+from health_intelligence.domain.enums import Locale
 from health_intelligence.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -50,8 +51,10 @@ _ResponseSchemaT = TypeVar("_ResponseSchemaT", bound=BaseModel)
 
 
 def _build_recipe_prompt(recipe_input: RecipeInput) -> str:
+    language = "英語" if recipe_input.locale == Locale.EN else "日本語"
     lines = [
-        "以下の食材を使ったレシピを1件、日本語で提案してください。",
+        f"以下の食材を使ったレシピを1件、{language}で提案してください。"
+        f"タイトル・材料名・単位・作り方はすべて{language}で書いてください。",
         f"食材: {', '.join(recipe_input.ingredient_names)}",
         "調理方法は電子レンジのみを使う前提にしてください"
         "(コンロ・オーブン・フライパンでの加熱は使わないでください)。",

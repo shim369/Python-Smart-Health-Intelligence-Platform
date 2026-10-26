@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 from health_intelligence.ai.protocols import AIProvider
 from health_intelligence.ai.recipe_cache import RecipeCache
 from health_intelligence.ai.schemas import GeneratedRecipeIngredient, RecipeInput
-from health_intelligence.domain.enums import RecipeSource
+from health_intelligence.domain.enums import Locale, RecipeSource
 from health_intelligence.domain.models import Ingredient, Recipe, RecipeIngredient
 from health_intelligence.repositories.errors import DuplicateKeyError
 from health_intelligence.repositories.unit_of_work import UnitOfWork
@@ -78,7 +78,9 @@ class RecipeService:
         with self._uow_factory() as uow:
             return {i.ingredient_id: i.name for i in uow.ingredients.list_by_ids(ingredient_ids)}
 
-    def generate_recipe(self, user_id: UUID, ingredient_names: list[str]) -> Recipe:
+    def generate_recipe(
+        self, user_id: UUID, ingredient_names: list[str], locale: Locale = Locale.JA
+    ) -> Recipe:
         """食材リストからAIによってレシピを生成し、保存する。
 
         同一の食材リスト(+食事制限+カロリー目標)で生成済みの場合は
@@ -89,8 +91,10 @@ class RecipeService:
         (`get_by_name`)、一致しなければ新規Ingredientとして作成する
         (get-or-createパターン)。IngredientのGet-or-createとRecipe/
         RecipeIngredientの保存は同じトランザクション内で行う。
+
+        `locale`はレシピ本文を書く言語(UIの表示言語を渡す想定)。
         """
-        recipe_input = RecipeInput(ingredient_names=ingredient_names)
+        recipe_input = RecipeInput(ingredient_names=ingredient_names, locale=locale)
 
         generated = self._recipe_cache.get(recipe_input)
         if generated is None:

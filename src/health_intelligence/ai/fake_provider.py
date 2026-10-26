@@ -16,6 +16,7 @@ from health_intelligence.ai.schemas import (
     MealNutritionInput,
     RecipeInput,
 )
+from health_intelligence.domain.enums import Locale
 
 
 @dataclass
@@ -47,11 +48,20 @@ class FakeAIProvider:
         if self.fixed_recipe is not None:
             return self.fixed_recipe
 
+        if recipe_input.locale == Locale.EN:
+            title = f"{', '.join(recipe_input.ingredient_names)} recipe"
+            instructions = "1. Cut the ingredients\n2. Heat in the microwave\n3. Plate and serve"
+            unit = "serving"
+        else:
+            title = f"{'・'.join(recipe_input.ingredient_names)}のレシピ"
+            instructions = "1. 材料を切る\n2. 電子レンジで加熱する\n3. 盛り付ける"
+            unit = "人前"
+
         return GeneratedRecipe(
-            title=f"{'・'.join(recipe_input.ingredient_names)}のレシピ",
-            instructions="1. 材料を切る\n2. 電子レンジで加熱する\n3. 盛り付ける",
+            title=title,
+            instructions=instructions,
             ingredients=[
-                GeneratedRecipeIngredient(name=name, amount=1.0, unit="人前")
+                GeneratedRecipeIngredient(name=name, amount=1.0, unit=unit)
                 for name in recipe_input.ingredient_names
             ],
             total_calories=400.0,

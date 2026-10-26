@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from health_intelligence.domain.enums import Locale
+
 
 class RecipeInput(BaseModel):
     """レシピ生成のためのAIへの入力。"""
@@ -16,6 +18,8 @@ class RecipeInput(BaseModel):
     ingredient_names: list[str] = Field(min_length=1)
     dietary_preference: str | None = None
     calorie_target: float | None = None
+    locale: Locale = Locale.JA
+    """レシピ本文(タイトル・材料名・単位・作り方)を書く言語。UIの表示言語に合わせる。"""
 
 
 class GeneratedRecipeIngredient(BaseModel):
