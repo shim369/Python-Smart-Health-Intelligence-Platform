@@ -23,6 +23,18 @@ See below for the detailed design (documents are in Japanese).
 - **Health Score** (a proprietary metric, not intended for medical diagnosis) and rule-based improvement suggestions (Recommendation Engine) are implemented on the backend (currently hidden from the UI — see [Known limitations](#known-limitations)).
 - ML pipeline for weight-change prediction using LightGBM (compared against a rule-based baseline; only enabled once it meets the adoption criteria, otherwise falls back to rule-based).
 
+## Screenshots
+
+Captured with demo data (not real records).
+
+| Dashboard | Today (PDCA) |
+|---|---|
+| ![Dashboard](docs/images/dashboard_en.png) | ![Today page](docs/images/today_en.png) |
+
+| Goals |
+|---|
+| ![Goals page](docs/images/goals_en.png) |
+
 ## Tech stack
 
 - Python 3.13, [uv](https://docs.astral.sh/uv/)

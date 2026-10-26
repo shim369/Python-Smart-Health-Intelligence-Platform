@@ -23,6 +23,18 @@
 - Health Score(独自指標、医療診断目的ではない)とRule-basedによる改善提案(Recommendation Engine)をバックエンドに実装済み(現在のUIには非表示。[既知の制限事項](#既知の制限事項)参照)
 - LightGBMによる体重変化予測のML Pipeline(Rule-based Baseline比較、採用基準を満たした場合のみ有効化。未達時はRule-basedにFallback)
 
+## スクリーンショット
+
+デモデータ(実データではありません)で撮影したものです。
+
+| ダッシュボード | 今日(PDCA) |
+|---|---|
+| ![ダッシュボード](docs/images/dashboard_ja.png) | ![今日ページ](docs/images/today_ja.png) |
+
+| 長期目標 | AIレシピ |
+|---|---|
+| ![長期目標ページ](docs/images/goals_ja.png) | ![AIレシピページ](docs/images/recipe_ja.png) |
+
 ## 技術スタック
 
 - Python 3.13、[uv](https://docs.astral.sh/uv/)
